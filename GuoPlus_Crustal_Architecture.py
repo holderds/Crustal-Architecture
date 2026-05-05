@@ -18,7 +18,17 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
+APP_VERSION = 'v10.1 feature-set'
 GUO_FEATURES = ['SiO2','TiO2','Al2O3','FeO','MnO','MgO','CaO','Na2O','K2O','P2O5','La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Sr','Y','Rb','Ba','Hf','Nb','Ta','Th']
+FEATURE_SETS = {
+    'Full_32': GUO_FEATURES,
+    'Top_24': ['Rb','Yb','Lu','Tm','Th','Ho','Y','Er','K2O','Ba','Sr','Al2O3','Pr','P2O5','Nd','Dy','Ce','La','MnO','TiO2','Na2O','Nb','Sm','Tb'],
+    'Top_20': ['Rb','Yb','Lu','Tm','Th','Ho','Y','Er','K2O','Ba','Sr','Al2O3','Pr','P2O5','Nd','Dy','Ce','La','MnO','TiO2'],
+    'Core_proxy_plus_major_context': ['SiO2','Al2O3','FeO','MnO','MgO','CaO','K2O','Sr','Y','La','Ce','Nd','Sm','Eu','Gd','Dy','Yb','Rb','Ba','Th'],
+    'Tiny_proxy_set': ['Sr','Y','La','Yb','Ce','Dy','Gd','Rb','K2O','Al2O3'],
+    'Majors_only': ['SiO2','TiO2','Al2O3','FeO','MnO','MgO','CaO','Na2O','K2O','P2O5'],
+    'REE_only': ['La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu'],
+}
 TRAINING_COLUMNS = ['Lon','Lat','Crust_Thickness','Age_Ma'] + GUO_FEATURES
 CHON = {'La':0.237,'Sm':0.153,'Eu':0.058,'Gd':0.2055,'Yb':0.161}
 FE2O3_TO_FEO = 0.8998
@@ -55,7 +65,30 @@ def std_cols(df):
                 if t not in used:
                     ren[c] = t; used.add(t)
                 break
-    return out.rename(columns=ren)
+    return ensure_unique_columns(out.rename(columns=ren))
+
+def ensure_unique_columns(df):
+    out = df.copy()
+    seen = {}
+    cols = []
+    for c in out.columns:
+        base = str(c)
+        n = seen.get(base, 0)
+        cols.append(base if n == 0 else f'{base}_{n+1}')
+        seen[base] = n + 1
+    out.columns = cols
+    return out
+
+def plot_df(df):
+    return ensure_unique_columns(df.reset_index(drop=True))
+
+def hover_cols(df, candidates, *excluded):
+    excluded = {c for c in excluded if c}
+    cols = []
+    for c in candidates:
+        if c in df and c not in excluded and c not in cols:
+            cols.append(c)
+    return cols
 
 def dms_to_float(v):
     if pd.isna(v): return np.nan
@@ -141,29 +174,39 @@ def target_col(df):
     return None
 
 @st.cache_resource(show_spinner=False)
-def train_model(df, target, seed=42):
-    clean = df[GUO_FEATURES+[target]].apply(pd.to_numeric,errors='coerce').dropna()
+def train_model(df, target, features, seed=42):
+    if target is None:
+        raise ValueError('Could not find a crustal thickness target column in the training table.')
+    missing = [c for c in features if c not in df]
+    if missing:
+        raise ValueError(f'Training table is missing columns for this feature set: {", ".join(missing)}')
+    clean = df[features+[target]].apply(pd.to_numeric,errors='coerce').dropna()
+    if clean.empty:
+        raise ValueError('No complete training rows remain after numeric coercion for this feature set.')
     model = Pipeline([('scaler',StandardScaler()),('etr',ExtraTreesRegressor(n_estimators=500,max_features=1.0,random_state=seed,n_jobs=-1))])
-    model.fit(clean[GUO_FEATURES], clean[target].values.ravel())
+    model.fit(clean[features], clean[target].values.ravel())
     return model, clean
 
-def cv(clean,target,seed=42):
-    X = clean[GUO_FEATURES].values; y = clean[target].values.ravel(); pred = np.zeros_like(y,dtype=float)
-    kf = KFold(n_splits=10,shuffle=True,random_state=seed)
+def cv(clean,target,features,seed=42):
+    if len(clean) < 2:
+        return clean[target].values.ravel(), clean[target].values.ravel(), np.nan, np.nan
+    X = clean[features].values; y = clean[target].values.ravel(); pred = np.zeros_like(y,dtype=float)
+    kf = KFold(n_splits=min(10,len(clean)),shuffle=True,random_state=seed)
     for tr,te in kf.split(X):
         m = Pipeline([('scaler',StandardScaler()),('etr',ExtraTreesRegressor(n_estimators=500,max_features=1.0,random_state=seed,n_jobs=-1))])
         m.fit(X[tr],y[tr]); pred[te]=m.predict(X[te])
     return y,pred,r2_score(y,pred),mean_squared_error(y,pred)**0.5
 
-def complete(df):
-    miss = [c for c in GUO_FEATURES if c not in df]
+def complete(df, features):
+    miss = [c for c in features if c not in df]
     if miss: return pd.Series(False,index=df.index), miss
-    return df[GUO_FEATURES].apply(pd.to_numeric,errors='coerce').notna().all(axis=1), []
+    return df[features].apply(pd.to_numeric,errors='coerce').notna().all(axis=1), []
 
-def predict(model,df):
-    out = df.copy(); ok,miss = complete(out); out['H_Guo_ERT_km'] = np.nan
-    out['Guo_ERT_Status'] = np.where(ok,'Predicted','Missing Guo feature values')
-    if ok.any(): out.loc[ok,'H_Guo_ERT_km'] = model.predict(out.loc[ok,GUO_FEATURES])
+def predict(model,df,features,feature_set_name):
+    out = df.copy(); ok,miss = complete(out,features); out['H_Guo_ERT_km'] = np.nan
+    out['Guo_Feature_Set'] = feature_set_name
+    out['Guo_ERT_Status'] = np.where(ok,'Predicted',f'Missing values for {feature_set_name}')
+    if ok.any(): out.loc[ok,'H_Guo_ERT_km'] = model.predict(out.loc[ok,features])
     return out
 
 def div(a,b):
@@ -216,8 +259,11 @@ def xlsx_bytes(df):
 
 st.set_page_config(page_title='GuoPlus Crustal Architecture',layout='wide')
 st.title('GuoPlus Crustal Architecture')
-st.caption('Guo ExtraTrees ML + proxy curves + map + Fe2O3 to FeO conversion')
+st.caption(f'{APP_VERSION}: Guo ExtraTrees ML + reduced feature-set options + proxy curves + map + Fe2O3 to FeO conversion')
 with st.sidebar:
+    feature_set_name=st.selectbox('Guo feature set',list(FEATURE_SETS.keys()),index=0)
+    selected_features=FEATURE_SETS[feature_set_name]
+    st.caption(f'{len(selected_features)} model inputs')
     override=st.checkbox('Override default Guo model / retrain',False)
     la_mode=st.radio('La/Yb treatment',['raw_ppm','already_normalized'])
     pred_no_header=st.checkbox('Prediction file is Guo numeric no-header format',False)
@@ -229,31 +275,36 @@ try:
         mode=st.sidebar.radio('Model source',['Upload training table','Upload joblib'])
         if mode=='Upload joblib':
             up=st.sidebar.file_uploader('Upload joblib',type=['joblib'])
-            if up: tmp=Path(tempfile.gettempdir())/'guoplus_model.joblib'; tmp.write_bytes(up.getvalue()); obj=joblib.load(tmp); model=obj['model'] if isinstance(obj,dict) and 'model' in obj else obj
+            if up:
+                tmp=Path(tempfile.gettempdir())/'guoplus_model.joblib'; tmp.write_bytes(up.getvalue()); obj=joblib.load(tmp)
+                if isinstance(obj,dict) and 'model' in obj:
+                    model=obj['model']; selected_features=obj.get('features',selected_features); feature_set_name=obj.get('feature_set',feature_set_name)
+                else:
+                    model=obj
         else:
             up=st.sidebar.file_uploader('Upload Guo training table',type=['csv','xlsx','xls'])
-            if up: train_df=read_table(up,guo_no_header=True,expected=TRAINING_COLUMNS); target=target_col(train_df); model,clean=train_model(train_df,target,seed)
+            if up: train_df=read_table(up,guo_no_header=True,expected=TRAINING_COLUMNS); target=target_col(train_df); model,clean=train_model(train_df,target,selected_features,seed)
     else:
         p=find_training()
-        if p: train_df=read_table(p,guo_no_header=True,expected=TRAINING_COLUMNS); target=target_col(train_df); model,clean=train_model(train_df,target,seed); st.success(f'Auto-trained Guo model from {p}')
+        if p: train_df=read_table(p,guo_no_header=True,expected=TRAINING_COLUMNS); target=target_col(train_df); model,clean=train_model(train_df,target,selected_features,seed); st.success(f'Auto-trained {feature_set_name} Guo model from {p}')
         else: st.warning('No default training file found. Add Table S1(1).xlsx beside the app or use override.')
 except Exception as e:
     st.error(f'Model setup failed: {e}')
 
 if not clean.empty:
     with st.expander('Guo validation plot',expanded=True):
-        y,p,r2,rmse=cv(clean,target,seed); c1,c2=st.columns([1,2]); c1.metric('Training rows',len(clean)); c1.metric('R2',f'{r2:.3f}'); c1.metric('RMSE',f'{rmse:.1f} km')
+        y,p,r2,rmse=cv(clean,target,selected_features,seed); c1,c2=st.columns([1,2]); c1.metric('Feature set',feature_set_name); c1.metric('Training rows',len(clean)); c1.metric('R2',f'{r2:.3f}'); c1.metric('RMSE',f'{rmse:.1f} km')
         fig,ax=plt.subplots(figsize=(6,6)); ax.scatter(y,p,25,color='r'); ax.plot([0,90],[0,90],'--',lw=2,color='b'); ax.plot([10,90],[0,80],'--',lw=2,color='g',alpha=.5); ax.plot([0,80],[10,90],'--',lw=2,color='g',alpha=.5); ax.set(xlabel='Observed',ylabel='Predicted',title='Crustal thickness',xlim=(0,90),ylim=(0,90)); ax.text(10,75,f'R2 = {r2:.3f}',fontsize=14); ax.text(10,70,f'RMSE = {rmse:.1f}',fontsize=14); c2.pyplot(fig)
-        bio=BytesIO(); joblib.dump({'model':model,'features':GUO_FEATURES},bio); st.download_button('Download trained Guo joblib',bio.getvalue(),'guo_ert_model.joblib','application/octet-stream')
+        bio=BytesIO(); joblib.dump({'model':model,'features':selected_features,'feature_set':feature_set_name,'app_version':APP_VERSION},bio); st.download_button('Download trained Guo joblib',bio.getvalue(),f'guo_ert_{feature_set_name}.joblib','application/octet-stream')
 
 uploaded=st.file_uploader('Upload prediction CSV/XLSX',type=['csv','xlsx','xls'])
 if not uploaded: st.info('Upload a prediction dataset to begin.'); st.stop()
 raw=read_table(uploaded,guo_no_header=pred_no_header,expected=GUO_FEATURES)
-res=predict(model,raw) if model is not None else raw.copy(); res=enrich(res,la_mode)
+res=predict(model,raw,selected_features,feature_set_name) if model is not None else raw.copy(); res=enrich(res,la_mode)
 
 t1,t2,t3,t4,t5=st.tabs(['QA','Predictions','Map','Proxy plots','Downloads'])
 with t1:
-    ok,miss=complete(res); c1,c2,c3=st.columns(3); c1.metric('Rows',len(res)); c2.metric('Complete Guo rows',int(ok.sum())); c3.metric('Missing Guo features',len(miss));
+    ok,miss=complete(res,selected_features); c1,c2,c3=st.columns(3); c1.metric('Rows',len(res)); c2.metric('Complete Guo rows',int(ok.sum())); c3.metric('Missing Guo features',len(miss));
     if miss: st.write(miss)
     st.dataframe(pd.DataFrame({'Column':res.columns,'Non_null':[int(res[c].notna().sum()) for c in res.columns],'Rows':len(res)}),use_container_width=True)
 with t2:
@@ -261,17 +312,31 @@ with t2:
     st.dataframe(res[cols+[c for c in res.columns if c not in cols]],use_container_width=True)
 with t3:
     if {'Lat','Lon'}.issubset(res):
-        m=res.dropna(subset=['Lat','Lon']); color=st.selectbox('Colour by',[c for c in ['H_Guo_ERT_km','Preferred_H_km','Sr_Y','La_Yb_N','Ce_Y'] if c in res])
-        fig=px.scatter_geo(m,lat='Lat',lon='Lon',color=color,hover_name='Sample_ID' if 'Sample_ID' in m else None,projection='natural earth'); fig.update_layout(height=650); st.plotly_chart(fig,use_container_width=True)
+        m=plot_df(res.dropna(subset=['Lat','Lon'])); color_options=[c for c in ['H_Guo_ERT_km','Preferred_H_km','Sr_Y','La_Yb_N','Ce_Y'] if c in m]
+        if color_options:
+            color=st.selectbox('Colour by',color_options)
+            hover=hover_cols(m,['Sample_ID','Arc_or_Segment','Age_Ma','Rock_Type_Model','Guo_Feature_Set','Reliability_Flags'],color,'Lat','Lon')
+            fig=px.scatter_geo(m,lat='Lat',lon='Lon',color=color,hover_name='Sample_ID' if 'Sample_ID' in m and 'Sample_ID' not in hover else None,hover_data=hover,projection='natural earth'); fig.update_layout(height=650); st.plotly_chart(fig,use_container_width=True)
+        else:
+            st.info('No plottable colour columns found.')
     else: st.info('No Lat/Lon columns found.')
 with t4:
-    nums=[c for c in res.columns if pd.api.types.is_numeric_dtype(res[c])]
-    x=st.selectbox('X',nums,index=nums.index('Preferred_H_km') if 'Preferred_H_km' in nums else 0); y=st.selectbox('Y',nums,index=nums.index('Sr_Y') if 'Sr_Y' in nums else min(1,len(nums)-1)); st.plotly_chart(px.scatter(res,x=x,y=y,color='Rock_Type_Model' if 'Rock_Type_Model' in res else None,hover_data=['Sample_ID'] if 'Sample_ID' in res else None),use_container_width=True)
-    proxy=st.selectbox('Author curve proxy',['Sr_Y','La_Yb_N','Ce_Y']); tx=st.selectbox('Thickness axis',[c for c in ['H_Guo_ERT_km','Preferred_H_km','Crust_Thickness'] if c in res]); H,cs=curves(proxy); sel=st.multiselect('Curves',list(cs.keys()),default=list(cs.keys()))
-    fig=go.Figure(); d=res.dropna(subset=[tx,proxy]) if proxy in res and tx in res else pd.DataFrame(); fig.add_trace(go.Scatter(x=d[tx],y=d[proxy],mode='markers',name='Samples'))
-    for n,v in cs.items():
-        if n in sel: fig.add_trace(go.Scatter(x=H,y=v,mode='lines',name=n))
-    fig.update_layout(xaxis_title=tx,yaxis_title=proxy,height=650,template='plotly_white'); st.plotly_chart(fig,use_container_width=True)
+    plot_res=plot_df(res)
+    nums=[c for c in plot_res.columns if pd.api.types.is_numeric_dtype(plot_res[c])]
+    if len(nums) >= 2:
+        x=st.selectbox('X',nums,index=nums.index('Preferred_H_km') if 'Preferred_H_km' in nums else 0); y=st.selectbox('Y',nums,index=nums.index('Sr_Y') if 'Sr_Y' in nums else min(1,len(nums)-1))
+        color_col='Rock_Type_Model' if 'Rock_Type_Model' in plot_res else None
+        hover=hover_cols(plot_res,['Sample_ID','Arc_or_Segment','Age_Ma','Guo_Feature_Set','Reliability_Flags'],x,y,color_col)
+        st.plotly_chart(px.scatter(plot_res,x=x,y=y,color=color_col,hover_data=hover),use_container_width=True)
+    else:
+        st.info('Need at least two numeric columns for scatter plotting.')
+    tx_options=[c for c in ['H_Guo_ERT_km','Preferred_H_km','Crust_Thickness'] if c in res]
+    if tx_options:
+        proxy=st.selectbox('Author curve proxy',['Sr_Y','La_Yb_N','Ce_Y']); tx=st.selectbox('Thickness axis',tx_options); H,cs=curves(proxy); sel=st.multiselect('Curves',list(cs.keys()),default=list(cs.keys()))
+        fig=go.Figure(); d=res.dropna(subset=[tx,proxy]) if proxy in res and tx in res else pd.DataFrame(); fig.add_trace(go.Scatter(x=d[tx],y=d[proxy],mode='markers',name='Samples'))
+        for n,v in cs.items():
+            if n in sel: fig.add_trace(go.Scatter(x=H,y=v,mode='lines',name=n))
+        fig.update_layout(xaxis_title=tx,yaxis_title=proxy,height=650,template='plotly_white'); st.plotly_chart(fig,use_container_width=True)
 with t5:
     st.download_button('Download CSV',res.to_csv(index=False).encode('utf-8'),'guoplus_results.csv','text/csv')
     st.download_button('Download Excel',xlsx_bytes(res),'guoplus_results.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
