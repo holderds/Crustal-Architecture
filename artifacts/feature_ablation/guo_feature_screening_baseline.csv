@@ -1,0 +1,2 @@
+Run_Type,CV_folds,n_estimators,Full32_R2,Full32_RMSE_km,Full32_MAE_km,Note
+fast screening CV,3,50,0.9017338585687351,4.914880899780484,2.8134439189189213,Screening run for feature removal; use as relative ranking rather than final publication-grade error.
