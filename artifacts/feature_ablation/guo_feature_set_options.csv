@@ -1,0 +1,11 @@
+Feature_Set,n_features,Features
+Full_32,32,"SiO2, TiO2, Al2O3, FeO, MnO, MgO, CaO, Na2O, K2O, P2O5, La, Ce, Pr, Nd, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu, Sr, Y, Rb, Ba, Hf, Nb, Ta, Th"
+Top_24,24,"Rb, Yb, Lu, Tm, Th, Ho, Y, Er, K2O, Ba, Sr, Al2O3, Pr, P2O5, Nd, Dy, Ce, La, MnO, TiO2, Na2O, Nb, Sm, Tb"
+Top_20,20,"Rb, Yb, Lu, Tm, Th, Ho, Y, Er, K2O, Ba, Sr, Al2O3, Pr, P2O5, Nd, Dy, Ce, La, MnO, TiO2"
+Top_16,16,"Rb, Yb, Lu, Tm, Th, Ho, Y, Er, K2O, Ba, Sr, Al2O3, Pr, P2O5, Nd, Dy"
+Majors_plus_trace_non_REE,18,"SiO2, TiO2, Al2O3, FeO, MnO, MgO, CaO, Na2O, K2O, P2O5, Sr, Y, Rb, Ba, Hf, Nb, Ta, Th"
+Core_proxy_plus_major_context,20,"SiO2, Al2O3, FeO, MnO, MgO, CaO, K2O, Sr, Y, La, Ce, Nd, Sm, Eu, Gd, Dy, Yb, Rb, Ba, Th"
+Tiny_proxy_set,10,"Sr, Y, La, Yb, Ce, Dy, Gd, Rb, K2O, Al2O3"
+Trace_non_REE,8,"Sr, Y, Rb, Ba, Hf, Nb, Ta, Th"
+Majors_only,10,"SiO2, TiO2, Al2O3, FeO, MnO, MgO, CaO, Na2O, K2O, P2O5"
+REE_only,14,"La, Ce, Pr, Nd, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu"
