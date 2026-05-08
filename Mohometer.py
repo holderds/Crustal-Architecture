@@ -1686,7 +1686,9 @@ def read_crust_grid(file_or_path):
 
 @st.cache_data(show_spinner=False)
 def read_default_crust_grid(path='CRUST_1_0_excel.csv'):
-    p = Path(path)
+    p = Path(__file__).resolve().parent / path
+    if not p.exists():
+        p = Path(path)
     return read_crust_grid(p) if p.exists() else pd.DataFrame()
 
 # ─── LithoRef18 (Alfonso 2019) reference grid ────────────────────────────────
@@ -1792,20 +1794,30 @@ def attach_grid_as_target(df, grid_df, value_col, target_name, grid_id='grid'):
 
 # ─────────────────────────────────────────────────────────────────────────────
 
-def find_training():
-    for p in ['GuoYang_2023_Model.xlsx','Table S1(1).xlsx','Table S1.xlsx','CrustThickness_5Ma_Tibet_Normalized.csv','data/training/Table S1(1).xlsx']:
-        if Path(p).exists(): return Path(p)
+def _app_dir():
+    """Directory containing Mohometer.py — reliable regardless of launch directory."""
+    return Path(__file__).resolve().parent
+
+def _find_file(names):
+    """Return the first matching file, checking beside the script before cwd."""
+    app_dir = _app_dir()
+    for name in names:
+        p = app_dir / name
+        if p.exists():
+            return p
+        p = Path(name)
+        if p.exists():
+            return p
     return None
+
+def find_training():
+    return _find_file(['GuoYang_2023_Model.xlsx','Table S1(1).xlsx','Table S1.xlsx'])
 
 def find_zou_training():
-    for p in ['Zou_2021_Model.xlsx','Zou_2021_Model.csv','Zou2021_Model.xlsx','Zou2021_Model.csv','Zou_2021.xlsx','Zou_2021.csv']:
-        if Path(p).exists(): return Path(p)
-    return None
+    return _find_file(['Zou_2021_Model.xlsx','Zou_2021_Model.csv','Zou2021_Model.xlsx','Zou2021_Model.csv','Zou_2021.xlsx','Zou_2021.csv'])
 
 def find_luffi_training():
-    for p in ['LuffiDucea_2022_Calibration.csv','luffi_ducea_2022_game_calibration.csv','LuffiDucea_2022_Model.csv','LuffiDucea_2022_Model.xlsx']:
-        if Path(p).exists(): return Path(p)
-    return None
+    return _find_file(['LuffiDucea_2022_Calibration.csv','luffi_ducea_2022_game_calibration.csv','LuffiDucea_2022_Model.csv','LuffiDucea_2022_Model.xlsx'])
 
 def _load_luffi_training(path):
     """Load the Luffi & Ducea (2022) calibration CSV as a training dataframe.
