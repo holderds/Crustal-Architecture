@@ -1,129 +1,78 @@
-# Crustal Architecture Shared Engine v0.7
+# Mohometer
 
-This bundle gives you **both**:
+A Streamlit app for crustal-thickness estimation from arc-magma geochemistry. Mohometer wraps Guo & Yang (2023), Zou et al. (2021), Sundell et al. (2021), Profeta et al. (2015), Mantle & Collins (2008), Luffi & Ducea (2022) and CRUST1.0 into one single-file workflow:
 
-1. `iogas_workflow.py` — a no-dashboard workflow script for ioGAS / CSV / Excel table enrichment.
-2. `streamlit_app.py` — a lightweight dashboard using the same calculation engine.
-3. `engine/` — the shared Python engine used by both.
+- **Data Prep** — upload CSV/XLSX, map columns to a controlled vocabulary, run anhydrous recalculation, alteration screening (CIA / AI / CCPI / K-Al-Na-Al), and export cleaned data.
+- **Model** — train and compare ExtraTrees, RandomForest, GradientBoosting, HistGradientBoosting and XGBoost models on the Guo & Yang (2023) table, the Zou et al. (2021) set, or your own training data.
+- **Validate** — benchmark trained models against blind data with known thickness, plus CRUST1.0, proxy curves, GAME consensus, and spatial-temporal local estimates.
+- **Predict** — apply trained models to unknown geochemistry, with proxy comparisons, GAME estimates, and grouping diagnostics.
+- **Summary** — multi-sheet Excel export with selectable column groups.
 
-## Why this structure?
-
-The aim is to maintain one calculation engine and use it in two places:
-
-```text
-engine/
-   ↓
-ioGAS workflow       Streamlit dashboard
-```
-
-ioGAS is best for production table enrichment. Streamlit is best for interactive plots, QA, and model development.
-
-## Quick start: Streamlit
+## Quick start (local)
 
 ```bash
 pip install -r requirements.txt
-streamlit run streamlit_app.py
+streamlit run Mohometer.py
 ```
 
-## Quick start: ioGAS-style CSV workflow
+The app expects these data files in the same folder as `Mohometer.py`:
 
-Export a table from ioGAS as CSV, then run:
+| File | Purpose | Source |
+| --- | --- | --- |
+| `GuoYang_2023_Model.xlsx` | Default training table (Guo & Yang 2023) | Guo & Yang (2023) supplementary |
+| `CRUST_1_0_excel.csv` | CRUST1.0 reference grid | Laske et al. (2013), reformatted |
+| `luffi_ducea_2022_game_calibration.csv` | GAME mohometer calibration table | Luffi & Ducea (2022) supplementary |
+| `barrick_logo.png` *(optional)* | Masthead logo | — |
 
-```bash
-python iogas_workflow.py --input samples.csv --output samples_enriched.csv
+If a file is missing, the corresponding feature is disabled but the rest of the app still runs.
+
+## Deploying on Streamlit Community Cloud
+
+1. Push this repo to GitHub (already done at [holderds/Crustal-Architecture](https://github.com/holderds/Crustal-Architecture)).
+2. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with your GitHub account.
+3. Click **New app** and select:
+   - Repository: `holderds/Crustal-Architecture`
+   - Branch: `main`
+   - Main file path: `Mohometer.py`
+4. Click **Deploy**. Streamlit will install `requirements.txt` and start the app. First boot takes ~2–3 minutes.
+5. Once running, you'll get a public URL like `https://<app-name>.streamlit.app/`.
+
+### Restricting access (for internal sharing)
+
+The Community Cloud free tier serves apps publicly by default. To keep access internal:
+
+- **Option A — private viewer list (recommended).** In the deployed app's settings, set Sharing to *Private* and add specific viewer emails (those users sign in with Google to view). Viewers must be added one at a time.
+- **Option B — host inside corporate infrastructure.** Containerise the app and deploy to Azure App Service, AWS, or an internal Streamlit instance behind SSO. The repo can stay private. This is the durable answer for company-wide rollout.
+
+Either way, **do not commit credentials, API keys, or sensitive sample locations** to the repo — Community Cloud builds run from the public-facing branch.
+
+### Resource limits
+
+Community Cloud free tier provides ~1 GB RAM and 1 vCPU. The default training tables fit well within this. Heavy workflows (training on tens of thousands of rows, broad hyperparameter sweeps) may need a paid tier or self-hosting.
+
+## Repository layout
+
+```
+Mohometer.py                              # The Streamlit app (single file)
+requirements.txt                          # Python dependencies
+engine/                                   # Reusable calculation modules
+  classify.py                             # Rock / lithology classification
+  ratios.py                               # Geochemical ratio computations
+artifacts/feature_ablation/               # Feature-screening study outputs
+Table S1(1).xlsx                          # Guo & Yang 2023 training table
+CRUST_1_0_excel.csv                       # CRUST1.0 grid
+luffi_ducea_2022_game_calibration.csv     # Luffi & Ducea 2022 GAME calibration
+barrick_logo.png                          # Masthead logo
 ```
 
-Then import or append `samples_enriched.csv` back into ioGAS.
+## Notes
 
-With a trained Guo model:
+- Proxy outputs are *apparent* thickness estimates. Interpret them alongside rock type, alteration screening, cumulate effects, and source/fractionation context.
+- CRUST1.0 is a modern (0 Ma) reference; the app does not assume it represents paleo-thickness for older samples unless you tell it to.
+- The GAME implementation is a Python-native reconstruction from the published calibration table (the original MATLAB GAME app stores opaque fitted surfaces). It uses the paper defaults `Moho = 6.79 × elevation + 26.40` and the paper-style MAD filtering thresholds for combining mohometers.
 
-```bash
-python iogas_workflow.py --input samples.csv --output samples_enriched.csv --guo-model models/guo_ert_model.joblib
-```
+## Citation
 
-## Training the Guo model once
+Holder, D. (2026). *Mohometer: an integrated crustal-thickness estimation tool.* Internal Barrick application.
 
-```bash
-python train_models.py --input guo_training.csv --target "Crustal thickness" --model guo --output models/guo_ert_model.joblib
-```
-
-The resulting `.joblib` can be used in both Streamlit and ioGAS workflows.
-
-## Column mapping
-
-The engine automatically recognises headers such as:
-
-```text
-Nd_ppm       -> Nd
-La (ppm)     -> La
-SiO2_wt%     -> SiO2
-MgO_pct      -> MgO
-sample_name  -> Sample_ID
-```
-
-Manual mapping is also supported in Python:
-
-```python
-from engine.pipeline import run_crustal_architecture_pipeline
-
-mapping = {"Nd": "Nd_ppm", "SiO2": "Silica_wt_pct"}
-out = run_crustal_architecture_pipeline(df, column_mapping=mapping)
-```
-
-## Important output columns
-
-- `Sr_Y`, `La_Yb_N`, `Ce_Y`, `MnO_MgO`, `Dy_Yb`, `Gd_Yb`
-- `H_Sundell2021_Paired_km`
-- `H_Mantle2008_CeYmax_km`
-- `H_Guo_ERT_km` if model is provided
-- `Preferred_H_km`
-- `Preferred_Method`
-- `Confidence_Score`
-- `Reliability_Flags`
-- `System_Class`
-- `Geological_Interpretation`
-
-## Notes for ioGAS
-
-The exact ioGAS Python Runner interface can vary by version/configuration. This bundle is therefore built around the most portable pattern:
-
-```text
-export active table -> run script -> import enriched table
-```
-
-If your ioGAS installation exposes the active table as a pandas dataframe, use this function directly:
-
-```python
-from iogas_workflow import run_iogas_dataframe
-
-enriched = run_iogas_dataframe(active_dataframe, guo_model_path="models/guo_ert_model.joblib")
-```
-
-## Scientific caution
-
-The proxy outputs are apparent thickness estimates. They must be interpreted with rock type, alteration, cumulate effects, sample grouping, and source/fractionation context.
-
-
-## v0.7 ML options in Streamlit
-
-The Streamlit dashboard now supports three ML modes for both Guo-style and Zou-style models:
-
-```text
-No ML
-Upload .joblib
-Upload training CSV/XLSX and train now
-```
-
-When you train from a CSV/XLSX inside Streamlit, the app also provides a button to download the trained `.joblib` model. Save that file in the `models/` folder and reuse it later in Streamlit or in the ioGAS workflow.
-
-Typical Guo workflow:
-
-```text
-1. Open Streamlit
-2. In the sidebar: Guo-style ERT ML mode → Upload training table and train now
-3. Upload Guo training CSV/XLSX
-4. Select target column, usually "Crustal thickness"
-5. Click Train
-6. Download guo_ert_model.joblib
-7. Reuse the .joblib in Streamlit or ioGAS
-```
+Underlying methods are credited to the original publications referenced above.
