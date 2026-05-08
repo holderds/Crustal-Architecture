@@ -1817,17 +1817,78 @@ def find_zou_training():
     return _find_file(['Zou_2021_Model.xlsx','Zou_2021_Model.csv','Zou2021_Model.xlsx','Zou2021_Model.csv','Zou_2021.xlsx','Zou_2021.csv'])
 
 def find_luffi_training():
-    return _find_file(['LuffiDucea_2022_Calibration.csv','luffi_ducea_2022_game_calibration.csv','LuffiDucea_2022_Model.csv','LuffiDucea_2022_Model.xlsx'])
+    # Prefer the full T1 primary dataset (~35k samples) over the 121-row arc averages.
+    # Arc averages are kept for GAME calibration only (load_game_calibration).
+    return _find_file([
+        'LuffiDucea_2022_T1.xlsx',
+        'Luffi & Ducea - Supplementary Table T1 (global arc primary datase.xlsx',
+        'LuffiDucea_2022_T1.csv',
+        'LuffiDucea_2022_Calibration.csv',
+        'luffi_ducea_2022_game_calibration.csv',
+        'LuffiDucea_2022_Model.csv',
+        'LuffiDucea_2022_Model.xlsx',
+    ])
 
 def _load_luffi_training(path):
-    """Load the Luffi & Ducea (2022) calibration CSV as a training dataframe.
-    Derives Crust_Thickness [km] from elevation using Moho = 6.79 × elev + 26.40."""
-    df = read_table(path, guo_no_header=False)
-    # Compute crustal thickness target from elevation if not already present
+    """Load a Luffi & Ducea (2022) file as a training dataframe.
+
+    Handles two formats:
+      - Full T1 primary dataset (~35k rows): has 'CRUST1 Moho depth (km)',
+        'Latitude', 'Longitude', 'GMRT elevation (km)' plus cleaned element
+        columns in '(wt%)' / '(ppm)' style in the rightmost block.
+      - 121-row arc averages (GAME calibration table): has 'elevation (km)'
+        and pre-computed ratios; target derived from H = 6.79×elev + 26.40.
+    """
+    # Read the sheet named 'Global arc dataset' if present (T1 xlsx), else plain read
+    suffix = Path(path).suffix.lower()
+    if suffix in ('.xlsx', '.xls'):
+        try:
+            xl = pd.ExcelFile(path)
+            sheet = 'Global arc dataset' if 'Global arc dataset' in xl.sheet_names else xl.sheet_names[0]
+            raw = pd.read_excel(path, sheet_name=sheet)
+        except Exception:
+            raw = pd.read_excel(path)
+    else:
+        raw = pd.read_csv(path)
+
+    # ── T1 primary dataset path ───────────────────────────────────────────────
+    if 'CRUST1 Moho depth (km)' in raw.columns:
+        # Spatial + target columns
+        rename = {
+            'Latitude': 'Lat', 'Longitude': 'Lon',
+            'GMRT elevation (km)': 'Elevation_km',
+            'CRUST1 Moho depth (km)': 'Crust_Thickness',
+        }
+        # Raw ppm/wt columns → canonical element names (only where no clean column exists)
+        _T1_ELEMENT_MAP = {
+            'LAppm':'La','CEppm':'Ce','PRppm':'Pr','NDppm':'Nd','SMppm':'Sm',
+            'EUppm':'Eu','GDppm':'Gd','TBppm':'Tb','DYppm':'Dy','HOppm':'Ho',
+            'ERppm':'Er','TMppm':'Tm','YBppm':'Yb','LUppm':'Lu',
+            'SRppm':'Sr','Yppm':'Y','RBppm':'Rb','BAppm':'Ba',
+            'NBppm':'Nb','HFppm':'Hf','TAppm':'Ta','THppm':'Th','Uppm':'U',
+            'ZRppm':'Zr','SCppm':'Sc','Vppm':'V','CRppm':'Cr','COppm':'Co',
+            'NIppm':'Ni','CUppm':'Cu','ZNppm':'Zn','GAppm':'Ga','PBppm':'Pb',
+            'LIppm':'Li','BEppm':'Be','CSppm':'Cs',
+        }
+        for src, dst in _T1_ELEMENT_MAP.items():
+            # Only rename if the clean '(ppm)' column doesn't already exist
+            clean = f'{dst} (ppm)'
+            if src in raw.columns and clean not in raw.columns:
+                rename[src] = dst
+        raw = raw.rename(columns={k: v for k, v in rename.items() if k in raw.columns})
+        # canonical_header_name in read_table handles the '(wt%)' / '(ppm)' clean columns
+        df = read_table(raw, guo_no_header=False)
+        for col in ('Crust_Thickness', 'Lat', 'Lon', 'Elevation_km'):
+            if col not in df and col in raw.columns:
+                df[col] = pd.to_numeric(raw[col], errors='coerce')
+        df = df.dropna(subset=['Crust_Thickness']).reset_index(drop=True)
+        return df
+
+    # ── 121-row arc-averages path ─────────────────────────────────────────────
+    df = read_table(raw, guo_no_header=False)
     if 'Crust_Thickness' not in df and 'Elevation_km' in df:
         elev = pd.to_numeric(df['Elevation_km'], errors='coerce')
         df['Crust_Thickness'] = (GAME_ALPHA_DEFAULT * elev + GAME_BETA_DEFAULT).round(2)
-    # Drop rows without a usable target
     if 'Crust_Thickness' in df:
         df = df.dropna(subset=['Crust_Thickness']).reset_index(drop=True)
     return df
