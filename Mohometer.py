@@ -5930,7 +5930,7 @@ with t0:
                 normalize_widget_state('primary_model_name')
                 primary_model_name=st.text_input('Primary model name',value=default_primary_name,key='primary_model_name')
                 primary_model_name=display_algorithm_label(primary_model_name)
-                configs.append({'label':primary_model_name.strip() or default_primary_name,'df':primary_train_df,'target':target,'features':primary_features,'feature_set':primary_feature_set,'algorithm':primary_algorithm})
+                configs.append({'label':primary_model_name.strip() or default_primary_name,'df':primary_train_df,'target':target,'features':primary_features,'feature_set':primary_feature_set,'algorithm':primary_algorithm,'source':primary_source})
             with st.expander('Compare models',expanded=False):
                 add_model2=st.checkbox('Add comparison model',False)
                 if add_model2:
@@ -5968,10 +5968,11 @@ with t0:
                             normalize_widget_state('model2_name')
                             model2_name=st.text_input('Model 2 name',value=default_model2_name,key='model2_name')
                             model2_name=display_algorithm_label(model2_name)
-                            configs.append({'label':model2_name.strip() or default_model2_name,'df':model2_df,'target':model2_target,'features':model2_features,'feature_set':model2_feature_set,'algorithm':model2_algorithm})
+                            configs.append({'label':model2_name.strip() or default_model2_name,'df':model2_df,'target':model2_target,'features':model2_features,'feature_set':model2_feature_set,'algorithm':model2_algorithm,'source':model2_source})
             models,validation_df,importance_df=train_configured_models(configs,seed)
             if not importance_df.empty:
                 st.session_state['_cached_importance_df'] = importance_df.copy()
+            st.session_state['_training_sources_used'] = {c.get('source','') for c in configs}
             primary_label=display_algorithm_label(configs[0]['label']) if configs else ''
             if primary_label:
                 model=models[primary_label]['model']; clean=models[primary_label]['clean']; selected_features=models[primary_label]['features']; feature_set_name=primary_label
@@ -6116,11 +6117,27 @@ with t_validation:
     st.header('Validation')
     st.caption('Use this tab to test trained models against known crustal-thickness data that were not used for training.')
     _dp_val_ready=not st.session_state.get('dp_validation_df',pd.DataFrame()).empty
-    _val_src_opts=['Upload file']+(['From Data Prep tab'] if _dp_val_ready else [])
+    _used_train_sources=st.session_state.get('_training_sources_used',set())
+    # Built-in datasets available for validation, excluding whatever was used to train
+    _builtin_val=[]
+    if find_training() and 'Guo & Yang (2023)' not in _used_train_sources:
+        _builtin_val.append('Guo & Yang (2023)')
+    if find_zou_training() and 'Zou et al. (2021)' not in _used_train_sources:
+        _builtin_val.append('Zou et al. (2021)')
+    if find_luffi_training() and 'Luffi & Ducea (2022)' not in _used_train_sources:
+        _builtin_val.append('Luffi & Ducea (2022)')
+    _val_src_opts=['Upload file']+_builtin_val+(['From Data Prep tab'] if _dp_val_ready else [])
     _val_src=st.radio('Validation data source',_val_src_opts,horizontal=True,key='val_data_source')
     if _val_src=='From Data Prep tab':
         test_df=st.session_state['dp_validation_df'].copy()
         st.success(f"Using Data Prep validation data: {len(test_df):,} rows.")
+        test_up=None
+    elif _val_src in ('Guo & Yang (2023)','Zou et al. (2021)','Luffi & Ducea (2022)'):
+        test_df,_=read_training_source(_val_src)
+        if test_df.empty:
+            st.warning(f'{_val_src} file not found beside the app.')
+        else:
+            st.success(f"Using {_val_src}: {len(test_df):,} rows.")
         test_up=None
     else:
         test_up=st.file_uploader('Upload known validation dataset',type=['csv','xlsx','xls'],key='validation_known_upload')
