@@ -49,10 +49,15 @@ SUMMARY_MEDIAN_COLOR = '#69c58e'
 SUMMARY_MEAN_COLOR = '#f0b36a'
 GUO_FEATURES = ['SiO2','TiO2','Al2O3','FeO','MnO','MgO','CaO','Na2O','K2O','P2O5','La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Sr','Y','Rb','Ba','Hf','Nb','Ta','Th']
 ZOU_2021_FEATURES = ['SiO2','TiO2','Al2O3','CaO','MgO','MnO','K2O','Na2O','P2O5','Rb','Sr','Y','Zr','Nb','Ba','La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Hf','Ta','Th','U']
+# Elements that underpin every GAME sensor in Luffi & Ducea (2022)
+LUFFI_FEATURES = ['SiO2','TiO2','FeO','MnO','MgO','CaO','Na2O','K2O',
+                   'Sc','V','Cr','Co','Ni','Ga','Rb','Sr','Y','Zr','Nb',
+                   'Ba','La','Ce','Nd','Sm','Gd','Dy','Yb','Lu','Hf','Pb','Th','U']
 IMMOBILE_FEATURES = ['TiO2','Al2O3','Y','Zr','Nb','La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Hf','Ta','Th','U']
 FEATURE_SETS = {
     'Guo & Yang (2023)': GUO_FEATURES,
     'Zou et al. (2021)': ZOU_2021_FEATURES,
+    'Luffi & Ducea (2022)': LUFFI_FEATURES,
     'Immobile elements': IMMOBILE_FEATURES,
 }
 ALGORITHMS = ['ExtraTrees','RandomForest','GradientBoosting','HistGradientBoosting'] + (['XGBoost'] if XGBRegressor is not None else [])
@@ -2298,7 +2303,7 @@ def feature_strategy_controls(prefix, df, target, default_set, full_importance=N
         strategies = ['Preset','Custom list'] + (['Minimum RI'] if allow_min_ri else [])
         strategy = st.radio(f'{prefix} element strategy',strategies,horizontal=True,key=f'{prefix}_strategy')
         if strategy == 'Preset':
-            preset_options = ['Guo & Yang (2023)','Zou et al. (2021)','Full suite','Immobile elements']
+            preset_options = ['Guo & Yang (2023)','Zou et al. (2021)','Luffi & Ducea (2022)','Full suite','Immobile elements']
             preset = st.selectbox(f'{prefix} preset',preset_options,index=preset_options.index(default_set) if default_set in preset_options else 0,key=f'{prefix}_preset')
             features = preset_features(preset,df,target)
             label = preset
@@ -5739,6 +5744,7 @@ with t0:
                 st.stop()
             primary_train_df=training_subset_controls('Primary model',train_df,expanded=False)
             default_set = ('Zou et al. (2021)' if primary_source == 'Zou et al. (2021)'
+                           else 'Luffi & Ducea (2022)' if primary_source == 'Luffi & Ducea (2022)'
                            else 'Guo & Yang (2023)' if primary_source == 'Guo & Yang (2023)'
                            else 'Full suite')
             importance_features = FEATURE_SETS['Guo & Yang (2023)'] if all(c in primary_train_df for c in FEATURE_SETS['Guo & Yang (2023)']) else dataset_numeric_features(primary_train_df,target)
@@ -5780,6 +5786,7 @@ with t0:
                         else:
                             model2_target=None
                         model2_default = ('Zou et al. (2021)' if model2_source == 'Zou et al. (2021)'
+                                          else 'Luffi & Ducea (2022)' if model2_source == 'Luffi & Ducea (2022)'
                                           else 'Guo & Yang (2023)' if model2_source == 'Guo & Yang (2023)'
                                           else 'Full suite')
                         model2_default_algorithm = 'XGBoost' if model2_source == 'Zou et al. (2021)' and 'XGBoost' in ALGORITHMS else primary_algorithm
