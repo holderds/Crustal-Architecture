@@ -2080,6 +2080,96 @@ def dataset_numeric_features(df, target):
     skip = {'Sample_ID','Lat','Lon','Age_Ma',target,'Crust_Thickness'}
     return [c for c in df.columns if c not in skip and has_numeric_column(df, c)]
 
+def bootstrap_median_convergence(values, n_bootstrap=500, ci_pct=95):
+    """Bootstrap the median at logarithmically-spaced n values from 2 to len(values).
+    Returns DataFrame with columns: n, median_est, ci_low, ci_high, ci_width."""
+    vals = np.array(values, dtype=float)
+    vals = vals[np.isfinite(vals)]
+    N = len(vals)
+    if N < 3:
+        return pd.DataFrame()
+    ns = sorted(set(
+        list(np.unique(np.round(np.geomspace(2, N, min(N - 1, 50))).astype(int))) + [N]
+    ))
+    alpha = (100 - ci_pct) / 2
+    rng = np.random.default_rng(42)
+    rows = []
+    for n in ns:
+        boots = np.median(rng.choice(vals, size=(n_bootstrap, n), replace=True), axis=1)
+        rows.append({
+            'n': int(n),
+            'median_est': float(np.median(boots)),
+            'ci_low': float(np.percentile(boots, alpha)),
+            'ci_high': float(np.percentile(boots, 100 - alpha)),
+            'ci_width': float(np.percentile(boots, 100 - alpha) - np.percentile(boots, alpha)),
+        })
+    return pd.DataFrame(rows)
+
+def render_sample_size_panel(values, ci_pct=95, precision_targets=(5.0, 10.0), key_prefix='ss'):
+    """Bootstrap convergence plot: how stable is the median as n grows?
+    precision_targets are half-widths in km (e.g. 5 → ±5 km CI half-width)."""
+    vals = np.array(values, dtype=float)
+    vals = vals[np.isfinite(vals)]
+    N = len(vals)
+    if N < 3:
+        st.info('Need at least 3 finite predicted values for sample-size analysis.')
+        return
+    conv = bootstrap_median_convergence(vals, ci_pct=ci_pct)
+    if conv.empty:
+        return
+    overall_med = float(np.median(vals))
+    fig = go.Figure()
+    # CI band
+    fig.add_trace(go.Scatter(x=conv['n'], y=conv['ci_high'], mode='lines',
+                             line=dict(width=0), showlegend=False, hoverinfo='skip'))
+    fig.add_trace(go.Scatter(x=conv['n'], y=conv['ci_low'], mode='lines',
+                             line=dict(width=0), fill='tonexty',
+                             fillcolor='rgba(59,130,246,0.15)',
+                             name=f'{ci_pct}% CI on median', hoverinfo='skip'))
+    # Median curve
+    fig.add_trace(go.Scatter(x=conv['n'], y=conv['median_est'], mode='lines+markers',
+                             line=dict(color='#3b82f6', width=2), marker=dict(size=4),
+                             name='Bootstrap median',
+                             hovertemplate='n=%{x}<br>median=%{y:.1f} km<extra></extra>'))
+    # Precision threshold lines (as ±half-width bands around the full-N median)
+    colors = ['#22c55e', '#f97316']
+    labels = ['good', 'acceptable']
+    vlines_added = set()
+    for thr_half, col, lbl in zip(precision_targets, colors, labels):
+        thr_full = thr_half * 2  # full CI width target
+        fig.add_hrect(y0=overall_med - thr_half, y1=overall_med + thr_half,
+                      fillcolor=col, opacity=0.06, line_width=0,
+                      annotation_text=f'±{thr_half:.0f} km ({lbl})',
+                      annotation_position='top right',
+                      annotation_font=dict(size=11, color=col))
+        below = conv[conv['ci_width'] <= thr_full]
+        if not below.empty:
+            n_cross = int(below['n'].iloc[0])
+            if n_cross not in vlines_added:
+                fig.add_vline(x=n_cross, line_dash='dot', line_color=col,
+                              line_width=1.4,
+                              annotation_text=f'n={n_cross}',
+                              annotation_position='top left',
+                              annotation_font=dict(color=col, size=11))
+                vlines_added.add(n_cross)
+    fig.update_layout(
+        height=320, template='plotly_white',
+        margin=dict(l=10, r=10, t=20, b=40),
+        xaxis_title='Number of samples (n)',
+        yaxis_title='Predicted crustal thickness (km)',
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0),
+    )
+    st.plotly_chart(fig, width='stretch', key=f'{key_prefix}_convergence_fig')
+    # Text recommendation
+    msgs = []
+    for thr_half, lbl in zip(precision_targets, labels):
+        below = conv[conv['ci_width'] <= thr_half * 2]
+        if not below.empty:
+            msgs.append(f'**{int(below["n"].iloc[0])} samples** for ±{thr_half:.0f} km ({lbl})')
+        else:
+            msgs.append(f'>**{N} samples** needed for ±{thr_half:.0f} km (not reached in this dataset)')
+    st.caption(f'At {ci_pct}% confidence — ' + ' · '.join(msgs))
+
 def preset_features(name, df, target):
     if name == 'Full suite':
         return dataset_numeric_features(df,target)
@@ -6001,6 +6091,26 @@ with t_validation:
                     fig=benchmark_figure(tidy_numbers(test_bench),point_size,color_by,show_best_fit,show_point_error,show_envelope,'Window',10.0,10,False,10.0,show_tree_ci)
                     st.plotly_chart(fig,width='stretch')
 
+                    with st.expander('Sample size adequacy', expanded=False):
+                        st.caption(
+                            'How many samples from your target area do you need for the median prediction to be stable? '
+                            'The chart bootstraps the median at each n using this validation dataset and shows the '
+                            'confidence interval narrowing as n grows. '
+                            'Green and orange bands show ±5 km and ±10 km precision targets — adjust below.'
+                        )
+                        _ss_c1, _ss_c2, _ss_c3, _ss_c4 = st.columns(4)
+                        _ss_model = _ss_c1.selectbox('Model', model_options, index=0, key='val_ss_model')
+                        _ss_ci = _ss_c2.selectbox('Confidence interval (%)', [80, 90, 95, 99], index=2, key='val_ss_ci')
+                        _ss_t1 = _ss_c3.number_input('Precision target 1 (±km)', 1.0, 30.0, 5.0, 0.5, key='val_ss_t1')
+                        _ss_t2 = _ss_c4.number_input('Precision target 2 (±km)', 1.0, 30.0, 10.0, 0.5, key='val_ss_t2')
+                        _ss_vals = pd.to_numeric(
+                            test_bench.loc[test_bench['Model'].astype(str) == str(_ss_model), 'Predicted_km'],
+                            errors='coerce'
+                        ).dropna().values
+                        render_sample_size_panel(_ss_vals, ci_pct=int(_ss_ci),
+                                                 precision_targets=(_ss_t1, _ss_t2),
+                                                 key_prefix='val_ss')
+
                     if 'H_GAME_LuffiDucea2022_km' in test_bench:
                         with st.expander('GAME diagnostics',expanded=False):
                             st.caption('Luffi & Ducea (2022) GAME mohometers are reconstructed from the published T2 calibration table using local LOWESS-style interpolation, then combined with the paper-style MAD filtering into a consensus Moho estimate.')
@@ -6691,6 +6801,26 @@ with t_unknown:
                 uk_show_ci=st.checkbox('Tree 90% CI bars',False,key='uk_show_ci',help='Show ensemble uncertainty: 90% interval across individual decision trees (ExtraTrees / RandomForest only)')
                 if uk_show_ci and 'Predicted_CI90_Low_km' not in pred_bench:
                     st.info('Tree CI requires ExtraTrees or RandomForest — not available for boosting algorithms.')
+
+                with st.expander('Sample size adequacy', expanded=False):
+                    st.caption(
+                        'How many samples from your target area do you need for the median prediction to be stable? '
+                        'The chart bootstraps the median at each n using your uploaded samples and shows the '
+                        'confidence interval narrowing as n grows. '
+                        'Green and orange bands show ±5 km and ±10 km precision targets — adjust below.'
+                    )
+                    _uk_ss_c1, _uk_ss_c2, _uk_ss_c3, _uk_ss_c4 = st.columns(4)
+                    _uk_ss_model = _uk_ss_c1.selectbox('Model', list(models.keys()), index=0, key='uk_ss_model')
+                    _uk_ss_ci = _uk_ss_c2.selectbox('Confidence interval (%)', [80, 90, 95, 99], index=2, key='uk_ss_ci')
+                    _uk_ss_t1 = _uk_ss_c3.number_input('Precision target 1 (±km)', 1.0, 30.0, 5.0, 0.5, key='uk_ss_t1')
+                    _uk_ss_t2 = _uk_ss_c4.number_input('Precision target 2 (±km)', 1.0, 30.0, 10.0, 0.5, key='uk_ss_t2')
+                    _uk_ss_vals = pd.to_numeric(
+                        pred_bench.loc[pred_bench['Model'].astype(str) == str(_uk_ss_model), 'Predicted_km'],
+                        errors='coerce'
+                    ).dropna().values
+                    render_sample_size_panel(_uk_ss_vals, ci_pct=int(_uk_ss_ci),
+                                             precision_targets=(_uk_ss_t1, _uk_ss_t2),
+                                             key_prefix='uk_ss')
 
                 if 'H_GAME_LuffiDucea2022_km' in pred_bench:
                     with st.expander('GAME diagnostics',expanded=False):
