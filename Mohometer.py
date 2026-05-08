@@ -21,8 +21,8 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.mixture import GaussianMixture
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+# Auto-clustering (KMeans/DBSCAN/Agglomerative + GMM two-population detection)
+# parked at engine/_parked_auto_clustering.py — see that file for re-enable steps.
 try:
     from scipy.spatial import cKDTree, Delaunay, QhullError
     from scipy.interpolate import LinearNDInterpolator as _LinearNDInterp
@@ -4113,45 +4113,6 @@ def spatiotemporal_local_estimates(targets, samples, value_col, mode='Modern ben
         rows.append(row)
     return tidy_numbers(pd.DataFrame(rows))
 
-def cluster_population_stats(values, target_value, min_cluster_n=5, seed=42):
-    vals = pd.to_numeric(pd.Series(values), errors='coerce').dropna()
-    empty = {
-        'Thickness_Cluster_Count':np.nan,
-        'Selected_Cluster_ID':np.nan,
-        'Selected_Cluster_N':np.nan,
-        'Selected_Cluster_Median':np.nan,
-        'Selected_Cluster_Q25':np.nan,
-        'Selected_Cluster_Q75':np.nan,
-        'Selected_Cluster_Flag':'not run',
-    }
-    if len(vals) < max(10, 2 * int(min_cluster_n)) or pd.isna(target_value):
-        return empty
-    x = vals.to_numpy(dtype=float).reshape(-1,1)
-    try:
-        g1 = GaussianMixture(n_components=1, random_state=seed).fit(x)
-        g2 = GaussianMixture(n_components=2, random_state=seed).fit(x)
-        labels = g2.predict(x)
-        counts = np.bincount(labels, minlength=2)
-        if g2.bic(x) >= g1.bic(x) - 2 or counts.min() < int(min_cluster_n):
-            empty['Thickness_Cluster_Count'] = 1
-            empty['Selected_Cluster_Flag'] = 'single population'
-            return empty
-        means = g2.means_.ravel()
-        selected_id = int(np.argmin(np.abs(means - float(target_value))))
-        selected_vals = vals.iloc[np.where(labels == selected_id)[0]]
-        q25 = float(selected_vals.quantile(0.25)); q75 = float(selected_vals.quantile(0.75))
-        return {
-            'Thickness_Cluster_Count':2,
-            'Selected_Cluster_ID':selected_id + 1,
-            'Selected_Cluster_N':int(len(selected_vals)),
-            'Selected_Cluster_Median':float(selected_vals.median()),
-            'Selected_Cluster_Q25':q25,
-            'Selected_Cluster_Q75':q75,
-            'Selected_Cluster_Flag':'two populations detected',
-        }
-    except Exception:
-        return empty
-
 def lonlat_xy_km(lon, lat, ref_lat=None):
     lon = np.asarray(lon, dtype=float)
     lat = np.asarray(lat, dtype=float)
@@ -4274,123 +4235,8 @@ def attach_sample_distribution_domains(df, group_col=None):
         out.loc[g.index, 'Sample_Distribution_Long_Axis_km'] = long_axis
     return out
 
-def auto_labels_with_range(method, X, source, n_clusters, min_samples=8, max_group_range_km=np.nan,
-                           max_h_range_km=np.nan, h_col='Predicted_km', max_clusters=12):
-    method = method or 'KMeans'
-    start_k = max(2, int(n_clusters))
-    max_k = max(start_k, int(max_clusters))
-    use_range = (pd.notna(max_group_range_km) and float(max_group_range_km) > 0) or (pd.notna(max_h_range_km) and float(max_h_range_km) > 0)
-    methods_with_k = ['KMeans','Agglomerative']
-    if method not in methods_with_k or not use_range:
-        if method == 'Agglomerative':
-            return AgglomerativeClustering(n_clusters=start_k).fit_predict(X), start_k, 'manual K'
-        return KMeans(n_clusters=start_k, random_state=42, n_init=20).fit_predict(X), start_k, 'manual K'
-
-    best_labels = None
-    best_k = start_k
-    best_reason = 'max K used; range target not fully met'
-    for k in range(start_k, max_k + 1):
-        labels = AgglomerativeClustering(n_clusters=k).fit_predict(X) if method == 'Agglomerative' else KMeans(n_clusters=k, random_state=42, n_init=20).fit_predict(X)
-        ok = True
-        for label_id in np.unique(labels):
-            g = source.iloc[np.where(labels == label_id)[0]]
-            if len(g) < int(min_samples):
-                ok = False
-                break
-            if pd.notna(max_group_range_km) and float(max_group_range_km) > 0 and {'Lat','Lon'}.issubset(g):
-                axis = long_axis_km_from_lonlat(g['Lon'], g['Lat'])
-                if pd.notna(axis) and axis > float(max_group_range_km):
-                    ok = False
-                    break
-            if pd.notna(max_h_range_km) and float(max_h_range_km) > 0 and h_col in g:
-                h = pd.to_numeric(g[h_col], errors='coerce').dropna()
-                if len(h) > 1 and (h.max() - h.min()) > float(max_h_range_km):
-                    ok = False
-                    break
-        best_labels = labels
-        best_k = k
-        if ok:
-            best_reason = 'range target met'
-            break
-    return best_labels, best_k, best_reason
-
-@st.cache_data(show_spinner=False)
-def attach_auto_domains(df, feature_cols, method='KMeans', n_clusters=4, eps=0.85, min_samples=8,
-                        spatial_weight=1.0, age_weight=1.0, thickness_weight=1.0, chemistry_weight=0.5,
-                        label='Auto domain', auto_k_by_range=False, max_group_range_km=np.nan,
-                        max_h_range_km=np.nan, h_col='Predicted_km', max_clusters=12):
-    out = df.copy()
-    out_col = label.replace(' ','_').replace('-','_') + '_ID'
-    out[out_col] = pd.Series([pd.NA] * len(out), index=out.index, dtype='object')
-    if out.empty or not {'Lat','Lon'}.issubset(out):
-        return out, out_col, pd.DataFrame()
-    cols = []
-    weights = []
-    if {'Lat','Lon'}.issubset(out):
-        xy = pd.DataFrame(lonlat_xy_km(pd.to_numeric(out['Lon'],errors='coerce'), pd.to_numeric(out['Lat'],errors='coerce')), columns=['Auto_X_km','Auto_Y_km'], index=out.index)
-        out = pd.concat([out,xy],axis=1)
-        cols += ['Auto_X_km','Auto_Y_km']
-        weights += [spatial_weight, spatial_weight]
-    for c in feature_cols:
-        if c in out and c not in cols:
-            cols.append(c)
-            if c == 'Age_Ma':
-                weights.append(age_weight)
-            elif c in ['Predicted_km','Observed_km','Residual_km'] or str(c).endswith('_km'):
-                weights.append(thickness_weight)
-            else:
-                weights.append(chemistry_weight)
-    work = out[cols].apply(pd.to_numeric, errors='coerce')
-    keep_cols = [c for c in work.columns if work[c].notna().sum() >= max(3,int(min_samples))]
-    work = work[keep_cols]
-    weights = [w for c,w in zip(cols,weights) if c in keep_cols]
-    if work.empty:
-        return out, out_col, pd.DataFrame()
-    ok = work.notna().any(axis=1)
-    if ok.sum() < max(3,int(min_samples)):
-        return out, out_col, pd.DataFrame()
-    work = work.loc[ok].copy()
-    for c in work.columns:
-        med = work[c].median()
-        work[c] = work[c].fillna(med)
-    X = StandardScaler().fit_transform(work)
-    X = X * np.asarray(weights, dtype=float)
-    try:
-        if method == 'DBSCAN':
-            labels = DBSCAN(eps=float(eps), min_samples=int(min_samples)).fit_predict(X)
-            chosen_k = int(len(set(labels)) - (1 if -1 in labels else 0))
-            k_reason = 'DBSCAN eps/min samples'
-        elif method == 'Agglomerative':
-            labels, chosen_k, k_reason = auto_labels_with_range(
-                'Agglomerative', X, out.loc[work.index], n_clusters, min_samples,
-                max_group_range_km if auto_k_by_range else np.nan,
-                max_h_range_km if auto_k_by_range else np.nan,
-                h_col, max_clusters
-            )
-        else:
-            labels, chosen_k, k_reason = auto_labels_with_range(
-                'KMeans', X, out.loc[work.index], n_clusters, min_samples,
-                max_group_range_km if auto_k_by_range else np.nan,
-                max_h_range_km if auto_k_by_range else np.nan,
-                h_col, max_clusters
-            )
-        out.loc[work.index,out_col] = [f'{label} {int(v)+1}' if int(v) >= 0 else f'{label} outlier' for v in labels]
-    except Exception:
-        return out, out_col, pd.DataFrame()
-    summary = []
-    for dom, g in out.dropna(subset=[out_col]).groupby(out_col, dropna=False):
-        summary.append({
-            'Grouping_Method':label,
-            'Auto_Domain_ID':dom,
-            'Chosen_K':chosen_k,
-            'K_Selection':k_reason,
-            'n':len(g),
-            'Median_H_km':pd.to_numeric(g.get('Predicted_km'),errors='coerce').median() if 'Predicted_km' in g else np.nan,
-            'Range_H_km':(pd.to_numeric(g.get(h_col),errors='coerce').max() - pd.to_numeric(g.get(h_col),errors='coerce').min()) if h_col in g else np.nan,
-            'Median_Age_Ma':pd.to_numeric(g.get('Age_Ma'),errors='coerce').median() if 'Age_Ma' in g else np.nan,
-            'Long_Axis_km':long_axis_km_from_lonlat(g['Lon'],g['Lat']) if {'Lon','Lat'}.issubset(g) and len(g.dropna(subset=['Lon','Lat'])) >= 2 else np.nan,
-        })
-    return out, out_col, tidy_numbers(pd.DataFrame(summary))
+# auto-clustering removed — see engine/_parked_auto_clustering.py for the
+# KMeans/DBSCAN/Agglomerative + GMM helpers and re-enable instructions.
 
 def attach_long_axis_position(df, group_col=None, out_col='Long_Axis_Position_km'):
     out = df.copy()
@@ -4508,8 +4354,8 @@ def preset_group_summary(df):
 
 def validation_local_estimates(df, value_col='Predicted_km', age_window=10.0, initial_radius_km=100.0,
                                max_radius_km=250.0, radius_step_km=50.0, minimum_n=10,
-                               rock_types=None, domain_col=None, cluster_diagnostic=False,
-                               min_cluster_n=5, n_boot=500, seed=42, radius_col=None):
+                               rock_types=None, domain_col=None,
+                               n_boot=500, seed=42, radius_col=None):
     if df.empty or value_col not in df or not {'Lat','Lon','Age_Ma','Model'}.issubset(df):
         return pd.DataFrame()
     rows = []
@@ -4548,8 +4394,6 @@ def validation_local_estimates(df, value_col='Predicted_km', age_window=10.0, in
             stats = neighbourhood_stats(selected[value_col] if value_col in selected else [], n_boot=n_boot, seed=seed+int(idx))
             row = target.to_dict()
             row.update(stats)
-            if cluster_diagnostic:
-                row.update(cluster_population_stats(selected[value_col] if value_col in selected else [], target.get(value_col), min_cluster_n=min_cluster_n, seed=seed+int(idx)))
             row.update({
                 'Local_Value_Column':value_col,
                 'Local_Age_Window_Ma':float(age_window),
@@ -5413,7 +5257,7 @@ def _render_grouping_display(prefix):
     _ldf=st.session_state.get(f'_{prefix}_local_df',pd.DataFrame())
     _lv=st.session_state.get(f'_{prefix}_local_value','Predicted_km')
     if _gmap.empty:
-        st.info('Select at least one non-manual grouping method (Auto KMeans, Sample distribution long axis, etc.) to show the grouping map and proxy graph.')
+        st.info('Select at least one non-manual grouping method (Preset grouping, Sample distribution long axis, or an uploaded geological domain) to show the grouping map and proxy graph.')
         return
     _gm1,_gm2,_gm3,_gm4,_gm5,_gm6=st.columns([1,1,0.5,0.5,0.5,0.5])
     _mmeths=sorted(_gmap['Grouping_Method'].dropna().astype(str).unique())
@@ -6446,7 +6290,7 @@ with t_validation:
                                 preset_split_distance=pg2.checkbox('Sub-split by distance',True,key='local_preset_split_distance')
                                 preset_segment_km=typed_slider(pg3,'Max segment [Km]',10,1000,100,10,key='local_preset_segment_km',disabled=not preset_split_distance)
                                 preset_age_bin_width=typed_slider(pg4,'Age bin [Ma]',1.0,500.0,50.0,1.0,key='local_preset_age_bin_width',disabled=preset_group_col!='Age_Ma')
-                                compare_options=['Preset grouping','Manual radius','Sample distribution long axis','Auto KMeans','Auto DBSCAN','Auto Agglomerative']
+                                compare_options=['Preset grouping','Manual radius','Sample distribution long axis']
                                 if uploaded_records:
                                     compare_options.insert(1,'Uploaded geological domain')
                                 if map_selected_available:
@@ -6454,28 +6298,7 @@ with t_validation:
                                 default_compare=['Preset grouping']
                                 if domain_mode in compare_options and domain_mode not in default_compare:
                                     default_compare.append(domain_mode)
-                                if 'Auto KMeans' in compare_options and 'Auto KMeans' not in default_compare:
-                                    default_compare.append('Auto KMeans')
                                 grouping_methods=st.multiselect('Grouping methods to compare',compare_options,default=default_compare,key='local_grouping_methods')
-                                ac1,ac2,ac3,ac4=st.columns(4)
-                                proxy_h_features=[c for c in PROXY_THICKNESS_LABELS if c in local_candidates]
-                                auto_features_available=[c for c in ['Age_Ma',local_value,'Predicted_km'] + proxy_h_features + ['Sr_Y','La_Yb_N','Ce_Y','SiO2','MgO','La','Yb','Sr','Y'] if c in local_candidates]
-                                auto_features_available=list(dict.fromkeys([c for c in auto_features_available if not str(c).startswith('CRUST1') and c != 'Observed_km' and c != 'Residual_km']))
-                                default_auto=[c for c in ['Age_Ma',local_value,'Predicted_km','H_Sundell2021_Paired_km','H_Sundell2021_SrY_km','H_Sundell2021_LaYbN_km','Sr_Y','La_Yb_N'] if c in auto_features_available]
-                                auto_features=ac1.multiselect('Auto-domain features',auto_features_available,default=list(dict.fromkeys(default_auto)),key='local_auto_features',format_func=lambda c: {'Predicted_km':'model: crustal thickness [Km]','Age_Ma':'Age [Ma]','Sr_Y':'Sr/Y','La_Yb_N':'La/Yb(N)','Ce_Y':'Ce/Y'}.get(c,PROXY_THICKNESS_LABELS.get(c,c)))
-                                auto_k_mode=ac2.selectbox('Auto K mode',['Max range','Manual K'],index=0,key='local_auto_k_mode')
-                                auto_k=typed_slider(ac2,'Starting K',2,12,4,1,key='local_auto_k')
-                                auto_eps=typed_slider(ac3,'DBSCAN eps',0.2,3.0,0.9,0.1,key='local_auto_eps')
-                                auto_min=typed_slider(ac4,'Auto min samples',3,30,8,1,key='local_auto_min')
-                                rk1,rk2,rk3=st.columns(3)
-                                max_group_range=typed_slider(rk1,'Max group long-axis [Km]',50,2000,500,50,key='local_auto_max_group_range',disabled=auto_k_mode!='Max range')
-                                max_h_range=typed_slider(rk2,'Max group H range [Km]',0.0,60.0,0.0,1.0,key='local_auto_max_h_range',disabled=auto_k_mode!='Max range',help='0 disables this constraint.')
-                                max_auto_k=typed_slider(rk3,'Maximum K',2,30,12,1,key='local_auto_max_k',disabled=auto_k_mode!='Max range')
-                                aw1,aw2,aw3,aw4=st.columns(4)
-                                spatial_weight=typed_slider(aw1,'Spatial weight',0.0,5.0,1.0,0.25,key='local_auto_spatial_weight')
-                                age_weight=typed_slider(aw2,'Age weight',0.0,5.0,1.0,0.25,key='local_auto_age_weight')
-                                thickness_weight=typed_slider(aw3,'Thickness weight',0.0,5.0,1.0,0.25,key='local_auto_thickness_weight')
-                                chemistry_weight=typed_slider(aw4,'Chemistry weight',0.0,5.0,0.5,0.25,key='local_auto_chemistry_weight')
 
                             local_boot=typed_slider(st,'Bootstrap repeats',100,2000,500,100,key='local_boot')
                             local_frames=[]
@@ -6508,18 +6331,6 @@ with t_validation:
                                     gm_source=attach_sample_distribution_domains(gm_source,sample_group_col)
                                     gm_domain=None if sample_group_col is None else 'Sample_Distribution_Domain'
                                     gm_radius_col='Sample_Distribution_Long_Axis_km'
-                                elif gm.startswith('Auto '):
-                                    auto_method=gm.replace('Auto ','')
-                                    gm_source, gm_domain, auto_summary = attach_auto_domains(
-                                        gm_source, tuple(auto_features), method=auto_method, n_clusters=auto_k, eps=auto_eps,
-                                        min_samples=auto_min, spatial_weight=spatial_weight, age_weight=age_weight,
-                                        thickness_weight=thickness_weight, chemistry_weight=chemistry_weight,
-                                        label=gm, auto_k_by_range=auto_k_mode=='Max range',
-                                        max_group_range_km=max_group_range, max_h_range_km=max_h_range,
-                                        h_col=local_value if local_value in gm_source else 'Predicted_km',
-                                        max_clusters=max_auto_k
-                                    )
-                                    domain_summaries.append(auto_summary)
                                 else:
                                     gm_domain=None
                                     gm_radius_col=None
@@ -6542,11 +6353,9 @@ with t_validation:
                                     local_frames.append(gm_df)
                             local_df=pd.concat(local_frames,ignore_index=True) if local_frames else pd.DataFrame()
                             if domain_summaries:
-                                auto_summary_df=pd.concat([d for d in domain_summaries if not d.empty],ignore_index=True) if any(not d.empty for d in domain_summaries) else pd.DataFrame()
-                                if not auto_summary_df.empty:
-                                    table_action_card('Grouping summary',auto_summary_df,'grouping_summary.csv','grouping_summary')
-                                    if 'K_Selection' in auto_summary_df and auto_summary_df['K_Selection'].astype(str).str.contains('not fully met',case=False,na=False).any():
-                                        st.warning('Auto grouping reached the maximum K before every group met the selected range target. Increase Maximum K or relax the max range.')
+                                grouping_summary_df=pd.concat([d for d in domain_summaries if not d.empty],ignore_index=True) if any(not d.empty for d in domain_summaries) else pd.DataFrame()
+                                if not grouping_summary_df.empty:
+                                    table_action_card('Grouping summary',grouping_summary_df,'grouping_summary.csv','grouping_summary')
                             if grouping_map_frames:
                                 group_map=pd.concat(grouping_map_frames,ignore_index=True)
                                 st.session_state['_val_group_map']=group_map.copy()
@@ -6555,7 +6364,7 @@ with t_validation:
                                 st.markdown('**6. Grouping diagnostics**')
                                 _render_grouping_display('val')
                             elif grouping_methods:
-                                st.info('Select at least one non-manual grouping method, such as Auto KMeans or Sample distribution long axis, to show the grouping map and proxy graph.')
+                                st.info('Select at least one non-manual grouping method, such as Preset grouping or Sample distribution long axis, to show the grouping map and proxy graph.')
                             if target_mode == 'CRUST1.0 grid cell' and local_df.empty:
                                 st.info('CRUST1.0 targets need the default CRUST_1_0_excel.csv grid plus validation Lat/Lon points.')
                             if local_df.empty:
@@ -7149,7 +6958,7 @@ with t_unknown:
                             uk_preset_split_distance=uk_pg2.checkbox('Sub-split by distance',True,key='uk_local_preset_split_distance')
                             uk_preset_segment_km=typed_slider(uk_pg3,'Max segment [Km]',10,1000,100,10,key='uk_local_preset_segment_km',disabled=not uk_preset_split_distance)
                             uk_preset_age_bin_width=typed_slider(uk_pg4,'Age bin [Ma]',1.0,500.0,50.0,1.0,key='uk_local_preset_age_bin_width',disabled=uk_preset_group_col!='Age_Ma')
-                            uk_compare_options=['Preset grouping','Manual radius','Sample distribution long axis','Auto KMeans','Auto DBSCAN','Auto Agglomerative']
+                            uk_compare_options=['Preset grouping','Manual radius','Sample distribution long axis']
                             if uk_uploaded_records:
                                 uk_compare_options.insert(1,'Uploaded geological domain')
                             if uk_map_selected_available:
@@ -7157,28 +6966,7 @@ with t_unknown:
                             uk_default_compare=['Preset grouping']
                             if uk_domain_mode in uk_compare_options and uk_domain_mode not in uk_default_compare:
                                 uk_default_compare.append(uk_domain_mode)
-                            if 'Auto KMeans' in uk_compare_options and 'Auto KMeans' not in uk_default_compare:
-                                uk_default_compare.append('Auto KMeans')
                             uk_grouping_methods=st.multiselect('Grouping methods to compare',uk_compare_options,default=uk_default_compare,key='uk_local_grouping_methods')
-                            uk_ac1,uk_ac2,uk_ac3,uk_ac4=st.columns(4)
-                            uk_proxy_h_features=[c for c in PROXY_THICKNESS_LABELS if c in uk_local_candidates]
-                            uk_auto_features_available=[c for c in ['Age_Ma',uk_local_value,'Predicted_km'] + uk_proxy_h_features + ['Sr_Y','La_Yb_N','Ce_Y','SiO2','MgO','La','Yb','Sr','Y'] if c in uk_local_candidates]
-                            uk_auto_features_available=list(dict.fromkeys([c for c in uk_auto_features_available if not str(c).startswith('CRUST1') and c != 'Residual_km']))
-                            uk_default_auto=[c for c in ['Age_Ma',uk_local_value,'Predicted_km','H_Sundell2021_Paired_km','H_Sundell2021_SrY_km','H_Sundell2021_LaYbN_km','Sr_Y','La_Yb_N'] if c in uk_auto_features_available]
-                            uk_auto_features=uk_ac1.multiselect('Auto-domain features',uk_auto_features_available,default=list(dict.fromkeys(uk_default_auto)),key='uk_local_auto_features',format_func=lambda c: {'Predicted_km':'model: crustal thickness [Km]','Age_Ma':'Age [Ma]','Sr_Y':'Sr/Y','La_Yb_N':'La/Yb(N)','Ce_Y':'Ce/Y'}.get(c,PROXY_THICKNESS_LABELS.get(c,c)))
-                            uk_auto_k_mode=uk_ac2.selectbox('Auto K mode',['Max range','Manual K'],index=0,key='uk_local_auto_k_mode')
-                            uk_auto_k=typed_slider(uk_ac2,'Starting K',2,12,4,1,key='uk_local_auto_k')
-                            uk_auto_eps=typed_slider(uk_ac3,'DBSCAN eps',0.2,3.0,0.9,0.1,key='uk_local_auto_eps')
-                            uk_auto_min=typed_slider(uk_ac4,'Auto min samples',3,30,8,1,key='uk_local_auto_min')
-                            uk_rk1,uk_rk2,uk_rk3=st.columns(3)
-                            uk_max_group_range=typed_slider(uk_rk1,'Max group long-axis [Km]',50,2000,500,50,key='uk_local_auto_max_group_range',disabled=uk_auto_k_mode!='Max range')
-                            uk_max_h_range=typed_slider(uk_rk2,'Max group H range [Km]',0.0,60.0,0.0,1.0,key='uk_local_auto_max_h_range',disabled=uk_auto_k_mode!='Max range',help='0 disables this constraint.')
-                            uk_max_auto_k=typed_slider(uk_rk3,'Maximum K',2,30,12,1,key='uk_local_auto_max_k',disabled=uk_auto_k_mode!='Max range')
-                            uk_aw1,uk_aw2,uk_aw3,uk_aw4=st.columns(4)
-                            uk_spatial_weight=typed_slider(uk_aw1,'Spatial weight',0.0,5.0,1.0,0.25,key='uk_local_auto_spatial_weight')
-                            uk_age_weight=typed_slider(uk_aw2,'Age weight',0.0,5.0,1.0,0.25,key='uk_local_auto_age_weight')
-                            uk_thickness_weight=typed_slider(uk_aw3,'Thickness weight',0.0,5.0,1.0,0.25,key='uk_local_auto_thickness_weight')
-                            uk_chemistry_weight=typed_slider(uk_aw4,'Chemistry weight',0.0,5.0,0.5,0.25,key='uk_local_auto_chemistry_weight')
 
                         uk_local_boot=typed_slider(st,'Bootstrap repeats',100,2000,500,100,key='uk_local_boot')
                         uk_local_frames=[]; uk_domain_summaries=[]; uk_grouping_map_frames=[]
@@ -7199,18 +6987,6 @@ with t_unknown:
                                 uk_gm_source=attach_sample_distribution_domains(uk_gm_source,uk_sample_group_col)
                                 uk_gm_domain=None if uk_sample_group_col is None else 'Sample_Distribution_Domain'
                                 uk_gm_radius_col='Sample_Distribution_Long_Axis_km'
-                            elif uk_gm.startswith('Auto '):
-                                uk_auto_method=uk_gm.replace('Auto ','')
-                                uk_gm_source,uk_gm_domain,uk_auto_summary=attach_auto_domains(
-                                    uk_gm_source,tuple(uk_auto_features),method=uk_auto_method,n_clusters=uk_auto_k,eps=uk_auto_eps,
-                                    min_samples=uk_auto_min,spatial_weight=uk_spatial_weight,age_weight=uk_age_weight,
-                                    thickness_weight=uk_thickness_weight,chemistry_weight=uk_chemistry_weight,
-                                    label=uk_gm,auto_k_by_range=uk_auto_k_mode=='Max range',
-                                    max_group_range_km=uk_max_group_range,max_h_range_km=uk_max_h_range,
-                                    h_col=uk_local_value if uk_local_value in uk_gm_source else 'Predicted_km',
-                                    max_clusters=uk_max_auto_k
-                                )
-                                uk_domain_summaries.append(uk_auto_summary)
                             else:
                                 uk_gm_domain=None; uk_gm_radius_col=None
                             if uk_gm_domain and uk_gm_domain in uk_gm_source and {'Lat','Lon'}.issubset(uk_gm_source):
@@ -7233,11 +7009,9 @@ with t_unknown:
                         uk_local_df=pd.concat(uk_local_frames,ignore_index=True) if uk_local_frames else pd.DataFrame()
                         st.session_state['_uk_local_df']=uk_local_df.copy() if not uk_local_df.empty else pd.DataFrame()
                         if uk_domain_summaries:
-                            uk_auto_summary_df=pd.concat([d for d in uk_domain_summaries if not d.empty],ignore_index=True) if any(not d.empty for d in uk_domain_summaries) else pd.DataFrame()
-                            if not uk_auto_summary_df.empty:
-                                table_action_card('Grouping summary',uk_auto_summary_df,'uk_grouping_summary.csv','uk_grouping_summary')
-                                if 'K_Selection' in uk_auto_summary_df and uk_auto_summary_df['K_Selection'].astype(str).str.contains('not fully met',case=False,na=False).any():
-                                    st.warning('Auto grouping reached the maximum K before every group met the selected range target. Increase Maximum K or relax the max range.')
+                            uk_grouping_summary_df=pd.concat([d for d in uk_domain_summaries if not d.empty],ignore_index=True) if any(not d.empty for d in uk_domain_summaries) else pd.DataFrame()
+                            if not uk_grouping_summary_df.empty:
+                                table_action_card('Grouping summary',uk_grouping_summary_df,'uk_grouping_summary.csv','uk_grouping_summary')
                         if uk_grouping_map_frames:
                             uk_group_map=pd.concat(uk_grouping_map_frames,ignore_index=True)
                             st.session_state['_rs_group_map']=uk_group_map.copy()
@@ -7247,7 +7021,7 @@ with t_unknown:
                             st.markdown('**6. Grouping diagnostics**')
                             _render_grouping_display('uk')
                         elif uk_grouping_methods:
-                            st.info('Select at least one non-manual grouping method, such as Auto KMeans or Sample distribution long axis, to show the grouping map and proxy graph.')
+                            st.info('Select at least one non-manual grouping method, such as Preset grouping or Sample distribution long axis, to show the grouping map and proxy graph.')
                         if uk_target_mode == 'CRUST1.0 grid cell' and uk_local_df.empty:
                             st.info('CRUST1.0 targets need the default CRUST_1_0_excel.csv grid plus prediction Lat/Lon points.')
                         if uk_local_df.empty:
