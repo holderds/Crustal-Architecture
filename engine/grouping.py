@@ -151,7 +151,7 @@ def candidate_group_columns(df: pd.DataFrame, max_unique: int = 60) -> list[str]
                     extras.append(c)
         except Exception:
             continue
-    return out + extras[:12]
+    return out + extras
 
 
 def candidate_numeric_columns(df: pd.DataFrame) -> list[str]:

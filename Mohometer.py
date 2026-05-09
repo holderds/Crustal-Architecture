@@ -2745,7 +2745,12 @@ def benchmark_uploaded(_models, test_df, target, seed=42, la_yb_mode='raw_ppm'):
     proxy_thickness_cols = list(PROXY_THICKNESS_LABELS) if 'PROXY_THICKNESS_LABELS' in globals() else ['H_Profeta2015_SrY_km','H_Sundell2021_SrY_km','H_Zou2021_SrY_SVRE_km','H_Profeta2015_LaYbN_km','H_Sundell2021_LaYbN_km','H_Zou2021_LaYbN_SVRE_km','H_Mantle2008_CeY_sample_km','H_Sundell2021_Paired_km','H_GAME_LuffiDucea2022_km']
     proxy_value_cols = list(PROXY_VALUE_LIBRARY) if 'PROXY_VALUE_LIBRARY' in globals() else ['Sr_Y','La_Yb_N','Ce_Y','Dy_Yb','MgO','SiO2']
     game_cols = ['GAME_Luffi2022_N_mohometers','GAME_Luffi2022_N_raw_mohometers','GAME_Luffi2022_MAD_km','GAME_Luffi2022_IQR_km','GAME_Luffi2022_CI95_Low_km','GAME_Luffi2022_CI95_High_km','GAME_Luffi2022_CI95_Width_km','GAME_Luffi2022_Reliability','GAME_Luffi2022_Status']
-    meta_cols = [c for c in ['Sample_ID','Lat','Lon','Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type','Rock_Type_Model','MgO','SiO2',target] + proxy_value_cols + proxy_thickness_cols + game_cols if c in test_df]
+    _meta_priority = ['Sample_ID','Lat','Lon','Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type','Rock_Type_Model','MgO','SiO2',target]
+    meta_cols = [c for c in _meta_priority + proxy_value_cols + proxy_thickness_cols + game_cols if c in test_df]
+    # Pass through ALL remaining columns from the upload so the Grouping tab
+    # can see Country, Province, Terrane, and any other user-supplied columns.
+    _meta_set = set(meta_cols)
+    meta_cols += [c for c in test_df.columns if c not in _meta_set]
     for name,bundle in _models.items():
         features = bundle['features']
         need = features + [target]
@@ -2782,7 +2787,12 @@ def predict_uploaded(_models, pred_df, seed=42, la_yb_mode='raw_ppm'):
     proxy_thickness_cols = list(PROXY_THICKNESS_LABELS)
     proxy_value_cols = list(PROXY_VALUE_LIBRARY)
     game_cols = ['GAME_Luffi2022_N_mohometers','GAME_Luffi2022_N_raw_mohometers','GAME_Luffi2022_MAD_km','GAME_Luffi2022_IQR_km','GAME_Luffi2022_CI95_Low_km','GAME_Luffi2022_CI95_High_km','GAME_Luffi2022_CI95_Width_km','GAME_Luffi2022_Reliability','GAME_Luffi2022_Status']
-    meta_cols = [c for c in ['Sample_ID','Lat','Lon','Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type','Rock_Type_Model','MgO','SiO2'] + proxy_value_cols + proxy_thickness_cols + game_cols if c in pred_df]
+    _meta_priority = ['Sample_ID','Lat','Lon','Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type','Rock_Type_Model','MgO','SiO2']
+    meta_cols = [c for c in _meta_priority + proxy_value_cols + proxy_thickness_cols + game_cols if c in pred_df]
+    # Pass through ALL remaining columns from the upload so the Grouping tab
+    # can see Country, Province, Terrane, and any other user-supplied columns.
+    _meta_set = set(meta_cols)
+    meta_cols += [c for c in pred_df.columns if c not in _meta_set]
     for name, bundle in _models.items():
         features = bundle['features']
         if any(c not in pred_df for c in features):
