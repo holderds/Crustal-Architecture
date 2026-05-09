@@ -44,6 +44,8 @@ from engine.grouping import (
     auto_groups_from_filters as _g_auto_groups_from_filters,
     group_stats as _g_group_stats,
     round_trip_columns as _g_round_trip_columns,
+    attach_polyline_projections as _g_attach_polyline_projections,
+    rolling_window_smoothed as _g_rolling_window_smoothed,
 )
 
 APP_VERSION = 'v10.1 feature-set'
@@ -7075,9 +7077,9 @@ with t_unknown:
 # ─────────────────────────────────────────────────────────────────────────────
 with t_grouping:
     st.header('Grouping')
-    st.caption('Define groups by stacking categorical and numeric filters from the table. '
-               'Lasso selection on the map / cross-plot and a draw-your-own long-axis polyline '
-               'arrive in the next landings.')
+    st.caption('Define groups by stacking categorical and numeric filters from the table, '
+               'lasso-selecting on the map or cross-plot, or enabling the PCA polyline '
+               'projection for along-strike analysis.')
 
     # --- Source selector ----------------------------------------------------
     _val_bench = st.session_state.get('_rs_val_bench', pd.DataFrame())
@@ -7238,11 +7240,61 @@ with t_grouping:
 
     # --- Linked map + cross-plot -------------------------------------------
     if _n_passing > 0 and {'Lat', 'Lon'}.issubset(_grouped.columns):
+        # ── Landing 3: Polyline-as-axis ──────────────────────────────────────
+        with st.expander('🔬 Polyline axes — PCA long-axis projection', expanded=False):
+            st.checkbox(
+                'Enable per-group PCA polyline projection',
+                value=st.session_state.get('_g_polyline_on', False),
+                key='_g_polyline_on',
+                help='Fits a straight-line axis through each group\'s samples via PCA '
+                     '(equirectangular km projection). Adds Along_Strike_km and '
+                     'Across_Strike_km columns; draws the axis on the map.',
+            )
+            if st.session_state.get('_g_polyline_on', False):
+                _pa1, _pa2 = st.columns(2)
+                _pa1.selectbox(
+                    'Rolling average statistic',
+                    ['median', 'mean'],
+                    key='_g_poly_stat',
+                    format_func=lambda s: {'median': 'Median + IQR band',
+                                           'mean': 'Mean ± 1 SD'}[s],
+                )
+                _pa2.slider(
+                    'Rolling window (km)', 50, 1000, 200, 50,
+                    key='_g_poly_window',
+                    help='Half-window = window ÷ 2 km on either side of each grid point.',
+                )
+                st.caption(
+                    '**Along_Strike_km** = distance along the group PCA axis from the '
+                    'south-west end. **Across_Strike_km** = signed perpendicular distance '
+                    '(positive = left of direction vector). Select **Along_Strike_km** as '
+                    'the cross-plot X axis to see a rolling-window smoothing curve.'
+                )
+
+        # Read polyline settings from session state (survives expander collapsed/open)
+        _poly_on = st.session_state.get('_g_polyline_on', False)
+        _poly_stat = st.session_state.get('_g_poly_stat', 'median')
+        _poly_window = int(st.session_state.get('_g_poly_window', 200))
+        _group_axes: dict = {}
+        if _poly_on and _n_passing > 0:
+            try:
+                _grouped_proj, _group_axes = _g_attach_polyline_projections(
+                    _grouped, group_col='Group_ID', lon_col='Lon', lat_col='Lat'
+                )
+                if 'Along_Strike_km' in _grouped_proj.columns:
+                    _grouped = _grouped_proj
+            except Exception as _poly_err:
+                st.warning(f'Polyline projection failed — {_poly_err}')
+
         st.markdown('**Map + cross-plot** (linked by Group_ID — drag a lasso/box on either to define groups)')
         _vis_df = _grouped.dropna(subset=['Group_ID']).copy()
         if not _vis_df.empty:
             _vc1, _vc2, _vc3 = st.columns(3)
             _vis_x_opts = [c for c in _num_cols if c in _vis_df.columns]
+            # Polyline projection columns go to the front of the picker when available
+            for _pcol in ('Across_Strike_km', 'Along_Strike_km'):
+                if _pcol in _vis_df.columns and _pcol not in _vis_x_opts:
+                    _vis_x_opts = [_pcol] + _vis_x_opts
             _vis_x = _vc1.selectbox('Cross-plot X', _vis_x_opts,
                                      index=_vis_x_opts.index('Sr_Y') if 'Sr_Y' in _vis_x_opts else 0,
                                      key='g_vis_x')
@@ -7296,6 +7348,20 @@ with t_grouping:
                     name='samples',
                     showlegend=False,
                 ))
+                # Landing 3 — axis polylines (one dashed line per group)
+                for _ax_gid, _ax_info in _group_axes.items():
+                    _ax_gname_rows = _vd.loc[_vd['Group_ID'] == _ax_gid, 'Group_Name'].dropna()
+                    _ax_gname = str(_ax_gname_rows.iloc[0]) if not _ax_gname_rows.empty else str(_ax_gid)
+                    _ax_color = _color_map.get(_ax_gname, '#333333')
+                    _mfig.add_trace(go.Scattergeo(
+                        lat=[_ax_info['lat0'], _ax_info['lat1']],
+                        lon=[_ax_info['lon0'], _ax_info['lon1']],
+                        mode='lines',
+                        line=dict(color=_ax_color, width=2.5, dash='dash'),
+                        showlegend=False,
+                        hoverinfo='skip',
+                        name=f'axis_{_ax_gid}',
+                    ))
                 _mfig.update_layout(height=440, template='plotly_white',
                                      margin=dict(l=10, r=10, t=20, b=10),
                                      geo=dict(projection_type='natural earth'),
@@ -7346,6 +7412,42 @@ with t_grouping:
                                               _summary['N'], _summary['MAD']],
                             hovertemplate=_ov_hover + '<extra></extra>',
                         ))
+                # Landing 3 — rolling-window smoother along the PCA axis
+                if _vis_x == 'Along_Strike_km' and _poly_on and 'Along_Strike_km' in _vd.columns:
+                    _roll_x = pd.to_numeric(_vd['Along_Strike_km'], errors='coerce')
+                    _roll_y = pd.to_numeric(_vd[_vis_y], errors='coerce')
+                    _rgrid, _rsmooth, _rlo, _rhi = _g_rolling_window_smoothed(
+                        _roll_x.to_numpy(), _roll_y.to_numpy(),
+                        window_km=_poly_window, stat=_poly_stat,
+                    )
+                    if _rgrid.size > 0:
+                        _band_ok = np.isfinite(_rsmooth) & np.isfinite(_rlo) & np.isfinite(_rhi)
+                        if _band_ok.any():
+                            _stat_label = ('Median + IQR' if _poly_stat == 'median'
+                                           else 'Mean ± 1 SD')
+                            # Filled IQR / ±SD band
+                            _bx = np.concatenate([_rgrid[_band_ok], _rgrid[_band_ok][::-1]])
+                            _by = np.concatenate([_rhi[_band_ok], _rlo[_band_ok][::-1]])
+                            _gfig.add_trace(go.Scatter(
+                                x=_bx, y=_by, mode='lines',
+                                fill='toself',
+                                fillcolor='rgba(30,58,95,0.10)',
+                                line=dict(color='rgba(0,0,0,0)'),
+                                showlegend=False, hoverinfo='skip',
+                                name='rolling_band',
+                            ))
+                            # Smoothed centre line
+                            _gfig.add_trace(go.Scatter(
+                                x=_rgrid[_band_ok], y=_rsmooth[_band_ok],
+                                mode='lines',
+                                line=dict(color='#1e3a5f', width=2.5),
+                                name=f'{_stat_label} ({_poly_window} km)',
+                                hovertemplate=(
+                                    f'Along-strike=%{{x:.1f}} km<br>'
+                                    f'{_vis_y} {_stat_label}=%{{y:.2f}}'
+                                    '<extra></extra>'
+                                ),
+                            ))
                 _gfig.update_layout(height=440, template='plotly_white',
                                      margin=dict(l=10, r=10, t=20, b=10),
                                      dragmode='lasso',

@@ -324,6 +324,156 @@ def group_stats(df: pd.DataFrame, value_col: str = 'Predicted_km',
     return out
 
 
+# ─── Polyline projection (Landing 3) ─────────────────────────────────────────
+
+def _lonlat_to_km(lon, lat, ref_lat: float | None = None) -> np.ndarray:
+    """Convert lon/lat (degrees) to a local equirectangular x/y projection in km.
+    ref_lat fixes the longitudinal scale; if None, uses the mean latitude."""
+    lon = np.asarray(lon, dtype=float)
+    lat = np.asarray(lat, dtype=float)
+    if ref_lat is None:
+        finite_lat = lat[np.isfinite(lat)]
+        ref_lat = float(np.nanmean(finite_lat)) if finite_lat.size else 0.0
+    x = lon * 111.32 * np.cos(np.radians(ref_lat))
+    y = lat * 110.57
+    return np.column_stack([x, y])
+
+
+def fit_pca_axis(lon, lat):
+    """Fit a single straight-line axis through a cloud of (lon, lat) points
+    using PCA on equirectangular-projected km coordinates.
+
+    Returns (centroid_xy, direction_unit, axis_length_km, ref_lat) or None
+    if there aren't at least 2 finite points.
+    """
+    lon = np.asarray(lon, dtype=float)
+    lat = np.asarray(lat, dtype=float)
+    finite = np.isfinite(lon) & np.isfinite(lat)
+    if finite.sum() < 2:
+        return None
+    ref_lat = float(np.nanmean(lat[finite]))
+    xy = _lonlat_to_km(lon[finite], lat[finite], ref_lat=ref_lat)
+    centroid = xy.mean(axis=0)
+    centred = xy - centroid
+    try:
+        _, _, vh = np.linalg.svd(centred, full_matrices=False)
+    except np.linalg.LinAlgError:
+        return None
+    direction = vh[0]
+    # Normalise direction so the start (along=min) is the southern/western end —
+    # makes "along-strike" labels intuitive across reruns.
+    if direction[1] < 0 or (direction[1] == 0 and direction[0] < 0):
+        direction = -direction
+    along = centred @ direction
+    length = float(np.nanmax(along) - np.nanmin(along))
+    return centroid, direction, length, ref_lat
+
+
+def project_onto_axis(lon, lat, centroid, direction, ref_lat):
+    """Project samples onto a straight axis. Returns (along_km, across_km)
+    with along zeroed at the southwestern end and across signed (positive
+    on the left of the direction vector)."""
+    xy = _lonlat_to_km(lon, lat, ref_lat=ref_lat)
+    centred = xy - centroid
+    along = centred @ direction
+    perp = np.array([-direction[1], direction[0]])  # 90° CCW
+    across = centred @ perp
+    finite = np.isfinite(along)
+    if finite.any():
+        along = along - np.nanmin(along[finite])
+    return along, across
+
+
+def axis_endpoints_lonlat(centroid, direction, length_km, ref_lat) -> tuple:
+    """Return ((lon0, lat0), (lon1, lat1)) for the two endpoints of the axis
+    so it can be drawn as a line on a map."""
+    half = length_km / 2.0
+    p0 = centroid - direction * half
+    p1 = centroid + direction * half
+    cos_lat = np.cos(np.radians(ref_lat))
+    if cos_lat == 0:
+        cos_lat = 1.0
+    lon0 = p0[0] / (111.32 * cos_lat)
+    lat0 = p0[1] / 110.57
+    lon1 = p1[0] / (111.32 * cos_lat)
+    lat1 = p1[1] / 110.57
+    return (float(lon0), float(lat0)), (float(lon1), float(lat1))
+
+
+def attach_polyline_projections(df: pd.DataFrame, group_col: str = 'Group_ID',
+                                 lon_col: str = 'Lon', lat_col: str = 'Lat'):
+    """For each group, fit a PCA axis and project that group's samples onto it.
+    Adds columns Along_Strike_km, Across_Strike_km to a copy of df.
+
+    Returns (df_with_projections, group_axes) where group_axes is a dict
+    {group_id: {'centroid', 'direction', 'length_km', 'ref_lat',
+                'lon0','lat0','lon1','lat1'}} for plotting.
+    """
+    out = df.copy()
+    out['Along_Strike_km'] = np.nan
+    out['Across_Strike_km'] = np.nan
+    group_axes: dict = {}
+    if group_col not in out.columns or lon_col not in out.columns or lat_col not in out.columns:
+        return out, group_axes
+    for gid, g in out.dropna(subset=[group_col, lon_col, lat_col]).groupby(group_col):
+        if len(g) < 2:
+            continue
+        fit = fit_pca_axis(g[lon_col].to_numpy(dtype=float),
+                           g[lat_col].to_numpy(dtype=float))
+        if fit is None:
+            continue
+        centroid, direction, length_km, ref_lat = fit
+        along, across = project_onto_axis(
+            g[lon_col].to_numpy(dtype=float),
+            g[lat_col].to_numpy(dtype=float),
+            centroid, direction, ref_lat,
+        )
+        out.loc[g.index, 'Along_Strike_km'] = np.round(along, 2)
+        out.loc[g.index, 'Across_Strike_km'] = np.round(across, 2)
+        (lon0, lat0), (lon1, lat1) = axis_endpoints_lonlat(centroid, direction, length_km, ref_lat)
+        group_axes[gid] = {
+            'centroid': centroid, 'direction': direction,
+            'length_km': float(length_km), 'ref_lat': ref_lat,
+            'lon0': lon0, 'lat0': lat0, 'lon1': lon1, 'lat1': lat1,
+        }
+    return out, group_axes
+
+
+def rolling_window_smoothed(x, y, window_km: float, stat: str = 'median',
+                             n_grid: int = 200):
+    """Sliding-window aggregate of y vs x (both 1-D arrays).
+
+    Returns (grid_x, smoothed_y, low_band, high_band) — low/high are Q25/Q75
+    when stat='median' or mean ± 1 SD when stat='mean'. Empty arrays if there
+    isn't enough data."""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    finite = np.isfinite(x) & np.isfinite(y)
+    x = x[finite]; y = y[finite]
+    if len(x) < 3:
+        return np.array([]), np.array([]), np.array([]), np.array([])
+    grid = np.linspace(float(x.min()), float(x.max()), n_grid)
+    half = float(window_km) / 2.0
+    smoothed = np.full(n_grid, np.nan)
+    lo = np.full(n_grid, np.nan)
+    hi = np.full(n_grid, np.nan)
+    for i, gx in enumerate(grid):
+        mask = np.abs(x - gx) <= half
+        n = int(mask.sum())
+        if n < 3:
+            continue
+        ys = y[mask]
+        if stat == 'mean':
+            mu = float(np.mean(ys))
+            sd = float(np.std(ys, ddof=1)) if n > 1 else 0.0
+            smoothed[i] = mu; lo[i] = mu - sd; hi[i] = mu + sd
+        else:
+            smoothed[i] = float(np.median(ys))
+            lo[i] = float(np.quantile(ys, 0.25))
+            hi[i] = float(np.quantile(ys, 0.75))
+    return grid, smoothed, lo, hi
+
+
 # ─── Persistence helpers ─────────────────────────────────────────────────────
 
 def round_trip_columns() -> list[str]:
