@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crustal Thickness Score</title>
+<style>
+  /* ---------- Mohometer-matched palette ---------- */
+  :root {
+    --bg: #ffffff;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-mute: #6f7378;
+    --ink-faint: #9a9fa3;
+    --rule: #e6e8ea;
+    --rule-soft: #eef0f2;
+    --input-bg: #f5f6f7;
+    --input-border: #dcdfe2;
+    --info-bg: #eef2fb;
+    --info-text: #1f3a6e;
+    --warn-bg: #fff4cc;
+    --warn-border: #e6c965;
+    --warn-text: #6e5300;
+    --rare-bg: #f5f6f7;
+    --rare-text: #9a9fa3;
+    --barrick-navy: #1f3a6e;
+    --barrick-red: #c8102e;
+    --result-bg: #eaf6e8;
+    --result-border: #b9dab1;
+    --result-text: #2d5a25;
+    --shadow-faint: 0 0 0 1px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Source Sans 3", "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 48px 96px;
+  }
+
+  /* ---------- Header ---------- */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 32px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 28px;
+  }
+  .header-left h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  .header-left .subtitle {
+    font-size: 16px;
+    color: var(--ink-soft);
+    margin: 0 0 8px 0;
+  }
+  .header-left .citations {
+    font-size: 13px;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .header-right {
+    text-align: right;
+  }
+  .barrick-logo {
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 38px;
+    color: var(--barrick-navy);
+    letter-spacing: 0.06em;
+    line-height: 1;
+    border-bottom: 2px solid #b6a06b;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+  }
+  .breadcrumb {
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* ---------- Sections ---------- */
+  .section { margin-bottom: 32px; }
+  .section-head {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 16px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ---------- Form layout ---------- */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--input-bg);
+    color: var(--ink-mute);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: help;
+    border: 1px solid var(--input-border);
+    position: relative;
+  }
+  .help-icon:hover { background: #e6e9ec; color: var(--ink-soft); }
+  .help-icon[data-tip]:hover::after,
+  .help-icon[data-tip]:focus::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 24px;
+    top: -4px;
+    background: var(--ink);
+    color: white;
+    font-weight: 400;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    border-radius: 6px;
+    width: 380px;
+    z-index: 100;
+    white-space: pre-wrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+
+  /* Inputs */
+  .input-text, .input-select, .input-num {
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    width: 100%;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .input-text:focus, .input-select:focus, .input-num:focus {
+    outline: none;
+    border-color: var(--barrick-red);
+    background: white;
+  }
+  .input-select { appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%236f7378' d='M6 8L0 0h12z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .input-num { width: 120px; }
+  textarea.input-text { resize: vertical; min-height: 60px; }
+
+  /* Info / read-out panels */
+  .panel {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .panel strong { color: var(--info-text); font-weight: 700; }
+  .panel.warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+  .panel.warn strong { color: var(--warn-text); }
+
+  /* Importance pill */
+  .imp-pill {
+    display: inline-block;
+    padding: 3px 12px;
+    background: var(--info-bg);
+    color: var(--info-text);
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 16px;
+    min-width: 30px;
+    text-align: center;
+  }
+  .imp-pill.imp-3 { background: #e1ecde; color: #2d5a25; }
+  .imp-pill.imp-2 { background: #fdecd6; color: #8a5a00; }
+  .imp-pill.imp-1 { background: #f2dde0; color: #6e0a1c; }
+  .imp-pill.imp-na { background: var(--rare-bg); color: var(--rare-text); }
+
+  /* ---------- Blocks table ---------- */
+  table.blocks {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  table.blocks thead th {
+    font-size: 12.5px;
+    font-weight: 700;
+    text-align: left;
+    color: var(--ink-soft);
+    background: var(--rule-soft);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.blocks thead th.center { text-align: center; }
+  table.blocks tbody td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: middle;
+  }
+  table.blocks .block-id {
+    width: 50px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-weight: 600;
+  }
+  table.blocks .computed {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    background: var(--rule-soft);
+    border-radius: 4px;
+    padding: 9px 8px;
+    min-height: 30px;
+  }
+  table.blocks .computed.empty { color: var(--ink-faint); }
+  table.blocks input.block-num,
+  table.blocks select.block-thick {
+    width: 100%;
+    text-align: center;
+    padding: 8px 10px;
+  }
+  table.blocks .col-thick { width: 18%; }
+  table.blocks .col-area { width: 14%; }
+  table.blocks .col-time { width: 14%; }
+  table.blocks .col-fh { width: 18%; }
+  table.blocks .col-contrib { width: 18%; }
+  table.blocks tfoot td {
+    background: #f0f3f8;
+    padding: 12px;
+    font-weight: 700;
+    border-top: 2px solid var(--rule);
+  }
+  table.blocks tfoot .label { text-align: right; color: var(--ink-soft); }
+  table.blocks tfoot .value { text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .coverage-status {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .coverage-status.ok { color: #2d5a25; }
+  .coverage-status.warn { color: var(--barrick-red); }
+  .coverage-status .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .coverage-status.ok .dot { background: #2d5a25; }
+  .coverage-status.warn .dot { background: var(--barrick-red); }
+
+  /* ---------- Results ---------- */
+  .results-card {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .result-block .label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .result-block .value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--barrick-navy);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .result-block.score .value {
+    font-size: 56px;
+    color: var(--barrick-navy);
+  }
+  .result-block.score .value.score-rare {
+    color: var(--ink-faint);
+  }
+  .result-band {
+    font-size: 14px;
+    color: var(--ink-mute);
+    margin-top: 6px;
+  }
+
+  /* ---------- Progressive thickening note ---------- */
+  .note-warn {
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    border: 1px solid var(--warn-border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  /* ---------- Collapsibles ---------- */
+  details {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  details summary {
+    padding: 12px 16px;
+    background: var(--rule-soft);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "▸";
+    font-size: 11px;
+    color: var(--ink-mute);
+    transition: transform 0.15s;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  details[open] summary { border-bottom: 1px solid var(--rule); }
+  details .details-body { padding: 20px 24px; }
+
+  /* Methodology body */
+  .methodology h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 24px 0 8px;
+  }
+  .methodology h3:first-child { margin-top: 0; }
+  .methodology p {
+    margin: 8px 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .methodology ul {
+    margin: 8px 0;
+    padding-left: 22px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .methodology li { margin: 4px 0; }
+  .methodology .formula {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    background: var(--info-bg);
+    color: var(--info-text);
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin: 8px 0;
+  }
+  .score-table { width: auto; border-collapse: collapse; margin: 8px 0; }
+  .score-table td { padding: 4px 16px 4px 0; font-size: 14px; color: var(--ink-soft); }
+  .score-table td:first-child { font-family: "JetBrains Mono", monospace; color: var(--ink); }
+
+  /* Matrix table */
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.matrix th {
+    background: var(--rule-soft);
+    text-align: left;
+    padding: 10px 8px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    font-size: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.matrix th.num { text-align: center; }
+  table.matrix td {
+    padding: 8px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  table.matrix td.num {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  table.matrix tr.rare td { background: var(--rare-bg); color: var(--rare-text); }
+  table.matrix tr.rare td.num { color: var(--rare-text); }
+  table.matrix .ts { font-weight: 600; color: var(--ink); }
+  table.matrix .imp-cell { text-align: center; }
+
+  /* Worked examples */
+  .example {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .example:last-child { border-bottom: 0; padding-bottom: 0; }
+  .example h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+  .example p {
+    margin: 0 0 10px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .example-meta {
+    font-size: 12.5px;
+    color: var(--ink-mute);
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .example-meta strong { color: var(--ink); font-weight: 700; }
+  .example-result {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 14px;
+    background: var(--rule-soft);
+    border-radius: 6px;
+    margin-top: 4px;
+    font-size: 13px;
+  }
+  .example-result strong { color: var(--barrick-navy); font-size: 16px; font-weight: 700; }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    margin-top: 64px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-mute);
+    font-size: 12px;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .page { padding: 24px 20px 64px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 16px; }
+    .header { flex-direction: column-reverse; gap: 16px; }
+    .header-right { text-align: left; }
+    .results-card { grid-template-columns: 1fr; gap: 20px; }
+    table.blocks { font-size: 13px; }
+    table.blocks .col-thick { width: 22%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Crustal Thickness Score</h1>
+      <p class="subtitle">Regional prospectivity assessment</p>
+      <p class="citations">Score integrates thickness × area × time within a lookback window. Anchored to Loucks (2014), Chiaradia &amp; Caricchi (2017).</p>
+    </div>
+    <div class="header-right">
+      <div class="barrick-logo">BARRICK</div>
+      <p class="breadcrumb">&lt;ASC – Regional – Crustal Architecture – Crustal Thickness&gt;</p>
+      <p class="breadcrumb">Holder (2026)</p>
+      <p class="breadcrumb">david.holder@barrick.com</p>
+    </div>
+  </div>
+
+  <!-- INPUTS -->
+  <div class="section">
+    <h2 class="section-head">Inputs</h2>
+
+    <div class="grid-2" style="margin-bottom: 16px;">
+      <div class="field">
+        <label class="field-label" for="region">Region</label>
+        <input class="input-text" type="text" id="region" placeholder="e.g. Northern Andean segment 28°S–30°S" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="lookback">
+          Lookback Window (Ma)
+          <span class="help-icon" tabindex="0" data-tip="The 20 Ma window immediately preceding the youngest mineralisation in the period of interest, looking backwards in time. This is the timescale over which sustained crustal thickness supports the deep magmatic systems required for fertile porphyry formation (Loucks 2014; Chiaradia &amp; Caricchi 2017).&#10;&#10;20 Ma is the framework default. Adjust only for: very young arcs younger than 20 Ma; Carlin-type or post-collisional systems where source preparation extends much further back; or Archean greenstone belts where geochronological resolution is coarser.">?</span>
+        </label>
+        <input class="input-num" type="number" id="lookback" value="20" min="1" step="0.5" />
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom: 16px;">
+      <div class="field">
+        <label class="field-label" for="setting">
+          Tectonic Setting
+          <span class="help-icon" tabindex="0" data-tip="The geodynamic environment of the magmatic system being scored — sets the typical crustal thickness range.&#10;&#10;Continental arc: sustained subduction, thick continental crust (35–70 km). El Teniente, Chuquicamata, Reko Diq.&#10;&#10;Mature island arc: intra-oceanic but evolved, 25–35 km. Lepanto, Cadia, Lihir, Oyu Tolgoi.&#10;&#10;Primitive island arc: juvenile intra-oceanic, ≤25 km. Pueblo Viejo (Los Ranchos primitive arc).&#10;&#10;Post-accretionary / post-collisional: orogenically thickened crust where active subduction has ended (slab rollback, terrane accretion completion, true continental collision). 40–60+ km. Yulong, Gangdese (Miocene), Skouries, late-stage CAOB porphyries.&#10;&#10;Back-arc / extensional: actively thinning crust.">?</span>
+        </label>
+        <select class="input-select" id="setting"></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="affinity">
+          Magmatic Affinity
+          <span class="help-icon" tabindex="0" data-tip="The magma chemistry — controls how fertility is built and whether crustal thickness is the mechanism or just the context.&#10;&#10;Calc-alkaline: mid-K, mainstream subduction-related. Fertility built by deep MASH differentiation.&#10;&#10;High-K calc-alkaline: mature, K-enriched mantle source. Same architectural argument as calc-alkaline.&#10;&#10;Shoshonitic / alkalic: Na-K alkalic, mantle-metasomatised source. Fertility inherited from source rather than built by crustal differentiation.&#10;&#10;Tholeiitic / low-K: primitive, juvenile source. Fertility entirely source-driven; crustal thickness incidental.">?</span>
+        </label>
+        <select class="input-select" id="affinity"></select>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom: 16px;">
+      <div class="field">
+        <label class="field-label">
+          Importance
+          <span class="help-icon" tabindex="0" data-tip="Importance reflects how directly crustal thickness controls fertility for the selected combination.&#10;&#10;3 = Direct mechanistic control. Architecture is the mechanism — score is a primary driver.&#10;&#10;2 = Meaningful but secondary control. Score contributes alongside fertility.&#10;&#10;1 = Geodynamic context indicator only. Fertility is source-driven; thickness is incidental.&#10;&#10;Importance is not folded into the calculator score — it sits as a separate axis on the radar plot.">?</span>
+        </label>
+        <div><span class="imp-pill" id="imp-pill">—</span></div>
+      </div>
+      <div class="field">
+        <label class="field-label">Examples</label>
+        <div class="panel" id="examples-panel" style="min-height: 38px;">—</div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom: 16px;">
+      <label class="field-label">Geological note</label>
+      <div class="panel" id="note-panel" style="min-height: 50px;">—</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="notes">Notes (regional context, evidence, caveats)</label>
+      <textarea class="input-text" id="notes" placeholder="optional"></textarea>
+    </div>
+  </div>
+
+  <!-- PROGRESSIVE THICKENING NOTE -->
+  <div class="note-warn">
+    <strong>Progressive thickening note.</strong> Where the crust thickened progressively into the mineralising window — peak thickness reached at or near mineralisation — the integrated score should be considered a lower bound. A manual upgrade by one step may be warranted.
+  </div>
+
+  <!-- BLOCKS -->
+  <div class="section">
+    <h2 class="section-head">Thickness × Area × Time blocks</h2>
+    <p style="margin: 0 0 14px; color: var(--ink-soft); font-size: 13.5px;">
+      For each block: pick the thickness band, enter the area fraction (0–1, what portion of the region) and the time fraction (0–1, what fraction of the lookback window). Where one area transitioned through different thicknesses over time, enter as separate rows with the same area fraction and time fractions that sum to 1.0 for that area.
+    </p>
+    <table class="blocks">
+      <thead>
+        <tr>
+          <th class="center">#</th>
+          <th class="col-thick">Thickness (km)</th>
+          <th class="col-area center">Area Fraction</th>
+          <th class="col-time center">Time Fraction</th>
+          <th class="col-fh center">Favourability f(h)</th>
+          <th class="col-contrib center">Block Contribution</th>
+        </tr>
+      </thead>
+      <tbody id="blocks-tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td class="label" colspan="2">Σ(area × time):</td>
+          <td class="value" id="sum-coverage">0.00</td>
+          <td></td>
+          <td class="label">Σ contribution:</td>
+          <td class="value" id="sum-contrib">0.000</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="coverage-status" id="coverage-status">
+      <span class="dot"></span><span id="coverage-text">Σ(area × time) should equal 1.0 for full coverage</span>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="section">
+    <h2 class="section-head">Results</h2>
+    <div class="results-card">
+      <div class="result-block">
+        <div class="label">Combined Favourability (0–1)</div>
+        <div class="value" id="result-fav">—</div>
+        <div class="result-band" id="result-band"></div>
+      </div>
+      <div class="result-block score">
+        <div class="label">Framework Score (1–5)</div>
+        <div class="value" id="result-score">—</div>
+        <div class="result-band" id="result-score-band"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLAPSIBLES -->
+  <div class="section">
+    <details>
+      <summary>Methodology</summary>
+      <div class="details-body methodology">
+
+        <h3>What this calculates</h3>
+        <p>A single 1–5 crustal thickness favourability score for a region of interest, by integrating the thickness, area, and time history of crust within that region. The calculation accounts for the fact that thickness varies in space and time — a small fraction of very thick crust for a brief period is not equivalent to widespread sustained moderately-thick crust.</p>
+
+        <h3>The mathematics</h3>
+        <div class="formula">Combined Favourability = Σ [ area_fraction(i) × time_fraction(i) × f(thickness_i) ]</div>
+        <p>For each block of the region — a portion of the assessment area at a particular thickness for a particular fraction of the lookback window — multiply its area fraction, its time fraction, and the favourability assigned to that thickness. Sum across all blocks. The result is a 0–1 number that maps to a 1–5 framework score.</p>
+
+        <h3>The two-axis classification — tectonic setting × magmatic affinity</h3>
+        <p>The favourability function f(h) and the importance value depend on which magmatic-hydrothermal system is being scored. Rather than asking the user to pick a deposit type, the framework asks two independent questions:</p>
+        <ul>
+          <li><strong>Tectonic Setting</strong> — what is the geodynamic environment? Controls the typical crustal thickness range for the system.</li>
+          <li><strong>Magmatic Affinity</strong> — what is the magma chemistry? Controls how fertility is built and whether crustal thickness is the mechanism or just the context.</li>
+        </ul>
+        <p>The combination determines the f(h) curve and the importance. Some combinations are geologically rare or inconsistent (e.g. tholeiitic in continental arc, alkalic in primitive island arc) and are flagged as "geologically unusual — reconsider classification."</p>
+
+        <h3>Why this approach matters — Pueblo Viejo as the test case</h3>
+        <p>Pueblo Viejo is a giant HS Au-Ag deposit (>40 Moz) hosted in primitive intra-oceanic island arc with crust ≤25 km. A simple "deposit-type-driven" calculator would either score it low and be embarrassed by the endowment, or score it high through some classification fudge.</p>
+        <p>The two-axis approach handles PV honestly: tectonic setting = primitive island arc; magmatic affinity = tholeiitic / low-K. This combination has importance 1 and an f(h) that peaks at 20–30 km. PV scores a high f(h) for its actual thickness, with importance 1 telling the assessor that thickness is not the prospectivity driver — fertility is source-derived and captured by the magmatic fertility score.</p>
+
+        <h3>The lookback window</h3>
+        <p>The lookback window (default 20 Ma) is the period immediately preceding the youngest mineralisation in the period of interest, looking backwards in time. Anchored to Loucks (2014) and Chiaradia &amp; Caricchi (2017) timescales for sustained crustal thickness supporting deep magmatic systems.</p>
+        <p>20 Ma is the framework default. Adjust only for very young arcs younger than 20 Ma; Carlin-type or post-collisional systems where source preparation extends much further back; or Archean greenstone belts where geochronological resolution is coarser.</p>
+
+        <h3>What "time fraction" means</h3>
+        <p>Each block has a time fraction (0–1) representing the fraction of the lookback window over which that area was at that thickness. A block at "this thickness for the full window" has time fraction = 1.0; "for half the window" = 0.5.</p>
+
+        <h3>Score mapping</h3>
+        <table class="score-table">
+          <tr><td>≥0.90</td><td>→ 5 (highly favourable)</td></tr>
+          <tr><td>0.70–0.90</td><td>→ 4 (favourable)</td></tr>
+          <tr><td>0.50–0.70</td><td>→ 3 (moderate)</td></tr>
+          <tr><td>0.30–0.50</td><td>→ 2 (limited)</td></tr>
+          <tr><td>&lt;0.30</td><td>→ 1 (unfavourable)</td></tr>
+        </table>
+        <p>Calibration: a region uniformly at thickness X for the full lookback window scores its base table value (e.g. uniform &gt;50 km → 5; uniform 30–40 km → 3; uniform &lt;20 km → 1).</p>
+
+        <h3>Importance and the score</h3>
+        <p>Each combination has an importance value (1, 2, or 3) reflecting how directly crustal thickness controls fertility:</p>
+        <ul>
+          <li><strong>3</strong> — direct mechanistic control. Score is a primary driver of prospectivity.</li>
+          <li><strong>2</strong> — meaningful but secondary control. Score contributes alongside fertility.</li>
+          <li><strong>1</strong> — geodynamic context indicator only. Score confirms tectonic setting only.</li>
+        </ul>
+        <p>The calculator outputs an unweighted favourability score; importance is shown alongside the selected combination for context but is not folded into the score itself.</p>
+
+        <h3>Coverage check</h3>
+        <p>Σ(area × time) across all blocks should equal 1.0. If less, the calculator is treating the missing portion as unfavourable thickness — which may not be your intent.</p>
+
+        <h3>Calibration status</h3>
+        <p>Continental arc + calc-alkaline f(h) is calibrated against the framework base score table for porphyry Cu and stress-tested against worked examples (El Teniente, Chuquicamata, etc).</p>
+        <p>All other combinations have first-order f(h) tables consistent with the typical syn-mineral thickness ranges for known examples in each combination, but they are not yet calibrated against systematic data. Calibration is pending the deposit calibration dataset workflow — once syn-mineral crustal thickness is populated for a representative subset of high-endowment deposits, the f(h) curves can be derived empirically.</p>
+        <p>Until then, scores from non-continental-arc-calc-alkaline combinations should be treated as indicative rather than definitive.</p>
+
+        <h3>Progressive thickening — a qualitative consideration</h3>
+        <p>Where the crust thickened progressively into the syn-mineral window — i.e. measurably thicker at the moment of mineralisation than the lookback average — the integrated score should be considered a lower bound. A manual upgrade by one step may be warranted where there is good evidence for an active thickening trajectory hitting peak thickness at mineralisation, since this is a known signature of giant porphyry formation (e.g. flat-slab cessation in the Andes, post-collisional pulses in the Tethyan belt).</p>
+
+      </div>
+    </details>
+
+    <details>
+      <summary>Favourability Matrix</summary>
+      <div class="details-body">
+        <p style="margin: 0 0 14px; color: var(--ink-soft); font-size: 13.5px;">Each row is one tectonic × magmatic combination. f(h) is the favourability assigned to each thickness band. Combinations marked "—" are geologically unusual and prompt reclassification.</p>
+        <table class="matrix" id="matrix-table">
+          <thead>
+            <tr>
+              <th>Tectonic Setting</th>
+              <th>Magmatic Affinity</th>
+              <th class="num">f(&lt;20)</th>
+              <th class="num">f(20–30)</th>
+              <th class="num">f(30–40)</th>
+              <th class="num">f(40–50)</th>
+              <th class="num">f(&gt;50)</th>
+              <th class="num">Imp.</th>
+              <th>Examples</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="matrix-body"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>Worked examples</summary>
+      <div class="details-body">
+        <p style="margin: 0 0 16px; color: var(--ink-soft); font-size: 13.5px;">These examples show how the two-axis classification handles real deposits across different settings. Each one assumes uniform thickness across the region for the full lookback window unless stated otherwise.</p>
+        <div id="examples-list"></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="footer">
+    Crustal Thickness Score · ASC – Regional – Crustal Architecture · Holder (2026) · david.holder@barrick.com
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA: tectonic × magmatic affinity matrix
+// ============================================================
+const SETTINGS = ['Continental arc','Mature island arc','Primitive island arc','Post-accretionary / post-collisional','Back-arc / extensional'];
+const AFFINITIES = ['Calc-alkaline','High-K calc-alkaline','Shoshonitic / alkalic','Tholeiitic / low-K'];
+const BANDS = ['<20','20-30','30-40','40-50','>50'];
+
+// fav: {<20, 20-30, 30-40, 40-50, >50}, imp, examples, note
+// fav: null means geologically unusual / no score
+const MATRIX = {
+  'Continental arc|Calc-alkaline': {
+    fav: {'<20':0.2, '20-30':0.4, '30-40':0.6, '40-50':0.8, '>50':1.0},
+    imp: 3,
+    examples: 'El Teniente, Chuquicamata, Escondida, Reko Diq',
+    note: 'Sustained subduction, thick continental crust. Architecture is the mechanism — deep MASH zone drives fertility.'
+  },
+  'Continental arc|High-K calc-alkaline': {
+    fav: {'<20':0.3, '20-30':0.5, '30-40':0.8, '40-50':1.0, '>50':0.9},
+    imp: 3,
+    examples: 'Late-stage continental arc systems',
+    note: 'Mature continental arc, K-enriched evolved mantle source. Architecture still drives fertility but at slightly thinner crust.'
+  },
+  'Continental arc|Shoshonitic / alkalic': {
+    fav: {'<20':0.2, '20-30':0.7, '30-40':1.0, '40-50':0.9, '>50':0.7},
+    imp: 2,
+    examples: '(rare; mostly transitional cases)',
+    note: 'Alkalic on continental arc crust is unusual — typically transitional toward high-K. Treat as importance 2 because fertility partly source-driven.'
+  },
+  'Continental arc|Tholeiitic / low-K': {
+    fav: null, imp: null, examples: '',
+    note: 'Geologically rare/inconsistent — tholeiitic magmas are not typical of continental arc settings. Reconsider tectonic/affinity assignment.'
+  },
+  'Mature island arc|Calc-alkaline': {
+    fav: {'<20':0.2, '20-30':0.6, '30-40':1.0, '40-50':0.9, '>50':0.7},
+    imp: 3,
+    examples: 'Lepanto / Far Southeast, Oyu Tolgoi, parts of Philippine arc',
+    note: 'Mature intra-oceanic arc, calc-alkaline. Crust thinner than continental arc but architecture still drives fertility through deep MASH.'
+  },
+  'Mature island arc|High-K calc-alkaline': {
+    fav: {'<20':0.3, '20-30':0.7, '30-40':1.0, '40-50':0.9, '>50':0.6},
+    imp: 3,
+    examples: 'Mature K-enriched island arc systems',
+    note: 'Evolved mature arc, K-enriched mantle. Same architectural argument as calc-alkaline mature arc.'
+  },
+  'Mature island arc|Shoshonitic / alkalic': {
+    fav: {'<20':0.2, '20-30':0.8, '30-40':1.0, '40-50':0.9, '>50':0.7},
+    imp: 2,
+    examples: 'Cadia, Northparkes, Lihir, Ladolam',
+    note: 'Shoshonitic / alkalic in mature island arc. Fertility from metasomatised mantle source — architecture is permissive context, not the mechanism.'
+  },
+  'Mature island arc|Tholeiitic / low-K': {
+    fav: {'<20':0.4, '20-30':0.9, '30-40':1.0, '40-50':0.7, '>50':0.4},
+    imp: 2,
+    examples: '(less common; transitional toward primitive)',
+    note: 'Tholeiitic tendency in mature island arc. Some fertility from source, some from differentiation.'
+  },
+  'Primitive island arc|Calc-alkaline': {
+    fav: {'<20':0.6, '20-30':1.0, '30-40':0.8, '40-50':0.4, '>50':0.2},
+    imp: 2,
+    examples: '(some Aleutian-style systems)',
+    note: 'Calc-alkaline in primitive intra-oceanic arc. Crust thin, fertility partly source-driven. Importance 2.'
+  },
+  'Primitive island arc|High-K calc-alkaline': {
+    fav: null, imp: null, examples: '',
+    note: 'Geologically unusual — high-K typically requires evolved mantle source. Reconsider classification.'
+  },
+  'Primitive island arc|Shoshonitic / alkalic': {
+    fav: null, imp: null, examples: '',
+    note: 'Geologically rare — alkalic magmas typically require mature/metasomatised mantle source.'
+  },
+  'Primitive island arc|Tholeiitic / low-K': {
+    fav: {'<20':0.7, '20-30':1.0, '30-40':0.6, '40-50':0.3, '>50':0.1},
+    imp: 1,
+    examples: 'Pueblo Viejo (Los Ranchos primitive island arc)',
+    note: 'Primitive intra-oceanic arc, tholeiitic to low-K. Fertility entirely source-driven (slab-derived oxidising fluids). Crustal thickness is incidental — importance 1. PV-style giants form on thin crust.'
+  },
+  'Post-accretionary / post-collisional|Calc-alkaline': {
+    fav: {'<20':0.2, '20-30':0.4, '30-40':0.7, '40-50':1.0, '>50':1.0},
+    imp: 2,
+    examples: '(transitional post-subduction systems)',
+    note: 'Calc-alkaline post-collisional — usually inherited fertility from prior arc. Architecture supports but fertility partly inherited.'
+  },
+  'Post-accretionary / post-collisional|High-K calc-alkaline': {
+    fav: {'<20':0.2, '20-30':0.4, '30-40':0.8, '40-50':1.0, '>50':0.9},
+    imp: 2,
+    examples: 'Yulong belt, Gangdese (Miocene), Iranian Tethyan, late-stage CAOB',
+    note: 'Post-collisional high-K — fertility commonly inherited from earlier subduction-modified mantle. Thickened crust hosts but did not generate the fertility.'
+  },
+  'Post-accretionary / post-collisional|Shoshonitic / alkalic': {
+    fav: {'<20':0.2, '20-30':0.5, '30-40':0.9, '40-50':1.0, '>50':0.8},
+    imp: 2,
+    examples: 'Skouries, post-collisional Au-rich systems',
+    note: 'Post-collisional alkalic — slab break-off / delamination triggers, mantle-metasomatised source. Fertility inherited, architecture permissive.'
+  },
+  'Post-accretionary / post-collisional|Tholeiitic / low-K': {
+    fav: null, imp: null, examples: '',
+    note: 'Geologically unusual — post-collisional settings rarely generate tholeiitic magmas.'
+  },
+  'Back-arc / extensional|Calc-alkaline': {
+    fav: {'<20':0.7, '20-30':0.9, '30-40':0.6, '40-50':0.3, '>50':0.1},
+    imp: 1,
+    examples: '(some back-arc Cu-Au systems)',
+    note: 'Back-arc / extensional calc-alkaline. Thinned crust, fertility from source. Importance 1 — thickness is geodynamic context.'
+  },
+  'Back-arc / extensional|High-K calc-alkaline': {
+    fav: null, imp: null, examples: '',
+    note: 'Geologically uncommon combination.'
+  },
+  'Back-arc / extensional|Shoshonitic / alkalic': {
+    fav: {'<20':0.5, '20-30':0.9, '30-40':1.0, '40-50':0.7, '>50':0.4},
+    imp: 1,
+    examples: '(rare back-arc alkalic Au)',
+    note: 'Back-arc alkalic, rare. Thinned crust, source-driven fertility.'
+  },
+  'Back-arc / extensional|Tholeiitic / low-K': {
+    fav: {'<20':1.0, '20-30':0.8, '30-40':0.4, '40-50':0.2, '>50':0.1},
+    imp: 1,
+    examples: '(some back-arc tholeiitic Au)',
+    note: 'Back-arc tholeiitic. Thinned crust, fertility entirely source-driven.'
+  }
+};
+
+const N_BLOCKS = 10;
+const $ = (id) => document.getElementById(id);
+
+// Populate dropdowns
+function populateDropdowns(){
+  const setSel = $('setting');
+  SETTINGS.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    setSel.appendChild(opt);
+  });
+  const affSel = $('affinity');
+  AFFINITIES.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    affSel.appendChild(opt);
+  });
+  setSel.value = 'Continental arc';
+  affSel.value = 'Calc-alkaline';
+}
+
+// Build blocks rows
+function buildBlocks(){
+  const tbody = $('blocks-tbody');
+  for (let i = 0; i < N_BLOCKS; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="block-id">${i+1}</td>
+      <td>
+        <select class="input-select block-thick" data-row="${i}">
+          <option value=""></option>
+          ${BANDS.map(b => `<option value="${b}">${b}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="input-text block-num" type="number" min="0" max="1" step="0.01" placeholder="0.00" data-row="${i}" data-col="area"></td>
+      <td><input class="input-text block-num" type="number" min="0" max="1" step="0.01" placeholder="0.00" data-row="${i}" data-col="time"></td>
+      <td><div class="computed empty" id="fh-${i}">—</div></td>
+      <td><div class="computed empty" id="contrib-${i}">—</div></td>
+    `;
+    tbody.appendChild(tr);
+  }
+  // wire up listeners
+  document.querySelectorAll('.block-thick, .block-num').forEach(el => {
+    el.addEventListener('input', recompute);
+    el.addEventListener('change', recompute);
+  });
+}
+
+// Build matrix table in the collapsible
+function buildMatrix(){
+  const body = $('matrix-body');
+  SETTINGS.forEach(ts => {
+    AFFINITIES.forEach(ma => {
+      const row = MATRIX[`${ts}|${ma}`];
+      const tr = document.createElement('tr');
+      if (!row.fav) tr.className = 'rare';
+      const fhCells = row.fav
+        ? BANDS.map(b => `<td class="num">${row.fav[b].toFixed(2)}</td>`).join('')
+        : `<td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>`;
+      const imp = row.imp != null ? row.imp : '—';
+      tr.innerHTML = `
+        <td class="ts">${ts}</td>
+        <td>${ma}</td>
+        ${fhCells}
+        <td class="imp-cell">${imp}</td>
+        <td>${row.examples || '—'}</td>
+        <td>${row.note}</td>
+      `;
+      body.appendChild(tr);
+    });
+  });
+}
+
+// Build worked examples
+const EXAMPLES = [
+  {
+    name: 'El Teniente — continental arc + calc-alkaline',
+    desc: 'Andean Altiplano. Whole region (100%) at >50 km thickness for the full 20 Ma window. Benchmark for score 5.',
+    ts: 'Continental arc', ma: 'Calc-alkaline',
+    blocks: [['>50', 1.0, 1.0]]
+  },
+  {
+    name: 'Cadia — mature island arc + alkalic',
+    desc: 'Macquarie Arc. Whole region at 25–30 km, alkalic shoshonitic intrusions. Source-driven fertility on thin arc crust.',
+    ts: 'Mature island arc', ma: 'Shoshonitic / alkalic',
+    blocks: [['20-30', 1.0, 1.0]]
+  },
+  {
+    name: 'Pueblo Viejo — primitive island arc + tholeiitic',
+    desc: 'Los Ranchos Formation. Whole region at 20–25 km, primitive intra-oceanic arc. Source-driven fertility with importance 1; thickness gives a strong score, fertility carries the prospectivity signal.',
+    ts: 'Primitive island arc', ma: 'Tholeiitic / low-K',
+    blocks: [['20-30', 1.0, 1.0]]
+  },
+  {
+    name: 'Yulong belt — post-accretionary / post-collisional + high-K',
+    desc: 'Eocene–Oligocene post-collisional Tibet. Whole region at 40–50 km for the full window.',
+    ts: 'Post-accretionary / post-collisional', ma: 'High-K calc-alkaline',
+    blocks: [['40-50', 1.0, 1.0]]
+  },
+  {
+    name: 'Heterogeneous Andean region (continental arc + calc-alkaline)',
+    desc: '50% at 40–50 km for full window; 50% at >50 km for full window. All area at favourable thickness throughout.',
+    ts: 'Continental arc', ma: 'Calc-alkaline',
+    blocks: [['40-50', 0.50, 1.0], ['>50', 0.50, 1.0]]
+  },
+  {
+    name: 'Localised thick block (continental arc + calc-alkaline)',
+    desc: '10% of area thick (>50 km) for 10% of the window then 40–50 km for the rest; remaining 90% at 30–40 km throughout.',
+    ts: 'Continental arc', ma: 'Calc-alkaline',
+    blocks: [['>50', 0.10, 0.1], ['40-50', 0.10, 0.9], ['30-40', 0.90, 1.0]]
+  }
+];
+function computeExample(ex){
+  const m = MATRIX[`${ex.ts}|${ex.ma}`];
+  if (!m.fav) return null;
+  const total = ex.blocks.reduce((s,[b,a,t]) => s + a*t*m.fav[b], 0);
+  let score;
+  if (total >= 0.9) score = 5;
+  else if (total >= 0.7) score = 4;
+  else if (total >= 0.5) score = 3;
+  else if (total >= 0.3) score = 2;
+  else score = 1;
+  return {fav: total, score, imp: m.imp};
+}
+function buildExamples(){
+  const list = $('examples-list');
+  EXAMPLES.forEach(ex => {
+    const r = computeExample(ex);
+    const div = document.createElement('div');
+    div.className = 'example';
+    div.innerHTML = `
+      <h4>${ex.name}</h4>
+      <p>${ex.desc}</p>
+      <div class="example-meta">
+        <span><strong>Setting:</strong> ${ex.ts}</span>
+        <span><strong>Affinity:</strong> ${ex.ma}</span>
+        <span><strong>Importance:</strong> ${r.imp}</span>
+      </div>
+      <div class="example-result">
+        <span>Combined Favourability: <strong>${r.fav.toFixed(3)}</strong></span>
+        <span>Framework Score: <strong>${r.score}</strong></span>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ============================================================
+// Recompute everything on input change
+// ============================================================
+function recompute(){
+  const ts = $('setting').value;
+  const ma = $('affinity').value;
+  const key = `${ts}|${ma}`;
+  const combo = MATRIX[key];
+
+  // Importance pill
+  const pill = $('imp-pill');
+  pill.classList.remove('imp-1','imp-2','imp-3','imp-na');
+  if (combo.imp == null){
+    pill.textContent = '—';
+    pill.classList.add('imp-na');
+  } else {
+    pill.textContent = combo.imp;
+    pill.classList.add(`imp-${combo.imp}`);
+  }
+
+  // Examples + Note panels
+  const exP = $('examples-panel');
+  exP.textContent = combo.examples || '—';
+  exP.classList.toggle('warn', !combo.fav);
+
+  const noteP = $('note-panel');
+  noteP.textContent = combo.note;
+  noteP.classList.toggle('warn', !combo.fav);
+
+  // Compute blocks
+  let totalContrib = 0;
+  let totalCoverage = 0;
+  for (let i = 0; i < N_BLOCKS; i++){
+    const thickSel = document.querySelector(`select.block-thick[data-row="${i}"]`);
+    const areaIn = document.querySelector(`input[data-row="${i}"][data-col="area"]`);
+    const timeIn = document.querySelector(`input[data-row="${i}"][data-col="time"]`);
+    const fhCell = $(`fh-${i}`);
+    const contribCell = $(`contrib-${i}`);
+
+    const thick = thickSel.value;
+    const area = parseFloat(areaIn.value);
+    const time = parseFloat(timeIn.value);
+
+    if (!thick || !combo.fav){
+      fhCell.textContent = '—'; fhCell.classList.add('empty');
+      contribCell.textContent = '—'; contribCell.classList.add('empty');
+      if (!isNaN(area) && !isNaN(time)) totalCoverage += area*time;
+      continue;
+    }
+    const fh = combo.fav[thick];
+    fhCell.textContent = fh.toFixed(2); fhCell.classList.remove('empty');
+
+    if (isNaN(area) || isNaN(time)){
+      contribCell.textContent = '—'; contribCell.classList.add('empty');
+      continue;
+    }
+    const contrib = area * time * fh;
+    contribCell.textContent = contrib.toFixed(3); contribCell.classList.remove('empty');
+    totalContrib += contrib;
+    totalCoverage += area*time;
+  }
+
+  $('sum-coverage').textContent = totalCoverage.toFixed(2);
+  $('sum-contrib').textContent = totalContrib.toFixed(3);
+
+  // Coverage status
+  const status = $('coverage-status');
+  const text = $('coverage-text');
+  const rounded = Math.round(totalCoverage * 100) / 100;
+  if (rounded === 1.00){
+    status.classList.remove('warn'); status.classList.add('ok');
+    text.textContent = 'Σ(area × time) = 1.00 — full coverage';
+  } else if (totalCoverage === 0){
+    status.classList.remove('ok','warn');
+    text.textContent = 'Σ(area × time) should equal 1.0 for full coverage';
+  } else {
+    status.classList.remove('ok'); status.classList.add('warn');
+    text.textContent = `Σ(area × time) = ${totalCoverage.toFixed(2)} — should be 1.00 for full coverage`;
+  }
+
+  // Results
+  const favCell = $('result-fav');
+  const scoreCell = $('result-score');
+  const bandCell = $('result-band');
+  const scoreBand = $('result-score-band');
+
+  if (!combo.fav){
+    favCell.textContent = '—';
+    scoreCell.textContent = '—';
+    scoreCell.classList.add('score-rare');
+    bandCell.textContent = 'Geologically unusual combination — reclassify before scoring.';
+    scoreBand.textContent = '';
+    return;
+  }
+  scoreCell.classList.remove('score-rare');
+
+  if (totalContrib === 0){
+    favCell.textContent = '—';
+    scoreCell.textContent = '—';
+    bandCell.textContent = 'Add blocks to compute a score.';
+    scoreBand.textContent = '';
+    return;
+  }
+  favCell.textContent = totalContrib.toFixed(3);
+
+  let score, band;
+  if (totalContrib >= 0.9){ score = 5; band = 'highly favourable'; }
+  else if (totalContrib >= 0.7){ score = 4; band = 'favourable'; }
+  else if (totalContrib >= 0.5){ score = 3; band = 'moderate'; }
+  else if (totalContrib >= 0.3){ score = 2; band = 'limited'; }
+  else { score = 1; band = 'unfavourable'; }
+  scoreCell.textContent = score;
+  bandCell.textContent = '';
+  scoreBand.textContent = band;
+}
+
+// ============================================================
+// Init
+// ============================================================
+populateDropdowns();
+buildBlocks();
+buildMatrix();
+buildExamples();
+$('setting').addEventListener('change', recompute);
+$('affinity').addEventListener('change', recompute);
+recompute();
+</script>
+</body>
+</html>
