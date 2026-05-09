@@ -1886,8 +1886,12 @@ def _load_luffi_training(path):
             if src in raw.columns and clean not in raw.columns:
                 rename[src] = dst
         raw = raw.rename(columns={k: v for k, v in rename.items() if k in raw.columns})
-        # canonical_header_name in read_table handles the '(wt%)' / '(ppm)' clean columns
-        df = read_table(raw, guo_no_header=False)
+        # Apply read_table's post-read normalisation directly to the in-memory df.
+        df = std_cols(raw)
+        if 'Sample_ID' not in df:
+            df.insert(0, 'Sample_ID', [f'Sample_{i+1}' for i in range(len(df))])
+        df = coerce(df)
+        df = iron_to_feo(df)
         for col in ('Crust_Thickness', 'Lat', 'Lon', 'Elevation_km'):
             if col not in df and col in raw.columns:
                 df[col] = pd.to_numeric(raw[col], errors='coerce')
@@ -1895,7 +1899,11 @@ def _load_luffi_training(path):
         return df
 
     # ── 121-row arc-averages path ─────────────────────────────────────────────
-    df = read_table(raw, guo_no_header=False)
+    df = std_cols(raw)
+    if 'Sample_ID' not in df:
+        df.insert(0, 'Sample_ID', [f'Sample_{i+1}' for i in range(len(df))])
+    df = coerce(df)
+    df = iron_to_feo(df)
     if 'Crust_Thickness' not in df and 'Elevation_km' in df:
         elev = pd.to_numeric(df['Elevation_km'], errors='coerce')
         df['Crust_Thickness'] = (GAME_ALPHA_DEFAULT * elev + GAME_BETA_DEFAULT).round(2)
