@@ -7204,9 +7204,41 @@ with t_grouping:
     else:
         st.info('Add at least one filter above to define groups.')
 
+    # --- Lasso state (Landing 2) -------------------------------------------
+    # _g_lasso_groups_{src}: dict[lasso_id, {'name', 'color', 'members'}]
+    # 'members' is a set of original-bench row indices.
+    _lasso_state_key = f'_g_lasso_groups_{_g_src}'
+    if _lasso_state_key not in st.session_state:
+        st.session_state[_lasso_state_key] = {}
+
+    # Apply lasso group memberships ON TOP of filter-resolved groups.
+    # Lasso assignments override filter assignments (last-write-wins).
+    _lasso_palette = px.colors.qualitative.Bold
+    for _li, (_lid, _ldef) in enumerate(st.session_state[_lasso_state_key].items()):
+        _members = _ldef.get('members', set())
+        if not _members:
+            continue
+        _hits = _grouped.index.isin(list(_members))
+        if _hits.any():
+            _grouped.loc[_hits, 'Group_ID'] = _lid
+            _grouped.loc[_hits, 'Group_Name'] = _ldef.get('name', _lid)
+            _grouped.loc[_hits, 'Group_Source'] = 'lasso'
+
+    # Recompute counts and summary so the table reflects lasso groups too
+    _n_passing = int(_grouped['Group_ID'].notna().sum())
+    _n_groups = int(_grouped['Group_ID'].dropna().nunique())
+    _summary = _g_group_stats(_grouped, value_col=_g_value_default, decimals=2)
+
+    # Re-render the preview table now that lasso groups are merged in
+    if not _summary.empty:
+        # The Adequate? column is rebuilt above; tag lasso-derived groups for clarity
+        _has_lasso = bool(st.session_state[_lasso_state_key])
+        if _has_lasso:
+            st.caption(f"_{len(st.session_state[_lasso_state_key])} lasso group(s) currently active — see panel below._")
+
     # --- Linked map + cross-plot -------------------------------------------
     if _n_passing > 0 and {'Lat', 'Lon'}.issubset(_grouped.columns):
-        st.markdown('**Map + cross-plot** (linked by Group_ID)')
+        st.markdown('**Map + cross-plot** (linked by Group_ID — drag a lasso/box on either to define groups)')
         _vis_df = _grouped.dropna(subset=['Group_ID']).copy()
         if not _vis_df.empty:
             _vc1, _vc2, _vc3 = st.columns(3)
@@ -7215,51 +7247,87 @@ with t_grouping:
                                      index=_vis_x_opts.index('Sr_Y') if 'Sr_Y' in _vis_x_opts else 0,
                                      key='g_vis_x')
             _vis_y_opts = [c for c in _vis_x_opts if c != _vis_x]
-            _vis_y_default = 'Predicted_km' if 'Predicted_km' in _vis_y_opts else (_vis_y_opts[0] if _vis_y_opts else _vis_x)
+            _vis_y_default = 'Predicted_km' if _vis_y_opts and 'Predicted_km' in _vis_y_opts else (_vis_y_opts[0] if _vis_y_opts else _vis_x)
             _vis_y = _vc2.selectbox('Cross-plot Y', _vis_y_opts,
                                      index=_vis_y_opts.index(_vis_y_default) if _vis_y_default in _vis_y_opts else 0,
                                      key='g_vis_y')
             _vis_overlay = _vc3.multiselect('Overlay group statistic',
                                              ['Mean', 'Median'], default=['Median'],
                                              key='g_vis_overlay')
-            # Hover content: full info per sample
-            _hover_cols_list = ['Sample_ID', 'Group_Name', 'Predicted_km', 'Observed_km',
-                                'Age_Ma', 'Sr_Y', 'La_Yb_N', 'SiO2', 'MgO',
-                                'H_GAME_LuffiDucea2022_km', 'H_Sundell2021_Paired_km',
-                                'Arc_or_Segment', 'Geologic_Domain', 'Tectonic_Setting']
-            _hover_cols_present = [c for c in _hover_cols_list if c in _vis_df.columns]
+
+            # Build per-row colour from a stable palette keyed by group name
+            _palette = px.colors.qualitative.Set2 + px.colors.qualitative.Bold
+            _grp_names_in_view = list(dict.fromkeys(_vis_df['Group_Name'].astype(str).tolist()))
+            _color_map = {gn: _palette[i % len(_palette)] for i, gn in enumerate(_grp_names_in_view)}
+
+            # Round numerics to 2dp for display + hover
             _vd = _vis_df.copy()
             for c in _vd.select_dtypes(include='number').columns:
                 _vd[c] = pd.to_numeric(_vd[c], errors='coerce').round(2)
+            # Encode the original bench-index in customdata so lasso can map back
+            _vd_orig_index = _vd.index.to_numpy()
+            _row_colors = [_color_map.get(str(g), '#6b7280') for g in _vd['Group_Name'].astype(str)]
+
+            # Hover columns
+            _hover_cols_list = ['Sample_ID', 'Group_Name', 'Group_Source',
+                                'Predicted_km', 'Observed_km',
+                                'Age_Ma', 'Sr_Y', 'La_Yb_N', 'SiO2', 'MgO',
+                                'H_GAME_LuffiDucea2022_km', 'H_Sundell2021_Paired_km',
+                                'Arc_or_Segment', 'Geologic_Domain', 'Tectonic_Setting']
+            _hover_cols_present = [c for c in _hover_cols_list if c in _vd.columns]
+            # Build hovertemplate from present columns
+            _hover_lines = [f'<b>{_vd[c].name}=%{{customdata[{i}]}}</b>' if c == 'Sample_ID'
+                            else f'{c}=%{{customdata[{i}]}}'
+                            for i, c in enumerate(_hover_cols_present)]
+            _hover_tmpl = '<br>'.join(_hover_lines) + '<extra></extra>'
+            _customdata = np.column_stack([_vd[c].astype(object).to_numpy() for c in _hover_cols_present])
 
             _mc1, _mc2 = st.columns(2)
+
+            # Map (single trace; lasso point_index → row position in _vd → bench index via _vd_orig_index)
             with _mc1:
-                _mfig = px.scatter_geo(_vd, lat='Lat', lon='Lon', color='Group_Name',
-                                       hover_data=_hover_cols_present,
-                                       projection='natural earth', template='plotly_white',
-                                       color_discrete_sequence=px.colors.qualitative.Set2)
-                _mfig.update_traces(marker=dict(size=7, line=dict(color='black', width=0.4)))
-                _mfig.update_layout(height=440, margin=dict(l=10, r=10, t=20, b=10),
-                                    legend=dict(orientation='h', y=-0.05))
-                st.plotly_chart(_mfig, width='stretch', key='g_map')
+                _mfig = go.Figure()
+                _mfig.add_trace(go.Scattergeo(
+                    lat=_vd['Lat'], lon=_vd['Lon'], mode='markers',
+                    marker=dict(size=7, color=_row_colors,
+                                line=dict(color='black', width=0.4)),
+                    customdata=_customdata,
+                    hovertemplate=_hover_tmpl,
+                    name='samples',
+                    showlegend=False,
+                ))
+                _mfig.update_layout(height=440, template='plotly_white',
+                                     margin=dict(l=10, r=10, t=20, b=10),
+                                     geo=dict(projection_type='natural earth'),
+                                     dragmode='lasso')
+                try:
+                    _map_event = st.plotly_chart(_mfig, width='stretch',
+                                                  key='g_map_lasso',
+                                                  on_select='rerun',
+                                                  selection_mode=['lasso', 'box'])
+                except TypeError:
+                    _map_event = None
+                    st.plotly_chart(_mfig, width='stretch', key='g_map_static')
+                _map_pos_idx = plotly_selected_indices(_map_event) if _map_event else []
+
+            # Cross-plot (single trace + optional overlay traces for stats)
             with _mc2:
-                _gfig = px.scatter(_vd, x=_vis_x, y=_vis_y, color='Group_Name',
-                                   hover_data=_hover_cols_present,
-                                   template='plotly_white',
-                                   color_discrete_sequence=px.colors.qualitative.Set2)
-                _gfig.update_traces(marker=dict(size=7, line=dict(color='black', width=0.4)))
+                _gfig = go.Figure()
+                _gfig.add_trace(go.Scatter(
+                    x=_vd[_vis_x], y=_vd[_vis_y], mode='markers',
+                    marker=dict(size=7, color=_row_colors,
+                                line=dict(color='black', width=0.4)),
+                    customdata=_customdata,
+                    hovertemplate=_hover_tmpl,
+                    name='samples',
+                    showlegend=False,
+                ))
                 # Overlay group mean/median markers
                 if _vis_overlay and not _summary.empty:
                     for _stat in _vis_overlay:
-                        _ov_x_col = f'{_vis_x}_median'
-                        _ov_y_col = 'Median' if _vis_y == _g_value_default else f'{_vis_y}_median'
-                        if _ov_x_col not in _summary.columns and _vis_x == _g_value_default:
-                            _ov_x_col = 'Median' if _stat == 'Median' else 'Mean'
-                        if _ov_y_col not in _summary.columns:
-                            continue
-                        _ov_x = _summary[_ov_x_col] if _ov_x_col in _summary.columns else None
-                        _ov_y = _summary[_ov_y_col] if _ov_y_col in _summary.columns else None
-                        if _ov_x is None or _ov_y is None:
+                        _ov_x_col = f'{_vis_x}_median' if _vis_x != _g_value_default else 'Median'
+                        _ov_y_col = f'{_vis_y}_median' if _vis_y != _g_value_default else 'Median'
+                        if _ov_x_col not in _summary.columns or _ov_y_col not in _summary.columns:
                             continue
                         _ov_hover = '<br>'.join([
                             'Group=%{customdata[0]}',
@@ -7269,7 +7337,7 @@ with t_grouping:
                             'MAD=%{customdata[2]:.2f}',
                         ])
                         _gfig.add_trace(go.Scatter(
-                            x=_ov_x, y=_ov_y, mode='markers',
+                            x=_summary[_ov_x_col], y=_summary[_ov_y_col], mode='markers',
                             marker=dict(symbol='diamond' if _stat == 'Median' else 'star',
                                         size=14, color='#111827',
                                         line=dict(color='white', width=1.2)),
@@ -7278,9 +7346,112 @@ with t_grouping:
                                               _summary['N'], _summary['MAD']],
                             hovertemplate=_ov_hover + '<extra></extra>',
                         ))
-                _gfig.update_layout(height=440, margin=dict(l=10, r=10, t=20, b=10),
-                                    legend=dict(orientation='h', y=-0.15))
-                st.plotly_chart(_gfig, width='stretch', key='g_xplot')
+                _gfig.update_layout(height=440, template='plotly_white',
+                                     margin=dict(l=10, r=10, t=20, b=10),
+                                     dragmode='lasso',
+                                     xaxis_title=_vis_x, yaxis_title=_vis_y,
+                                     legend=dict(orientation='h', y=-0.15))
+                try:
+                    _xplot_event = st.plotly_chart(_gfig, width='stretch',
+                                                    key='g_xplot_lasso',
+                                                    on_select='rerun',
+                                                    selection_mode=['lasso', 'box'])
+                except TypeError:
+                    _xplot_event = None
+                    st.plotly_chart(_gfig, width='stretch', key='g_xplot_static')
+                # Cross-plot's selected points may come from the samples trace OR an overlay
+                # trace — we only want the samples trace (curve_number=0).
+                _xplot_pos_idx = []
+                if _xplot_event:
+                    _sel = _xplot_event.get('selection', {}) if isinstance(_xplot_event, dict) else getattr(_xplot_event, 'selection', {})
+                    _pts = (_sel.get('points', []) if isinstance(_sel, dict) else getattr(_sel, 'points', [])) or []
+                    for _p in _pts:
+                        _curve = _p.get('curve_number', _p.get('curveNumber', 0)) if isinstance(_p, dict) else getattr(_p, 'curve_number', 0)
+                        if _curve != 0:
+                            continue
+                        _idx_val = _p.get('point_index', _p.get('pointIndex', _p.get('point_number'))) if isinstance(_p, dict) else getattr(_p, 'point_index', None)
+                        if _idx_val is not None:
+                            try:
+                                _xplot_pos_idx.append(int(_idx_val))
+                            except Exception:
+                                pass
+                    _xplot_pos_idx = sorted(set(_xplot_pos_idx))
+
+            # Map both plots' positional indices back to original bench-index
+            _selected_bench_idx = set()
+            for _pos in _map_pos_idx:
+                if 0 <= _pos < len(_vd_orig_index):
+                    _selected_bench_idx.add(int(_vd_orig_index[_pos]))
+            for _pos in _xplot_pos_idx:
+                if 0 <= _pos < len(_vd_orig_index):
+                    _selected_bench_idx.add(int(_vd_orig_index[_pos]))
+
+            # ── Lasso group management panel ─────────────────────────────
+            st.markdown('**Lasso groups** — drag a lasso or box on either chart, then assign')
+            _lg_state = st.session_state[_lasso_state_key]
+            _lg_names = [v.get('name', k) for k, v in _lg_state.items()]
+            _lg_keys = list(_lg_state.keys())
+
+            _ag1, _ag2, _ag3, _ag4 = st.columns([1.2, 1.4, 1.0, 1.0])
+            _new_name = _ag1.text_input(
+                f'Selected: {len(_selected_bench_idx)} samples',
+                value='',
+                placeholder='Name for new group (or leave blank)',
+                key='g_lasso_new_name',
+            )
+            _add_to_choice = _ag2.selectbox(
+                'Add to existing group',
+                ['(none)'] + _lg_names,
+                key='g_lasso_add_to',
+            )
+            if _ag3.button('+ New group', key='g_lasso_new', disabled=(len(_selected_bench_idx) == 0)):
+                _next_n = len(_lg_state) + 1
+                _new_id = f'lasso_{_next_n}'
+                while _new_id in _lg_state:
+                    _next_n += 1
+                    _new_id = f'lasso_{_next_n}'
+                _lg_state[_new_id] = {
+                    'name': _new_name.strip() or f'Lasso {_next_n}',
+                    'color': _lasso_palette[(_next_n - 1) % len(_lasso_palette)],
+                    'members': set(_selected_bench_idx),
+                }
+                st.rerun()
+            if _ag4.button('Add to group', key='g_lasso_add',
+                            disabled=(len(_selected_bench_idx) == 0 or _add_to_choice == '(none)')):
+                # Resolve name → id
+                _target_id = next((k for k, v in _lg_state.items()
+                                    if v.get('name', k) == _add_to_choice), None)
+                if _target_id is not None:
+                    _lg_state[_target_id]['members'] = (
+                        _lg_state[_target_id].get('members', set()) | set(_selected_bench_idx)
+                    )
+                    st.rerun()
+
+            # List existing lasso groups with rename / delete
+            if _lg_state:
+                for _li, (_lid, _ldef) in enumerate(list(_lg_state.items())):
+                    _lr1, _lr2, _lr3, _lr4 = st.columns([2.0, 1.2, 0.6, 0.6])
+                    _new_label = _lr1.text_input(f'Group {_li + 1} name',
+                                                   value=_ldef.get('name', _lid),
+                                                   key=f'g_lasso_rename_{_lid}',
+                                                   label_visibility='collapsed')
+                    if _new_label != _ldef.get('name', _lid):
+                        _ldef['name'] = _new_label
+                    _lr2.markdown(f"<span style='color:{_ldef.get('color','#888')}'>●</span> "
+                                  f"**{len(_ldef.get('members', set()))} samples**",
+                                  unsafe_allow_html=True)
+                    if _lr3.button('Empty', key=f'g_lasso_empty_{_lid}',
+                                    help='Clear this group\'s members but keep the entry'):
+                        _ldef['members'] = set()
+                        st.rerun()
+                    if _lr4.button('✕', key=f'g_lasso_del_{_lid}', help='Delete this lasso group'):
+                        _lg_state.pop(_lid, None)
+                        st.rerun()
+                if st.button('Clear all lasso groups', key='g_lasso_clear_all'):
+                    st.session_state[_lasso_state_key] = {}
+                    st.rerun()
+            else:
+                st.caption('No lasso groups yet. Drag a lasso/box on the map or cross-plot, then click "+ New group".')
 
     # --- Persist Group_ID + Group_Name back to the bench dataframes --------
     _bench_key = '_rs_val_bench' if _g_src == 'Validation' else '_rs_pred_bench'
@@ -7293,7 +7464,7 @@ with t_grouping:
     # Also publish a Result-Summary friendly grouping map so the violins read it
     if _n_passing > 0:
         _gmap = _grouped.dropna(subset=['Group_ID']).copy()
-        _gmap['Grouping_Method'] = 'Filter-based'
+        _gmap['Grouping_Method'] = 'Filter+Lasso'
         st.session_state['_rs_group_map'] = _gmap
 
 with t_result_summary:
