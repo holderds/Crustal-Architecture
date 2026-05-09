@@ -129,7 +129,7 @@ def assign_numeric_bins(values, breaks: np.ndarray, decimals: int = 1) -> pd.Ser
 
 # ─── Filter specs and group resolution ───────────────────────────────────────
 
-def candidate_group_columns(df: pd.DataFrame, max_unique: int = 60) -> list[str]:
+def candidate_group_columns(df: pd.DataFrame, max_unique: int = 200) -> list[str]:
     """Columns that make sense as a categorical group key.
     Priority columns first, then any other low-cardinality string columns."""
     priority = [
@@ -192,11 +192,13 @@ def apply_filter_specs(df: pd.DataFrame, specs: list[dict]) -> pd.Series:
             lo = spec.get('lo')
             hi = spec.get('hi')
             ser = pd.to_numeric(df[col], errors='coerce')
+            # Rows with no value for this column pass through (not excluded by range filter).
+            # This prevents a range filter on one column from wiping out rows that have
+            # data for a different (categorical) partition column.
             if lo is not None:
                 mask &= (ser >= float(lo)) | ser.isna()
             if hi is not None:
                 mask &= (ser <= float(hi)) | ser.isna()
-            mask &= ser.notna()
         elif kind == 'numeric_bin':
             method = spec.get('method', 'equal')
             n_bins = int(spec.get('n_bins', 4))

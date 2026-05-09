@@ -6456,8 +6456,15 @@ with t_grouping:
     if _filter_state_key not in st.session_state:
         st.session_state[_filter_state_key] = []  # list of dicts
 
-    _cat_cols = _g_candidate_group_columns(_g_bench)
-    _num_cols = _g_candidate_numeric_columns(_g_bench)
+    # Cache column discovery — only recompute when the bench actually changes
+    # (not on every slider/widget interaction, which makes the tab very slow).
+    _bench_sig = _g_src + ':' + ':'.join(str(c) for c in _g_bench.columns) + ':' + str(len(_g_bench))
+    if st.session_state.get('_g_bench_sig') != _bench_sig:
+        st.session_state['_g_bench_sig'] = _bench_sig
+        st.session_state['_g_cat_cols_c'] = _g_candidate_group_columns(_g_bench)
+        st.session_state['_g_num_cols_c'] = _g_candidate_numeric_columns(_g_bench)
+    _cat_cols = st.session_state.get('_g_cat_cols_c', [])
+    _num_cols = st.session_state.get('_g_num_cols_c', [])
 
     _af1, _af2, _af3 = st.columns([1.2, 1.2, 0.7])
     _add_kind = _af1.selectbox('Add filter type',
@@ -6474,7 +6481,7 @@ with t_grouping:
 
     if _af3.button('+ Add', key='g_add_filter') and _add_col is not None:
         if _add_kind.startswith('Categorical'):
-            spec = {'type': 'categorical', 'col': _add_col, 'values': []}
+            spec = {'type': 'categorical', 'col': _add_col, 'values': None}  # None → show all on first render
         elif _add_kind.startswith('Numeric range'):
             ser = pd.to_numeric(_g_bench[_add_col], errors='coerce')
             spec = {'type': 'numeric_range', 'col': _add_col,
@@ -6495,18 +6502,23 @@ with t_grouping:
             _r1.markdown(f"**{_col}** &nbsp; *({_spec.get('type','')})*")
             if _spec['type'] == 'categorical':
                 _opts = sorted(_g_bench[_col].dropna().astype(str).unique().tolist()) if _col in _g_bench else []
-                _spec['values'] = _r2.multiselect('Keep values', _opts, default=_spec.get('values', []),
+                # None sentinel = newly added filter → default to all values so groups appear immediately
+                _cat_default = _opts if _spec.get('values') is None else _spec.get('values', _opts)
+                _spec['values'] = _r2.multiselect('Keep values', _opts, default=_cat_default,
                                                    key=f'g_filter_cat_{_fi}', label_visibility='collapsed')
                 _r3.caption(f"{len(_spec['values'])} of {len(_opts)} selected")
             elif _spec['type'] == 'numeric_range':
                 _ser = pd.to_numeric(_g_bench[_col], errors='coerce')
-                _lo_d, _hi_d = float(_ser.min()), float(_ser.max())
+                _lo_d = float(_ser.min()) if _ser.notna().any() else 0.0
+                _hi_d = float(_ser.max()) if _ser.notna().any() else 1.0
+                if _lo_d == _hi_d:
+                    _hi_d = _lo_d + 1.0
                 _step = max((_hi_d - _lo_d) / 100.0, 1e-3)
                 _rng = _r2.slider(f'{_col} range', _lo_d, _hi_d,
                                   (float(_spec.get('lo', _lo_d)), float(_spec.get('hi', _hi_d))),
                                   step=_step, key=f'g_filter_range_{_fi}', label_visibility='collapsed')
                 _spec['lo'], _spec['hi'] = float(_rng[0]), float(_rng[1])
-                _r3.caption(f"{_spec['lo']:.2f} – {_spec['hi']:.2f}")
+                _r3.caption(f"{_spec['lo']:.2f} – {_spec['hi']:.2f} · narrows rows, add a categorical or bins filter to split into named groups")
             elif _spec['type'] == 'numeric_bin':
                 _bm1, _bm2 = _r2.columns(2)
                 _spec['method'] = _bm1.selectbox('Method', ['equal', 'geometric', 'quantile', 'jenks'],
