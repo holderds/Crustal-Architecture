@@ -4325,7 +4325,7 @@ def attach_preset_group_domains(df, group_col=None, max_segment_km=100.0, split_
         out['Preset_Group_Segment'] = 1
         out['Preset_Group_Segment_Label'] = 'all'
         out['Preset_Group_ID'] = out['Preset_Group_Base'].astype(str)
-    out['Preset_Group_Segment_Long_Axis_km'] = np.nan
+    out['Preset_Group_Segment_Width_km'] = np.nan
     for group_id, g in out.groupby('Preset_Group_ID', dropna=False):
         if {'Lon','Lat'}.issubset(g) and len(g.dropna(subset=['Lon','Lat'])) >= 2:
             axis = long_axis_km_from_lonlat(g['Lon'], g['Lat'])
@@ -4333,7 +4333,7 @@ def attach_preset_group_domains(df, group_col=None, max_segment_km=100.0, split_
             axis = max_segment_km if split_by_distance else np.nan
         if split_by_distance and pd.notna(axis):
             axis = min(float(axis), max_segment_km)
-        out.loc[g.index, 'Preset_Group_Segment_Long_Axis_km'] = axis
+        out.loc[g.index, 'Preset_Group_Segment_Width_km'] = axis
     return out
 
 def preset_group_summary(df):
@@ -4495,17 +4495,12 @@ def attach_target_domains_from_samples(targets, samples, domain_col=None, radius
                 out[domain_col] = pd.Series([pd.NA] * len(out), index=out.index, dtype='object')
             else:
                 out[domain_col] = out[domain_col].astype('object')
-            assigned = False
-            if domain_col == 'Geological_Domain':
-                for domain_name, g in sample_coords.dropna(subset=[domain_col]).groupby(domain_col, dropna=False):
-                    if len(g) >= 3 and polygon_contains_lonlat(np.column_stack([g['Lon'].to_numpy(dtype=float), g['Lat'].to_numpy(dtype=float)]), tlon, tlat):
-                        out.at[idx, domain_col] = domain_name
-                        assigned = True
-                        break
-            if not assigned:
-                d = haversine_km(float(tlat), float(tlon), sample_coords['Lat'].to_numpy(dtype=float), sample_coords['Lon'].to_numpy(dtype=float))
-                nearest_idx = sample_coords.index[int(np.nanargmin(d))]
-                out.at[idx, domain_col] = sample_coords.at[nearest_idx, domain_col]
+            # Nearest-sample assignment. Previous "polygon from raw scatter points"
+            # path was unreliable (MplPath result depended on row order) — removed.
+            # Real polygon containment is handled upstream by attach_uploaded_geological_domains.
+            d = haversine_km(float(tlat), float(tlon), sample_coords['Lat'].to_numpy(dtype=float), sample_coords['Lon'].to_numpy(dtype=float))
+            nearest_idx = sample_coords.index[int(np.nanargmin(d))]
+            out.at[idx, domain_col] = sample_coords.at[nearest_idx, domain_col]
         if radius_col and radius_col in sample_coords:
             if radius_col not in out:
                 out[radius_col] = np.nan
@@ -6318,7 +6313,7 @@ with t_validation:
                                         age_bin_width=preset_age_bin_width,
                                     )
                                     gm_domain='Preset_Group_ID'
-                                    gm_radius_col='Preset_Group_Segment_Long_Axis_km'
+                                    gm_radius_col='Preset_Group_Segment_Width_km'
                                     domain_summaries.append(preset_group_summary(gm_source))
                                 elif gm == 'Uploaded geological domain' and uploaded_records:
                                     gm_source=attach_uploaded_geological_domains(gm_source,uploaded_records)
@@ -6359,6 +6354,7 @@ with t_validation:
                             if grouping_map_frames:
                                 group_map=pd.concat(grouping_map_frames,ignore_index=True)
                                 st.session_state['_val_group_map']=group_map.copy()
+                                st.session_state['_rs_group_map']=group_map.copy()
                                 st.session_state['_val_local_df']=local_df.copy() if not local_df.empty else pd.DataFrame()
                                 st.session_state['_val_local_value']=local_value
                                 st.markdown('**6. Grouping diagnostics**')
@@ -6976,7 +6972,7 @@ with t_unknown:
                             if uk_gm == 'Preset grouping':
                                 uk_base_col=None if uk_preset_group_col == 'All samples' else uk_preset_group_col
                                 uk_gm_source=attach_preset_group_domains(uk_gm_source,uk_base_col,max_segment_km=uk_preset_segment_km,split_by_distance=uk_preset_split_distance,age_bin_width=uk_preset_age_bin_width)
-                                uk_gm_domain='Preset_Group_ID'; uk_gm_radius_col='Preset_Group_Segment_Long_Axis_km'
+                                uk_gm_domain='Preset_Group_ID'; uk_gm_radius_col='Preset_Group_Segment_Width_km'
                                 uk_domain_summaries.append(preset_group_summary(uk_gm_source))
                             elif uk_gm == 'Uploaded geological domain' and uk_uploaded_records:
                                 uk_gm_source=attach_uploaded_geological_domains(uk_gm_source,uk_uploaded_records)
