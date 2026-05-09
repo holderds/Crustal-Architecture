@@ -6173,7 +6173,7 @@ with t_validation:
                     else:
                         st.info('Proxy comparison needs a recognised proxy value or proxy-thickness method in the validation data.')
 
-                    with st.expander('Local crustal-thickness estimate and grouping workflow',expanded=True):
+                    with st.expander('Local crustal-thickness estimation',expanded=False):
                         st.caption('Estimate local crustal thickness for a target point, CRUST1.0 cell, sample, or arc segment from nearby geochemical samples in a combined spatial + temporal neighbourhood. Nearest-N, radius, and time window define the candidate population; they are not error bars.')
                         if {'Lat','Lon'}.issubset(test_bench):
                             domain_priority=[c for c in ['Arc_or_Segment','Geologic_Domain','Tectonic_Setting','Dataset','Rock_Type_Model','Geologic_Era','Geologic_Period','Geologic_Epoch'] if c in test_bench]
@@ -6845,7 +6845,7 @@ with t_unknown:
                 else:
                     st.info('Proxy comparison needs a recognised proxy value or proxy-thickness method in the uploaded data.')
 
-                with st.expander('Local crustal-thickness estimate and grouping workflow',expanded=True):
+                with st.expander('Local crustal-thickness estimation',expanded=False):
                     st.caption('Estimate local crustal thickness for a target point, CRUST1.0 cell, sample, or arc segment from nearby geochemical samples in a combined spatial + temporal neighbourhood. Nearest-N, radius, and time window define the candidate population; they are not error bars.')
                     if {'Lat','Lon'}.issubset(pred_bench):
                         uk_domain_priority=[c for c in ['Arc_or_Segment','Geologic_Domain','Tectonic_Setting','Dataset','Rock_Type_Model','Geologic_Era','Geologic_Period','Geologic_Epoch'] if c in pred_bench]
