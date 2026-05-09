@@ -36,6 +36,16 @@ try:
 except Exception:
     XGBRegressor = None
 
+from engine.grouping import (
+    candidate_group_columns as _g_candidate_group_columns,
+    candidate_numeric_columns as _g_candidate_numeric_columns,
+    numeric_breaks as _g_numeric_breaks,
+    assign_numeric_bins as _g_assign_numeric_bins,
+    auto_groups_from_filters as _g_auto_groups_from_filters,
+    group_stats as _g_group_stats,
+    round_trip_columns as _g_round_trip_columns,
+)
+
 APP_VERSION = 'v10.1 feature-set'
 DEFAULT_CRUST1_GRID = Path('CRUST_1_0_excel.csv')
 GAME_CALIBRATION_FILE = Path('LuffiDucea_2022_Calibration.csv')
@@ -5372,7 +5382,7 @@ def _render_grouping_display(prefix):
     _pgfig.update_xaxes(title=local_option_label(_gx)); _pgfig.update_yaxes(title=local_option_label(_gy))
     st.plotly_chart(_pgfig,width='stretch',key=f'{prefix}_disp_graph_fig')
 
-t_data_prep,t0,t_validation,t_unknown,t_result_summary=st.tabs(['Prepare','Model','Validate','Predict','Summary'])
+t_data_prep,t0,t_validation,t_unknown,t_grouping,t_result_summary=st.tabs(['Prepare','Model','Validate','Predict','Grouping','Summary'])
 
 models={}; validation_df=pd.DataFrame(); importance_df=pd.DataFrame(); train_df=pd.DataFrame(); clean=pd.DataFrame(); target=None
 selected_model_names=['Guo & Yang (2023)']; selected_algorithms=['ExtraTrees']; feature_set_name='Guo & Yang (2023)'; selected_features=FEATURE_SETS[feature_set_name]; model=None
@@ -7049,6 +7059,234 @@ with t_unknown:
                         st.info('Grouping workflow needs Lat and Lon columns in the uploaded data.')
 
                 st.caption('Download predictions in the Summary tab → Export results.')
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Grouping tab — define groups via stacked table filters with classification
+# options (equal / geometric / quantile / Jenks). Lasso selection on map +
+# graph and user-drawn polyline-as-axis come in subsequent landings.
+# ─────────────────────────────────────────────────────────────────────────────
+with t_grouping:
+    st.header('Grouping')
+    st.caption('Define groups by stacking categorical and numeric filters from the table. '
+               'Lasso selection on the map / cross-plot and a draw-your-own long-axis polyline '
+               'arrive in the next landings.')
+
+    # --- Source selector ----------------------------------------------------
+    _val_bench = st.session_state.get('_rs_val_bench', pd.DataFrame())
+    _pred_bench = st.session_state.get('_rs_pred_bench', pd.DataFrame())
+    _src_options = []
+    if not _val_bench.empty:
+        _src_options.append('Validation')
+    if not _pred_bench.empty:
+        _src_options.append('Prediction')
+    if not _src_options:
+        st.info('Run Validate or Predict first — the Grouping tab works on those benched results.')
+        st.stop()
+    _g_src = st.radio('Data source', _src_options, horizontal=True, key='grouping_source')
+    _g_bench = _val_bench.copy() if _g_src == 'Validation' else _pred_bench.copy()
+    _g_bench = _g_bench.reset_index(drop=True)
+    _g_value_default = 'Predicted_km' if 'Predicted_km' in _g_bench.columns else (
+        'Observed_km' if 'Observed_km' in _g_bench.columns else _g_bench.select_dtypes('number').columns[0]
+    )
+
+    # --- Filter editor ------------------------------------------------------
+    st.markdown('**Filters** — each row narrows or partitions the dataset. AND-combined.')
+    _filter_state_key = f'_g_filters_{_g_src}'
+    if _filter_state_key not in st.session_state:
+        st.session_state[_filter_state_key] = []  # list of dicts
+
+    _cat_cols = _g_candidate_group_columns(_g_bench)
+    _num_cols = _g_candidate_numeric_columns(_g_bench)
+
+    _af1, _af2, _af3 = st.columns([1.2, 1.2, 0.7])
+    _add_kind = _af1.selectbox('Add filter type',
+                               ['Categorical (multi-select)',
+                                'Numeric range',
+                                'Numeric bins (partition)'],
+                               key='g_add_kind')
+    if _add_kind.startswith('Categorical'):
+        _add_col = _af2.selectbox('Column', _cat_cols, key='g_add_cat_col') if _cat_cols else None
+    elif _add_kind.startswith('Numeric range'):
+        _add_col = _af2.selectbox('Column', _num_cols, key='g_add_range_col') if _num_cols else None
+    else:
+        _add_col = _af2.selectbox('Column', _num_cols, key='g_add_bin_col') if _num_cols else None
+
+    if _af3.button('+ Add', key='g_add_filter') and _add_col is not None:
+        if _add_kind.startswith('Categorical'):
+            spec = {'type': 'categorical', 'col': _add_col, 'values': []}
+        elif _add_kind.startswith('Numeric range'):
+            ser = pd.to_numeric(_g_bench[_add_col], errors='coerce')
+            spec = {'type': 'numeric_range', 'col': _add_col,
+                    'lo': float(ser.min()) if ser.notna().any() else 0.0,
+                    'hi': float(ser.max()) if ser.notna().any() else 1.0}
+        else:
+            spec = {'type': 'numeric_bin', 'col': _add_col,
+                    'method': 'equal', 'n_bins': 4, 'keep': []}
+        st.session_state[_filter_state_key].append(spec)
+
+    # Render existing filters
+    _filters = st.session_state[_filter_state_key]
+    _delete_idx = None
+    for _fi, _spec in enumerate(list(_filters)):
+        with st.container(border=True):
+            _r1, _r2, _r3, _r4 = st.columns([1.5, 2.3, 1.0, 0.4])
+            _col = _spec.get('col', '')
+            _r1.markdown(f"**{_col}** &nbsp; *({_spec.get('type','')})*")
+            if _spec['type'] == 'categorical':
+                _opts = sorted(_g_bench[_col].dropna().astype(str).unique().tolist()) if _col in _g_bench else []
+                _spec['values'] = _r2.multiselect('Keep values', _opts, default=_spec.get('values', []),
+                                                   key=f'g_filter_cat_{_fi}', label_visibility='collapsed')
+                _r3.caption(f"{len(_spec['values'])} of {len(_opts)} selected")
+            elif _spec['type'] == 'numeric_range':
+                _ser = pd.to_numeric(_g_bench[_col], errors='coerce')
+                _lo_d, _hi_d = float(_ser.min()), float(_ser.max())
+                _step = max((_hi_d - _lo_d) / 100.0, 1e-3)
+                _rng = _r2.slider(f'{_col} range', _lo_d, _hi_d,
+                                  (float(_spec.get('lo', _lo_d)), float(_spec.get('hi', _hi_d))),
+                                  step=_step, key=f'g_filter_range_{_fi}', label_visibility='collapsed')
+                _spec['lo'], _spec['hi'] = float(_rng[0]), float(_rng[1])
+                _r3.caption(f"{_spec['lo']:.2f} – {_spec['hi']:.2f}")
+            elif _spec['type'] == 'numeric_bin':
+                _bm1, _bm2 = _r2.columns(2)
+                _spec['method'] = _bm1.selectbox('Method', ['equal', 'geometric', 'quantile', 'jenks'],
+                                                 index=['equal','geometric','quantile','jenks'].index(_spec.get('method','equal')),
+                                                 key=f'g_filter_bin_method_{_fi}',
+                                                 format_func=lambda m: {'equal':'Equal interval','geometric':'Geometric',
+                                                                         'quantile':'Quantile','jenks':'Natural breaks (Jenks)'}[m])
+                _spec['n_bins'] = int(_bm2.number_input('Bins', 2, 12, int(_spec.get('n_bins', 4)),
+                                                        step=1, key=f'g_filter_bin_n_{_fi}'))
+                _ser = pd.to_numeric(_g_bench[_col], errors='coerce')
+                _breaks = _g_numeric_breaks(_ser.dropna().to_numpy(), _spec['method'], _spec['n_bins'])
+                _labels_full = _g_assign_numeric_bins(_ser, _breaks)
+                _bin_options = sorted(_labels_full.dropna().unique().tolist())
+                if 'unknown' in _bin_options:
+                    _bin_options.remove('unknown')
+                _spec['keep'] = _r3.multiselect('Keep bins', _bin_options,
+                                                default=_spec.get('keep', _bin_options),
+                                                key=f'g_filter_bin_keep_{_fi}',
+                                                label_visibility='collapsed')
+            if _r4.button('✕', key=f'g_filter_del_{_fi}', help='Remove this filter'):
+                _delete_idx = _fi
+
+    if _delete_idx is not None:
+        st.session_state[_filter_state_key].pop(_delete_idx)
+        st.rerun()
+
+    if st.button('Clear all filters and groups', key='g_clear_filters'):
+        st.session_state[_filter_state_key] = []
+        st.session_state.pop(f'_g_groups_{_g_src}', None)
+        st.rerun()
+
+    # --- Resolve groups from filters ---------------------------------------
+    _grouped = _g_auto_groups_from_filters(_g_bench, st.session_state[_filter_state_key])
+    _n_passing = int(_grouped['Group_ID'].notna().sum())
+    _n_total = len(_grouped)
+    _n_groups = int(_grouped['Group_ID'].dropna().nunique())
+
+    _summary = _g_group_stats(_grouped, value_col=_g_value_default, decimals=2)
+
+    # --- Group preview table ------------------------------------------------
+    st.markdown(f"**Groups** — {_n_groups} group(s) · {_n_passing:,} of {_n_total:,} rows pass filters")
+    if not _summary.empty:
+        # Sample-size adequacy badge: aim for N >= 20 for stable median
+        _summary_disp = _summary.copy()
+        _summary_disp.insert(2, 'Adequate?',
+                             _summary_disp['N'].apply(lambda n: '✅' if n >= 20 else ('⚠️' if n >= 10 else '❌')))
+        st.dataframe(_summary_disp, width='stretch', hide_index=True)
+    else:
+        st.info('Add at least one filter above to define groups.')
+
+    # --- Linked map + cross-plot -------------------------------------------
+    if _n_passing > 0 and {'Lat', 'Lon'}.issubset(_grouped.columns):
+        st.markdown('**Map + cross-plot** (linked by Group_ID)')
+        _vis_df = _grouped.dropna(subset=['Group_ID']).copy()
+        if not _vis_df.empty:
+            _vc1, _vc2, _vc3 = st.columns(3)
+            _vis_x_opts = [c for c in _num_cols if c in _vis_df.columns]
+            _vis_x = _vc1.selectbox('Cross-plot X', _vis_x_opts,
+                                     index=_vis_x_opts.index('Sr_Y') if 'Sr_Y' in _vis_x_opts else 0,
+                                     key='g_vis_x')
+            _vis_y_opts = [c for c in _vis_x_opts if c != _vis_x]
+            _vis_y_default = 'Predicted_km' if 'Predicted_km' in _vis_y_opts else (_vis_y_opts[0] if _vis_y_opts else _vis_x)
+            _vis_y = _vc2.selectbox('Cross-plot Y', _vis_y_opts,
+                                     index=_vis_y_opts.index(_vis_y_default) if _vis_y_default in _vis_y_opts else 0,
+                                     key='g_vis_y')
+            _vis_overlay = _vc3.multiselect('Overlay group statistic',
+                                             ['Mean', 'Median'], default=['Median'],
+                                             key='g_vis_overlay')
+            # Hover content: full info per sample
+            _hover_cols_list = ['Sample_ID', 'Group_Name', 'Predicted_km', 'Observed_km',
+                                'Age_Ma', 'Sr_Y', 'La_Yb_N', 'SiO2', 'MgO',
+                                'H_GAME_LuffiDucea2022_km', 'H_Sundell2021_Paired_km',
+                                'Arc_or_Segment', 'Geologic_Domain', 'Tectonic_Setting']
+            _hover_cols_present = [c for c in _hover_cols_list if c in _vis_df.columns]
+            _vd = _vis_df.copy()
+            for c in _vd.select_dtypes(include='number').columns:
+                _vd[c] = pd.to_numeric(_vd[c], errors='coerce').round(2)
+
+            _mc1, _mc2 = st.columns(2)
+            with _mc1:
+                _mfig = px.scatter_geo(_vd, lat='Lat', lon='Lon', color='Group_Name',
+                                       hover_data=_hover_cols_present,
+                                       projection='natural earth', template='plotly_white',
+                                       color_discrete_sequence=px.colors.qualitative.Set2)
+                _mfig.update_traces(marker=dict(size=7, line=dict(color='black', width=0.4)))
+                _mfig.update_layout(height=440, margin=dict(l=10, r=10, t=20, b=10),
+                                    legend=dict(orientation='h', y=-0.05))
+                st.plotly_chart(_mfig, width='stretch', key='g_map')
+            with _mc2:
+                _gfig = px.scatter(_vd, x=_vis_x, y=_vis_y, color='Group_Name',
+                                   hover_data=_hover_cols_present,
+                                   template='plotly_white',
+                                   color_discrete_sequence=px.colors.qualitative.Set2)
+                _gfig.update_traces(marker=dict(size=7, line=dict(color='black', width=0.4)))
+                # Overlay group mean/median markers
+                if _vis_overlay and not _summary.empty:
+                    for _stat in _vis_overlay:
+                        _ov_x_col = f'{_vis_x}_median'
+                        _ov_y_col = 'Median' if _vis_y == _g_value_default else f'{_vis_y}_median'
+                        if _ov_x_col not in _summary.columns and _vis_x == _g_value_default:
+                            _ov_x_col = 'Median' if _stat == 'Median' else 'Mean'
+                        if _ov_y_col not in _summary.columns:
+                            continue
+                        _ov_x = _summary[_ov_x_col] if _ov_x_col in _summary.columns else None
+                        _ov_y = _summary[_ov_y_col] if _ov_y_col in _summary.columns else None
+                        if _ov_x is None or _ov_y is None:
+                            continue
+                        _ov_hover = '<br>'.join([
+                            'Group=%{customdata[0]}',
+                            f'{_stat} {_vis_y}=%{{y:.2f}}',
+                            f'{_stat} {_vis_x}=%{{x:.2f}}',
+                            'N=%{customdata[1]}',
+                            'MAD=%{customdata[2]:.2f}',
+                        ])
+                        _gfig.add_trace(go.Scatter(
+                            x=_ov_x, y=_ov_y, mode='markers',
+                            marker=dict(symbol='diamond' if _stat == 'Median' else 'star',
+                                        size=14, color='#111827',
+                                        line=dict(color='white', width=1.2)),
+                            name=f'{_stat} per group',
+                            customdata=np.c_[_summary['Group_Name'].astype(str),
+                                              _summary['N'], _summary['MAD']],
+                            hovertemplate=_ov_hover + '<extra></extra>',
+                        ))
+                _gfig.update_layout(height=440, margin=dict(l=10, r=10, t=20, b=10),
+                                    legend=dict(orientation='h', y=-0.15))
+                st.plotly_chart(_gfig, width='stretch', key='g_xplot')
+
+    # --- Persist Group_ID + Group_Name back to the bench dataframes --------
+    _bench_key = '_rs_val_bench' if _g_src == 'Validation' else '_rs_pred_bench'
+    _stored = st.session_state.get(_bench_key, pd.DataFrame()).copy()
+    if not _stored.empty and len(_stored) == len(_grouped):
+        for c in _g_round_trip_columns():
+            if c in _grouped.columns:
+                _stored[c] = _grouped[c].values
+        st.session_state[_bench_key] = _stored
+    # Also publish a Result-Summary friendly grouping map so the violins read it
+    if _n_passing > 0:
+        _gmap = _grouped.dropna(subset=['Group_ID']).copy()
+        _gmap['Grouping_Method'] = 'Filter-based'
+        st.session_state['_rs_group_map'] = _gmap
 
 with t_result_summary:
     st.header('Summary')
