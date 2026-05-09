@@ -106,21 +106,24 @@ def label_for_bin(lo: float, hi: float, decimals: int = 1) -> str:
 
 def assign_numeric_bins(values, breaks: np.ndarray, decimals: int = 1) -> pd.Series:
     """Assign each value to a labelled bin using the given break edges.
-    Returns a string Series with NaN as 'unknown'."""
-    s = pd.Series(values).reset_index(drop=True)
-    if len(breaks) < 2:
-        return pd.Series(['unknown'] * len(s), index=s.index, dtype='object')
-    nums = pd.to_numeric(s, errors='coerce')
+    Returns a string Series with NaN as 'unknown'. Preserves the input index
+    so callers can concat with other label frames."""
+    s = pd.Series(values) if not isinstance(values, pd.Series) else values
     out = pd.Series(['unknown'] * len(s), index=s.index, dtype='object')
+    if len(breaks) < 2:
+        return out
+    nums = pd.to_numeric(s, errors='coerce')
     edges = np.asarray(breaks, dtype=float)
-    # Clamp to extend the rightmost edge slightly so the maximum value falls in the last bin
+    # Extend the rightmost edge slightly so the maximum value falls in the last bin
     edges_use = edges.copy()
     edges_use[-1] = edges_use[-1] + 1e-9
     bin_idx = np.digitize(nums.to_numpy(dtype=float), edges_use, right=False) - 1
+    nums_notna = nums.notna().to_numpy()
     for i in range(len(edges) - 1):
-        mask = (bin_idx == i) & nums.notna().to_numpy()
+        mask = (bin_idx == i) & nums_notna
         if mask.any():
-            out.loc[mask] = label_for_bin(edges[i], edges[i + 1], decimals)
+            # mask is positional; convert to label-based for .loc assignment
+            out.iloc[np.where(mask)[0]] = label_for_bin(edges[i], edges[i + 1], decimals)
     return out
 
 
@@ -255,12 +258,13 @@ def auto_groups_from_filters(df: pd.DataFrame, specs: list[dict]) -> pd.DataFram
     keys = pd.concat(key_frames, axis=1)
     keys.columns = key_names
     combos = keys.apply(lambda r: ' / '.join(str(v) for v in r.values), axis=1)
-    # Stable group IDs (hash) so colours stay attached to a name across reruns
-    for combo, idx in combos.groupby(combos).groups.items():
+    # Stable group IDs (hash) so colours stay attached to a name across reruns.
+    # combos.groupby(combos).groups returns label-based Index (matches work.index ⊆ out.index).
+    for combo, label_idx in combos.groupby(combos).groups.items():
         gid = 'g_' + hashlib.md5(combo.encode('utf-8')).hexdigest()[:8]
-        out.loc[work.index[idx], 'Group_ID'] = gid
-        out.loc[work.index[idx], 'Group_Name'] = combo
-        out.loc[work.index[idx], 'Group_Source'] = 'filter'
+        out.loc[label_idx, 'Group_ID'] = gid
+        out.loc[label_idx, 'Group_Name'] = combo
+        out.loc[label_idx, 'Group_Source'] = 'filter'
     return out
 
 
