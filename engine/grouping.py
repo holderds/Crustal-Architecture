@@ -481,3 +481,129 @@ def rolling_window_smoothed(x, y, window_km: float, stat: str = 'median',
 def round_trip_columns() -> list[str]:
     """Columns to write into exports / detect on re-upload to round-trip groups."""
     return ['Group_ID', 'Group_Name', 'Group_Source']
+
+
+# ─── Group-then-calculate aggregation ────────────────────────────────────────
+
+# Columns that are NOT aggregated as chemistry; they receive special treatment
+_AGG_SKIP = frozenset({
+    'Sample_ID', 'Group_ID', 'Group_Name', 'Group_Source',
+    'Along_Strike_km', 'Across_Strike_km',
+})
+
+# Columns whose group mode (most-common value) is used instead of median
+_AGG_META_CATS = (
+    'Tectonic_Setting', 'Arc_or_Segment', 'Geologic_Domain', 'Dataset',
+    'Rock_Type', 'Rock_Type_Model', 'Geologic_Era', 'Geologic_Period',
+    'Geologic_Epoch', 'Geologic_Age_Label',
+)
+
+
+def aggregate_to_groups(
+    df: pd.DataFrame,
+    group_col: str = 'Group_ID',
+    name_col: str = 'Group_Name',
+    lat_col: str = 'Lat',
+    lon_col: str = 'Lon',
+    age_col: str = 'Age_Ma',
+    target_cols: tuple = ('Crust_Thickness', 'Observed_km'),
+    extra_agg_cols: tuple = (),
+) -> pd.DataFrame:
+    """Collapse a grouped DataFrame to one representative row per group.
+
+    Rules
+    -----
+    * **Lat / Lon** → group median (spatial centroid).
+    * **Age_Ma** → group median.
+    * **Known-thickness target columns** (Crust_Thickness, Observed_km) → group median.
+    * **Categorical metadata** (Tectonic_Setting, etc.) → mode (most common value).
+    * **All other numeric columns** (chemistry) → group median.
+    * **Group_ID / Group_Name / Group_Source** → passed through as-is from the
+      first non-null value in the group.
+    * **Along_Strike_km / Across_Strike_km** → dropped (per-sample projection).
+    * **Sample_ID** → set to ``"<Group_Name> (n=<N>)"`` to indicate it is an
+      aggregate.
+
+    Parameters
+    ----------
+    df : DataFrame with a ``group_col`` column (and optionally ``name_col``).
+    group_col : column that holds the group identifier.
+    extra_agg_cols : additional column names to force-include as numeric medians.
+
+    Returns
+    -------
+    One-row-per-group DataFrame, sorted by group_col, with a new column
+    ``Agg_N`` recording the number of raw samples in each group.
+    """
+    if df is None or df.empty:
+        return pd.DataFrame()
+    if group_col not in df.columns:
+        return pd.DataFrame()
+
+    keep = df[df[group_col].notna()].copy()
+    if keep.empty:
+        return pd.DataFrame()
+
+    meta_cat_set = set(_AGG_META_CATS)
+    skip_set = set(_AGG_SKIP)
+
+    # Determine column roles
+    num_cols = [
+        c for c in keep.columns
+        if c not in skip_set
+        and c not in meta_cat_set
+        and c not in (lat_col, lon_col, age_col)
+        and c not in set(target_cols)
+        and pd.api.types.is_numeric_dtype(keep[c])
+    ]
+
+    rows = []
+    for gid, grp in keep.groupby(group_col, sort=False):
+        n = len(grp)
+        gname = (
+            grp[name_col].dropna().iloc[0]
+            if name_col in grp.columns and grp[name_col].notna().any()
+            else str(gid)
+        )
+        row: dict = {
+            group_col: gid,
+            name_col: gname,
+            'Agg_N': n,
+            'Sample_ID': f'{gname} (n={n})',
+        }
+        # Spatial centroid
+        for _c in (lat_col, lon_col):
+            if _c in grp.columns:
+                v = pd.to_numeric(grp[_c], errors='coerce')
+                row[_c] = float(v.median()) if v.notna().any() else np.nan
+        # Age
+        if age_col in grp.columns:
+            v = pd.to_numeric(grp[age_col], errors='coerce')
+            row[age_col] = float(v.median()) if v.notna().any() else np.nan
+        # Target columns (Crust_Thickness, Observed_km …)
+        for _c in target_cols:
+            if _c in grp.columns:
+                v = pd.to_numeric(grp[_c], errors='coerce')
+                row[_c] = float(v.median()) if v.notna().any() else np.nan
+        # Categorical metadata → mode
+        for _c in _AGG_META_CATS:
+            if _c in grp.columns:
+                vals = grp[_c].dropna().astype(str)
+                row[_c] = vals.mode().iloc[0] if not vals.empty else np.nan
+        # Chemistry & other numerics → median
+        for _c in list(num_cols) + list(extra_agg_cols):
+            if _c in grp.columns:
+                v = pd.to_numeric(grp[_c], errors='coerce')
+                row[_c] = float(v.median()) if v.notna().any() else np.nan
+        # Pass through Group_Source
+        if 'Group_Source' in grp.columns:
+            gs = grp['Group_Source'].dropna()
+            row['Group_Source'] = str(gs.iloc[0]) if not gs.empty else 'aggregated'
+        rows.append(row)
+
+    out = pd.DataFrame(rows)
+    # Restore column order from original (drop columns that weren't captured)
+    orig_order = [c for c in df.columns if c in out.columns and c not in skip_set]
+    extra = [c for c in out.columns if c not in set(orig_order)]
+    out = out[list(dict.fromkeys(orig_order + extra))].reset_index(drop=True)
+    return out
