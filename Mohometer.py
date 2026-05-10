@@ -6563,6 +6563,29 @@ def unified_method_figure(bench_df, x_col, selected_method_ids,
     # block is dead code wrapped inside the marker function and never runs.
 
 
+# Hierarchy hints printed next to the geologic-time columns in every
+# grouping dropdown. Era ⊃ Period ⊃ Epoch ⊃ Age_Label; without these
+# annotations users see four sibling-looking options and have no clue
+# they're related at different resolutions.
+_GEOLOGIC_TIME_HIERARCHY_HINT = {
+    'Geologic_Era':       '(coarse — eras)',
+    'Geologic_Period':    '(periods)',
+    'Geologic_Epoch':     '(epochs)',
+    'Geologic_Age_Label': '(fine — ages)',
+    'Age_Ma':             '(numeric, Ma)',
+}
+
+
+def group_picker_label(c):
+    """Decorate column names in grouping dropdowns with a hierarchy hint
+    when the column is one of the geologic-time labels. Used as a
+    ``format_func`` on every "Group rows by" / "And also by" picker so
+    the Era→Period→Epoch→Age_Label hierarchy reads at a glance."""
+    s = str(c)
+    hint = _GEOLOGIC_TIME_HIERARCHY_HINT.get(s)
+    return f'{s}  {hint}' if hint else s
+
+
 def simple_xy_two_stage_picker(label, axis_options, default_col,
                                key_prefix, container=None,
                                include_none=False, none_label='(none)'):
@@ -11034,14 +11057,26 @@ with t_validation:
                                         or n_unique <= 30):
                                     continue
                             cands.append(c)
+                    # ``Arc_or_Segment`` is a fallback union built by
+                    # enrich() (Arc when present, Segment otherwise). When
+                    # the bench actually has Arc AND Segment, the union
+                    # adds no new information — drop it from the picker
+                    # so users don't pick a confusing third axis. Keep it
+                    # available when only the union exists (rare edge case).
+                    if 'Arc' in cands and 'Segment' in cands and 'Arc_or_Segment' in cands:
+                        cands = [c for c in cands if c != 'Arc_or_Segment']
                     # Stable order: Group_Name / Group_ID first, then Arc,
                     # Segment, classic regional/tectonic columns, then alpha.
+                    # Geologic_* labels share a coarse→fine hierarchy
+                    # (Era ⊃ Period ⊃ Epoch ⊃ Age_Label) so they sit
+                    # together right after Tectonic_Setting / Geologic_Domain.
                     _priority = ['Group_Name', 'Group_ID', 'Arc', 'Segment',
-                                 'Arc_or_Segment', 'Tectonic_Setting',
-                                 'Geologic_Domain', 'Geologic_Era',
-                                 'Geologic_Period', 'Geologic_Epoch',
+                                 'Tectonic_Setting', 'Geologic_Domain',
+                                 'Geologic_Era', 'Geologic_Period',
+                                 'Geologic_Epoch', 'Geologic_Age_Label',
                                  'Rock_Type_Model', 'Dataset', 'Country',
-                                 'Province', 'Terrane', 'Formation', 'Model']
+                                 'Province', 'Terrane', 'Formation', 'Model',
+                                 'Arc_or_Segment']
                     out = [c for c in _priority if c in cands]
                     out += [c for c in cands if c not in out]
                     return out
@@ -11072,10 +11107,13 @@ with t_validation:
                             else _val_group_default
                         ),
                         key='_val_group_col',
+                        format_func=group_picker_label,
                         help='Primary grouping axis. `Group_Name` is the column '
                              'applied in the Group tab; the others (Arc, Segment, '
                              'Tectonic_Setting, Geologic_Period …) come straight '
-                             'from the dataset. Drives the Show-groups filter, '
+                             'from the dataset. The Geologic_* columns share a '
+                             'coarse→fine hierarchy (Era ⊃ Period ⊃ Epoch ⊃ '
+                             'Age_Label). Drives the Show-groups filter, '
                              'the per-group averages table, and the per-group '
                              'overlay on the chart.',
                     )
@@ -11091,6 +11129,7 @@ with t_validation:
                         'And also by (composite)',
                         _val_secondary_choices,
                         index=0, key='_val_group_col_secondary',
+                        format_func=group_picker_label,
                         help='Optional second axis. When set, groups are formed '
                              'by combining the primary and secondary into one '
                              'composite ID, e.g. "Andes · Cretaceous" or '
@@ -12129,12 +12168,18 @@ with t_unknown:
                                         or n_unique <= 30):
                                     continue
                             cands.append(c)
+                    # See _val_group_col_candidates for rationale: when
+                    # both Arc and Segment exist, the synthesised
+                    # Arc_or_Segment union is redundant in the picker.
+                    if 'Arc' in cands and 'Segment' in cands and 'Arc_or_Segment' in cands:
+                        cands = [c for c in cands if c != 'Arc_or_Segment']
                     _priority = ['Group_Name', 'Group_ID', 'Arc', 'Segment',
-                                 'Arc_or_Segment', 'Tectonic_Setting',
-                                 'Geologic_Domain', 'Geologic_Era',
-                                 'Geologic_Period', 'Geologic_Epoch',
+                                 'Tectonic_Setting', 'Geologic_Domain',
+                                 'Geologic_Era', 'Geologic_Period',
+                                 'Geologic_Epoch', 'Geologic_Age_Label',
                                  'Rock_Type_Model', 'Dataset', 'Country',
-                                 'Province', 'Terrane', 'Formation', 'Model']
+                                 'Province', 'Terrane', 'Formation', 'Model',
+                                 'Arc_or_Segment']
                     out = [c for c in _priority if c in cands]
                     out += [c for c in cands if c not in out]
                     return out
@@ -12159,9 +12204,12 @@ with t_unknown:
                             else _pred_group_default
                         ),
                         key='_pred_group_col',
+                        format_func=group_picker_label,
                         help='Primary grouping axis on the prediction bench — '
                              'Group_Name (set in the Group tab) or any raw '
-                             'categorical column (Arc, Segment, Geologic_Period, …).',
+                             'categorical column (Arc, Segment, Geologic_Period, …). '
+                             'Geologic_* columns share a coarse→fine hierarchy '
+                             '(Era ⊃ Period ⊃ Epoch ⊃ Age_Label).',
                     )
                     # Secondary composite picker — same UX as Validate
                     _pred_secondary_choices = ['(none)']
@@ -12172,6 +12220,7 @@ with t_unknown:
                         'And also by (composite)',
                         _pred_secondary_choices,
                         index=0, key='_pred_group_col_secondary',
+                        format_func=group_picker_label,
                         help='Optional second axis. Set to a categorical column '
                              '(Geologic_Period, Tectonic_Setting…) or to "Age bins '
                              '(Ma)" to slice numeric Age_Ma at the chosen width — '
