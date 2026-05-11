@@ -420,39 +420,14 @@ def typed_range_slider(ui, label, min_value, max_value, value, key, step=None, d
         low, high = high, low
     return (low, high)
 
-GEO_TIME_BINS = [
-    ('Holocene','Quaternary','Cenozoic',0.0,0.0117),
-    ('Pleistocene','Quaternary','Cenozoic',0.0117,2.58),
-    ('Pliocene','Neogene','Cenozoic',2.58,5.333),
-    ('Miocene','Neogene','Cenozoic',5.333,23.03),
-    ('Oligocene','Paleogene','Cenozoic',23.03,33.9),
-    ('Eocene','Paleogene','Cenozoic',33.9,56.0),
-    ('Paleocene','Paleogene','Cenozoic',56.0,66.0),
-    ('Late Cretaceous','Cretaceous','Mesozoic',66.0,100.5),
-    ('Early Cretaceous','Cretaceous','Mesozoic',100.5,145.0),
-    ('Late Jurassic','Jurassic','Mesozoic',145.0,163.5),
-    ('Middle Jurassic','Jurassic','Mesozoic',163.5,174.7),
-    ('Early Jurassic','Jurassic','Mesozoic',174.7,201.4),
-    ('Late Triassic','Triassic','Mesozoic',201.4,237.0),
-    ('Middle Triassic','Triassic','Mesozoic',237.0,247.2),
-    ('Early Triassic','Triassic','Mesozoic',247.2,251.9),
-    ('Lopingian','Permian','Paleozoic',251.9,259.5),
-    ('Guadalupian','Permian','Paleozoic',259.5,273.0),
-    ('Cisuralian','Permian','Paleozoic',273.0,298.9),
-    ('Pennsylvanian','Carboniferous','Paleozoic',298.9,323.2),
-    ('Mississippian','Carboniferous','Paleozoic',323.2,358.9),
-    ('Late Devonian','Devonian','Paleozoic',358.9,382.7),
-    ('Middle Devonian','Devonian','Paleozoic',382.7,393.3),
-    ('Early Devonian','Devonian','Paleozoic',393.3,419.2),
-    ('Silurian','Silurian','Paleozoic',419.2,443.8),
-    ('Ordovician','Ordovician','Paleozoic',443.8,485.4),
-    ('Cambrian','Cambrian','Paleozoic',485.4,538.8),
-    ('Neoproterozoic','Neoproterozoic','Proterozoic',538.8,1000.0),
-    ('Mesoproterozoic','Mesoproterozoic','Proterozoic',1000.0,1600.0),
-    ('Paleoproterozoic','Paleoproterozoic','Proterozoic',1600.0,2500.0),
-    ('Archean','Archean','Archean',2500.0,4000.0),
-    ('Hadean','Hadean','Hadean',4000.0,4567.0),
-]
+# GEO_TIME_BINS (the coarse hardcoded forward-lookup table) and
+# _DP_GEOLOGIC_AGE_MA (coarse name → midpoint dict) have been removed.
+# Both are superseded by the ICS chronostratigraphy CSV loader and the
+# ics_forward_lookup / ics_reverse_lookup helpers further down. The new
+# table is Stage-resolution and covers the Precambrian; geologic_from_age,
+# geologic_midpoint, _dp_infer_age_from_geologic_time and add_geologic_time_categories
+# all route through the ICS layer now.
+
 GEO_TIME_ALIASES = {
     'recent':'Holocene','modern':'Holocene','quaternary':'Pleistocene','pleistocene':'Pleistocene','holocene':'Holocene',
     'pliocene':'Pliocene','miocene':'Miocene','oligocene':'Oligocene','eocene':'Eocene','paleocene':'Paleocene',
@@ -843,20 +818,25 @@ def ics_auto_populate(df: pd.DataFrame, disable: bool = False) -> tuple:
     return out, stats
 
 def geologic_midpoint(label):
+    """Legacy scalar API: takes a chronostratigraphic label string (Era,
+    Period, Epoch, Stage, or a common alias like 'cretaceous') and returns
+    the midpoint of its Ma range, or NaN if unrecognised.
+
+    Now delegates to the ICS reverse lookup so it picks up Stage-level
+    labels and the full Precambrian hierarchy. Tries each level so a string
+    that could be any of (stage / epoch / period / era / eon) resolves
+    against the first matching one.
+    """
     if pd.isna(label):
         return np.nan
-    norm = key(label)
-    epoch_name = GEO_TIME_ALIASES.get(norm)
-    if epoch_name is None:
-        for epoch, period, era, young, old in GEO_TIME_BINS:
-            if norm in [key(epoch),key(period),key(era)]:
-                epoch_name = epoch
-                break
-    if epoch_name is None:
+    s = str(label).strip()
+    if not s:
         return np.nan
-    for epoch, period, era, young, old in GEO_TIME_BINS:
-        if epoch == epoch_name:
-            return float((young + old) / 2)
+    # Try each level — ics_reverse_lookup short-circuits on first match.
+    for lvl_kw in ('stage', 'epoch', 'period', 'era', 'eon'):
+        res = ics_reverse_lookup(**{lvl_kw: s})
+        if res is not None:
+            return float(res['age_ma'])
     return np.nan
 
 def add_geologic_time_categories(df):
@@ -1681,40 +1661,10 @@ def _dp_save_custom_refs(entries: list) -> bool:
         return False
 
 # ── Geologic time → Age [Ma] lookup ───────────────────────────────────────────
-_DP_GEOLOGIC_AGE_MA: dict = {
-    # Eons / supereons
-    'hadean':3975, 'archean':2750, 'proterozoic':1500, 'phanerozoic':280,
-    'precambrian':2000,
-    # Eras
-    'paleozoic':395, 'mesozoic':185, 'cenozoic':33,
-    # Periods
-    'cambrian':510, 'ordovician':465, 'silurian':433, 'devonian':385,
-    'carboniferous':325, 'mississippian':340, 'pennsylvanian':307,
-    'permian':275, 'triassic':232, 'jurassic':165, 'cretaceous':96,
-    'paleogene':55, 'neogene':12, 'quaternary':1.5,
-    # Epochs
-    'paleocene':59, 'eocene':46, 'oligocene':31,
-    'miocene':14, 'pliocene':3.5, 'pleistocene':1.0, 'holocene':0.01,
-    # Common stages
-    'campanian':80, 'maastrichtian':69, 'turonian':91, 'cenomanian':97,
-    'albian':106, 'aptian':120, 'barremian':127, 'hauterivian':131,
-    'valanginian':136, 'berriasian':141, 'tithonian':149, 'kimmeridgian':155,
-    'oxfordian':160, 'callovian':165, 'bathonian':169, 'bajocian':172,
-    'aalenian':174, 'toarcian':181, 'pliensbachian':189, 'sinemurian':195,
-    'hettangian':202, 'rhaetian':205, 'norian':220, 'carnian':235,
-    'ladinian':242, 'anisian':247, 'olenekian':250, 'induan':252,
-    'changhsingian':254, 'wuchiapingian':257, 'capitanian':262,
-    'wordian':265, 'roadian':268, 'kungurian':277, 'artinskian':285,
-    'sakmarian':295, 'asselian':299, 'gzhelian':302, 'kasimovian':305,
-    'moscovian':311, 'bashkirian':319, 'serpukhovian':327,
-    'visean':335, 'tournaisian':350,
-    'famennian':366, 'frasnian':374, 'givetian':382, 'eifelian':388,
-    'emsian':400, 'pragian':408, 'lochkovian':413,
-    'pridoli':424, 'ludlow':427, 'wenlock':432, 'llandovery':440,
-    'hirnantian':446, 'katian':454, 'sandbian':457, 'darriwilian':462,
-    'dapingian':468, 'floian':474, 'tremadocian':481,
-    'furongian':494, 'miaolingian':509, 'series2':521, 'terreneuvian':534,
-}
+# _DP_GEOLOGIC_AGE_MA (the coarse name→midpoint dict) has been removed.
+# All reverse name→age resolution now routes through ics_reverse_lookup
+# which uses the ICS chronostratigraphy CSV at Stage resolution and returns
+# proper min/max bounds in addition to the midpoint.
 
 def _dp_infer_age_from_geologic_time(df: pd.DataFrame) -> pd.DataFrame:
     """Fill Age_Ma from chronostratigraphic category columns (and vice versa).
@@ -15144,11 +15094,20 @@ with t_result_summary:
                     'the export (`Median_CI_MC_Low_km` / `Median_CI_MC_High_km`).'
                 )
             elif _cached_mc.empty:
-                _mc_c2.caption(
-                    'Bootstrap CI above only includes within-group variability. '
-                    'Click *Compute MC-perturbed CI* to add the honest CI that '
-                    'also propagates per-sample model error (used for export).'
-                )
+                if _ci_w_col_rs is None:
+                    _mc_c2.caption(
+                        'Bootstrap CI above only includes within-group variability. '
+                        'Per-sample CI columns aren\'t on this bench yet — train an '
+                        'ML model and run Validate / Predict, then return here and '
+                        'click *Compute MC-perturbed CI* to add the honest CI that '
+                        'also propagates per-sample model error.'
+                    )
+                else:
+                    _mc_c2.caption(
+                        'Bootstrap CI above only includes within-group variability. '
+                        'Click *Compute MC-perturbed CI* to add the honest CI that '
+                        'also propagates per-sample model error (used for export).'
+                    )
             else:
                 _mc_c2.info(
                     'MC-perturbed CI is stale (bench or group column changed). '
