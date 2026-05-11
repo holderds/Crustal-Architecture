@@ -4408,6 +4408,84 @@ def _bootstrap_median_ci(values, n_boot: int = 1000, alpha: float = 0.10,
     return (lo, hi)
 
 
+def _group_mswd(predictions, ci_half_widths, alpha: float = 0.10):
+    """MSWD-style goodness-of-fit for a group of per-sample crustal-thickness
+    predictions. Direct port of the geochronology Mean Squared Weighted
+    Deviation:
+
+        MSWD = (1/(N−1)) · Σᵢ (yᵢ − ȳ)² / σ_model_i²
+
+    where σ_model_i = (per-sample CI half-width) / z_{1−α/2}. With α=0.10
+    the 90 % CI half-width corresponds to 1.645·σ under a Gaussian
+    assumption. Robust to per-sample CI absence (samples without CI are
+    dropped from the σ_model average).
+
+    Returns (mswd, excess_sigma_km, sigma_model_km):
+      • mswd ≈ 1   — within-group scatter matches expected model error
+                     (group is as homogeneous as the model allows).
+      • mswd > 1   — geological excess scatter beyond model uncertainty.
+      • mswd < 1   — group is unusually tight, or CIs are over-conservative.
+      • excess σ   = √max(0, σ_within² − σ_model²) — the part of the
+                     within-group scatter NOT explained by model error.
+
+    Returns (NaN, NaN, NaN) when N<2 or all CI half-widths are missing.
+    """
+    import numpy as _np
+    arr = _np.asarray(predictions, dtype=float)
+    hw  = _np.asarray(ci_half_widths, dtype=float)
+    finite_pred = _np.isfinite(arr)
+    if int(finite_pred.sum()) < 2:
+        return (float('nan'), float('nan'), float('nan'))
+    finite_hw = _np.isfinite(hw)
+    # σ_model² averaged over the group's available CIs. If none, return NaN.
+    if int(finite_hw.sum()) < 1:
+        return (float('nan'), float('nan'), float('nan'))
+    _z = 1.645 if abs(alpha - 0.10) < 1e-9 else float(__import__('scipy.stats', fromlist=['norm']).norm.ppf(1.0 - alpha / 2.0))
+    sigma_model_sq = float(_np.nanmean((hw[finite_hw] / _z) ** 2))
+    if sigma_model_sq <= 0 or not _np.isfinite(sigma_model_sq):
+        return (float('nan'), float('nan'), float('nan'))
+    sigma_within_sq = float(_np.var(arr[finite_pred], ddof=1))
+    mswd = sigma_within_sq / sigma_model_sq
+    excess = float(_np.sqrt(max(0.0, sigma_within_sq - sigma_model_sq)))
+    return (mswd, excess, float(_np.sqrt(sigma_model_sq)))
+
+
+def _bootstrap_median_ci_mc(values, ci_half_widths, n_boot: int = 1000,
+                             alpha: float = 0.10, seed: int = 42):
+    """Monte-Carlo-perturbed bootstrap CI on the median.
+
+    Same recipe as _bootstrap_median_ci but each resampled value is
+    additionally perturbed by Uniform(−q_i, q_i) where q_i is the
+    per-sample 90 % CI half-width. Captures BOTH within-group sample
+    variability AND per-sample model error in the same interval.
+
+    Samples without a finite half-width get q_i = 0 (no perturbation) —
+    falls back to plain bootstrap behaviour for those rows so a mixed
+    bench (some samples with conformal CIs, some without) still works.
+
+    Returns (low, high) for the (alpha/2, 1−alpha/2) percentiles of the
+    bootstrapped+perturbed medians. Returns (NaN, NaN) when N<3.
+    """
+    import numpy as _np
+    arr = _np.asarray(values, dtype=float)
+    hw  = _np.asarray(ci_half_widths, dtype=float)
+    finite = _np.isfinite(arr)
+    arr = arr[finite]
+    hw  = hw[finite] if hw.size == finite.size else _np.zeros_like(arr)
+    # Replace NaN / inf half-widths with 0 so unbounded samples just don't perturb.
+    hw  = _np.where(_np.isfinite(hw), hw, 0.0)
+    n = arr.size
+    if n < 3:
+        return (float('nan'), float('nan'))
+    rng = _np.random.default_rng(seed)
+    idx = rng.integers(0, n, size=(int(n_boot), n))
+    perturb = (rng.random((int(n_boot), n)) * 2.0 - 1.0) * hw[idx]
+    boot_medians = _np.median(arr[idx] + perturb, axis=1)
+    lo = float(_np.quantile(boot_medians, alpha / 2.0))
+    hi = float(_np.quantile(boot_medians, 1.0 - alpha / 2.0))
+    return (lo, hi)
+
+
 def _sanitise_model_name(name) -> str:
     """Convert a model registry key (e.g. 'Guo & Yang (2023) / ExtraTrees')
     into a column-safe suffix (e.g. 'Guo_Yang_2023_ExtraTrees'). Strips
@@ -12265,10 +12343,25 @@ with t_validation:
                                 _resid = _p - _o
                                 # 90 % bootstrap CI on the median of per-sample
                                 # Predicted_km — captures within-group sample
-                                # variability. Tells you how much the group's
-                                # median thickness would move if you'd sampled
-                                # a different N rocks from the same population.
+                                # variability only (geological scatter). Use
+                                # the Summary-tab "MC-perturbed CI" button to
+                                # additionally propagate per-sample model error.
                                 _med_lo, _med_hi = _bootstrap_median_ci(_p.to_numpy())
+                                # MSWD-style goodness-of-fit. σ_model derived
+                                # from the per-sample Conformal CI half-width
+                                # (fallback to Tree-CI if Conformal unavailable).
+                                _ci_w_col = ('Predicted_Conformal_Width_km'
+                                             if 'Predicted_Conformal_Width_km' in _g.columns
+                                             else ('Predicted_CI90_Width_km'
+                                                   if 'Predicted_CI90_Width_km' in _g.columns
+                                                   else None))
+                                if _ci_w_col is not None:
+                                    _hw_g = (pd.to_numeric(_g[_ci_w_col], errors='coerce')
+                                              .loc[_ok] / 2.0)
+                                    _mswd_v, _excess_v, _sm_v = _group_mswd(
+                                        _p.to_numpy(), _hw_g.to_numpy())
+                                else:
+                                    _mswd_v = _excess_v = _sm_v = float('nan')
                                 _grp_rows.append({
                                     'Model':              _mn,
                                     _val_group_col:       str(_gname),
@@ -12277,6 +12370,9 @@ with t_validation:
                                     'Median Predicted [km]':      float(_p.median()),
                                     'Median Predicted CI Low':    _med_lo,
                                     'Median Predicted CI High':   _med_hi,
+                                    'MSWD':                       _mswd_v,
+                                    'Excess σ [km]':              _excess_v,
+                                    'σ_model [km]':               _sm_v,
                                     'Mean Observed [km]':    float(_o.mean()),
                                     'Mean Predicted [km]':   float(_p.mean()),
                                     'Median Residual [km]':  float(_resid.median()),
@@ -12293,12 +12389,17 @@ with t_validation:
                                           if not (c == 'Model' and _grp_df['Model'].nunique() <= 1)]
                             st.caption(
                                 '`Median Predicted CI Low / High` = 90 % bootstrap '
-                                'interval on the group median Predicted_km — how much '
-                                'the median would shift if you sampled a different N '
-                                'rocks from the same group. Tightens with larger N and '
-                                'lower within-group spread; doesn\'t include per-sample '
-                                'model error (look at `Predicted_Conformal_*_km` columns '
-                                'for that).'
+                                'CI on the group median (within-group sample variability '
+                                'only). `MSWD` = within-group scatter / per-sample model '
+                                'scatter (Mean Squared Weighted Deviation, geochronology '
+                                '/ isotope convention). MSWD ≈ 1 → group as homogeneous '
+                                'as the model allows; MSWD >> 1 → real geological excess '
+                                'scatter (consider splitting the group); MSWD << 1 → '
+                                'model CIs over-conservative or group unusually tight. '
+                                '`Excess σ [km]` = √max(0, σ_within² − σ_model²) — the '
+                                'unexplained-by-model part of the spread. For an honest '
+                                'CI that combines BOTH sources, use the Summary tab\'s '
+                                '*Compute MC-perturbed CI* button.'
                             )
                             table_action_card(
                                 f'Per-`{_val_group_col}` averages ({len(_grp_df)} group(s))',
@@ -14530,6 +14631,7 @@ with t_result_summary:
             _rs_grp_cols=list(dict.fromkeys(
                 c for c in [_rs_x,'Model','Algorithm'] if c in _rs_vdf
             ))
+            # Base group summary aggregations (cheap, always computed).
             _rs_sum=_rs_vdf.groupby(_rs_grp_cols,dropna=False).agg(
                 N=('Predicted_km','count'),
                 Median_km=('Predicted_km','median'),
@@ -14542,13 +14644,136 @@ with t_result_summary:
                 Median_CI_High_km=('Predicted_km',
                                   lambda x: _bootstrap_median_ci(x.to_numpy())[1]),
             ).reset_index()
+            # Per-group MSWD + Excess σ — uses the per-sample Conformal CI
+            # half-width as σ_model (falls back to Tree-CI if Conformal is
+            # absent). Cheap; computed alongside the base summary.
+            _ci_w_col_rs = ('Predicted_Conformal_Width_km'
+                            if 'Predicted_Conformal_Width_km' in _rs_vdf.columns
+                            else ('Predicted_CI90_Width_km'
+                                  if 'Predicted_CI90_Width_km' in _rs_vdf.columns
+                                  else None))
+            _rs_mswd_rows = []
+            for _gkeys, _gsub in _rs_vdf.groupby(_rs_grp_cols, dropna=False):
+                _y = pd.to_numeric(_gsub['Predicted_km'], errors='coerce')
+                _ok_y = _y.notna()
+                if _ci_w_col_rs is not None:
+                    _hw_rs = (pd.to_numeric(_gsub[_ci_w_col_rs], errors='coerce')
+                               .loc[_ok_y] / 2.0)
+                    _mswd_v, _excess_v, _sm_v = _group_mswd(
+                        _y[_ok_y].to_numpy(), _hw_rs.to_numpy())
+                else:
+                    _mswd_v = _excess_v = _sm_v = float('nan')
+                _row = {'__keys__': _gkeys, 'MSWD': _mswd_v,
+                        'Excess_sigma_km': _excess_v,
+                        'sigma_model_km':  _sm_v}
+                _rs_mswd_rows.append(_row)
+            if _rs_mswd_rows:
+                _rs_mswd_df = pd.DataFrame(_rs_mswd_rows)
+                # Unpack the tuple keys back into matching group columns so
+                # we can merge on _rs_grp_cols (one column when single key,
+                # tuple when multi-key).
+                if len(_rs_grp_cols) == 1:
+                    _rs_mswd_df[_rs_grp_cols[0]] = _rs_mswd_df['__keys__']
+                else:
+                    for _i, _kc in enumerate(_rs_grp_cols):
+                        _rs_mswd_df[_kc] = _rs_mswd_df['__keys__'].apply(lambda t, _ii=_i: t[_ii])
+                _rs_mswd_df = _rs_mswd_df.drop(columns=['__keys__'])
+                _rs_sum = _rs_sum.merge(_rs_mswd_df, on=_rs_grp_cols, how='left')
+
+            # ── MC-perturbed CI for export (on-demand, button-gated) ────────
+            # Adds the "honest" 90 % CI that combines within-group bootstrap
+            # AND per-sample conformal CIs via MC perturbation. Cached in
+            # session state by a content signature so re-runs reuse the
+            # last computed result until the bench / group column changes.
+            _mc_sig_payload = json.dumps({
+                'n_rows':   int(len(_rs_vdf)),
+                'grp_cols': list(_rs_grp_cols),
+                'has_conf': _ci_w_col_rs is not None,
+                'ci_col':   _ci_w_col_rs,
+            }, sort_keys=True)
+            import hashlib as _hl_mc
+            _mc_sig = _hl_mc.md5(_mc_sig_payload.encode('utf-8')).hexdigest()
+            _mc_cache_key = '_rs_mc_ci_result'
+            _mc_sig_key   = '_rs_mc_ci_sig'
+
+            _mc_c1, _mc_c2 = st.columns([1, 4])
+            _mc_clicked = _mc_c1.button(
+                '⚙️ Compute MC-perturbed CI',
+                key='rs_mc_compute',
+                help='Run the Monte-Carlo-perturbed bootstrap: within each '
+                     'bootstrap resample, perturb each sample by U(−q, q) '
+                     'with q = per-sample Conformal CI half-width. The '
+                     'resulting median CI propagates BOTH within-group '
+                     'variability AND per-sample model error. Takes a '
+                     'few seconds for large benches. Result is cached '
+                     'until the group column or bench changes; columns '
+                     'Median_CI_MC_Low_km / _High_km are added to the '
+                     'table and flow into the CSV / Excel export.',
+            )
+            _cached_sig = st.session_state.get(_mc_sig_key)
+            _cached_mc  = st.session_state.get(_mc_cache_key, pd.DataFrame())
+            if _mc_clicked:
+                if _ci_w_col_rs is None:
+                    _mc_c2.warning('No per-sample Conformal / Tree CI on the bench — '
+                                   'train an ML model and run Predict / Validate first.')
+                else:
+                    with st.spinner('Bootstrapping per-group medians with per-sample CI perturbation…'):
+                        _mc_rows = []
+                        for _gkeys, _gsub in _rs_vdf.groupby(_rs_grp_cols, dropna=False):
+                            _y = pd.to_numeric(_gsub['Predicted_km'], errors='coerce')
+                            _hw = (pd.to_numeric(_gsub[_ci_w_col_rs], errors='coerce') / 2.0)
+                            _mask = _y.notna()
+                            if int(_mask.sum()) < 3:
+                                continue
+                            _lo_mc, _hi_mc = _bootstrap_median_ci_mc(
+                                _y[_mask].to_numpy(),
+                                _hw[_mask].to_numpy(),
+                                n_boot=2000, alpha=0.10,
+                            )
+                            _mc_rows.append({'__keys__': _gkeys,
+                                             'Median_CI_MC_Low_km':  _lo_mc,
+                                             'Median_CI_MC_High_km': _hi_mc})
+                        if _mc_rows:
+                            _mc_df = pd.DataFrame(_mc_rows)
+                            if len(_rs_grp_cols) == 1:
+                                _mc_df[_rs_grp_cols[0]] = _mc_df['__keys__']
+                            else:
+                                for _i, _kc in enumerate(_rs_grp_cols):
+                                    _mc_df[_kc] = _mc_df['__keys__'].apply(lambda t, _ii=_i: t[_ii])
+                            _mc_df = _mc_df.drop(columns=['__keys__'])
+                            st.session_state[_mc_cache_key] = _mc_df
+                            st.session_state[_mc_sig_key]   = _mc_sig
+                            _cached_mc = _mc_df
+                            _cached_sig = _mc_sig
+            # Merge cached MC result into _rs_sum when the signature still
+            # matches the current bench shape.
+            if not _cached_mc.empty and _cached_sig == _mc_sig:
+                _rs_sum = _rs_sum.merge(_cached_mc, on=_rs_grp_cols, how='left')
+                _mc_c2.success(
+                    '✅ MC-perturbed CI included in the table below and in '
+                    'the export (`Median_CI_MC_Low_km` / `Median_CI_MC_High_km`).'
+                )
+            elif _cached_mc.empty:
+                _mc_c2.caption(
+                    'Bootstrap CI above only includes within-group variability. '
+                    'Click *Compute MC-perturbed CI* to add the honest CI that '
+                    'also propagates per-sample model error (used for export).'
+                )
+            else:
+                _mc_c2.info(
+                    'MC-perturbed CI is stale (bench or group column changed). '
+                    'Click *Compute MC-perturbed CI* to refresh.'
+                )
+
             # (downloads consolidated into the Export results section below)
             st.caption(
-                '`Median_CI_Low_km` / `Median_CI_High_km` = 90 % bootstrap '
-                'interval on the per-group median Predicted_km. Captures '
-                'within-group sample variability — how much the median would '
-                'shift if you sampled a different N rocks from the same group. '
-                'Narrower when N is large and within-group spread is tight.'
+                '`Median_CI_Low_km` / `_High_km` = 90 % bootstrap CI on the '
+                'group median (within-group spread only). '
+                '`MSWD` (Mean Squared Weighted Deviation, MSWD≈1 = well-defined, '
+                '>>1 = excess scatter, <<1 = over-conservative model CIs). '
+                '`Excess_sigma_km` = unexplained-by-model spread inside the group. '
+                '`Median_CI_MC_*` (when present) = MC-perturbed honest CI '
+                'combining within-group and per-sample error.'
             )
             table_action_card('Group prediction summary',tidy_numbers(_rs_sum),'result_summary.csv','rs_group_summary_table')
             # ── Summary map ───────────────────────────────────────────────────
