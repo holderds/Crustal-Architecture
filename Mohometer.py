@@ -11386,18 +11386,6 @@ with t_validation:
                     # honour the composite when one is picked.
                     _val_group_col = _val_effective_group_col
 
-                _val_color_options = ['Delta_km', 'Model', 'Algorithm']
-                if _val_group_col:
-                    _val_color_options.append(_val_group_col)
-
-                v1,v3,v4,v5,v6=st.columns(5)
-                color_by=v1.selectbox('Colour points by',_val_color_options,index=0,key='validation_color',format_func=lambda c: 'model - known [Km]' if c == 'Delta_km' else ('group' if c == _val_group_col else c))
-                point_size=int(st.session_state.get('global_point_size', 5))
-                show_best_fit=v3.checkbox('Best-fit lines',True,key='validation_best_fit')
-                show_point_error=v4.checkbox('Point residual bars',False,key='validation_point_error')
-                show_envelope=v5.checkbox('Best-fit residual envelopes',False,key='validation_envelope')
-                show_tree_ci=v6.checkbox('Tree 90% CI bars',False,key='validation_tree_ci',help='Show ensemble uncertainty: 90% interval across individual decision trees (ExtraTrees / RandomForest only)')
-
                 # Per-group visibility — only when a grouping column is
                 # picked above. Defaults to "all groups visible"; unchecking
                 # a group hides its points (and best-fit / moving-average
@@ -11430,11 +11418,6 @@ with t_validation:
                                    help='Re-show every group'):
                         st.session_state[f'_val_visible_groups::{_val_group_col}'] = _val_all_groups
                         st.rerun()
-                vm1,vm2,vm3,vm4=st.columns(4)
-                show_pts=vm1.checkbox('Show points',True,key='validation_points')
-                show_ma=vm2.checkbox('Moving average',False,key='validation_ma')
-                ma_type=vm3.selectbox('Avg type',['Median','Mean'],index=0,key='validation_ma_type',disabled=not show_ma)
-                ma_n=vm4.slider('Window n',3,50,20,1,key='validation_ma_n',disabled=not show_ma)
                 # ── Validation is now explicit. Build a config signature
                 # of everything that affects the result, then only run the
                 # heavy benchmarking when the user clicks ▶ Run validation.
@@ -11835,12 +11818,78 @@ with t_validation:
                                     + (' …' if len(test_df.columns) > 60 else '')
                                 )
                 else:
-                    st.subheader('Blind validation graph')
+                    st.subheader('Validation diagnostics')
                     summary=validation_summary(test_bench)
-                    st.caption('R2 shows fit quality. RMSE and MAE are average prediction error in Km. Bias is mean model - known thickness; positive means the model overestimates.')
-                    if show_tree_ci and 'Predicted_CI90_Low_km' not in test_bench:
-                        st.info('Tree CI requires ExtraTrees or RandomForest — not available for boosting algorithms.')
+                    st.caption('R² shows fit quality. RMSE and MAE are average prediction error in Km. Bias is mean model − known thickness; positive means the model overestimates.')
                     table_action_card('Validation summary',display_validation_summary(test_bench),'validation_summary.csv','validation_summary')
+
+                    # ── Performance by 5 km Observed-thickness bin ──────────
+                    # Slices the bench by Observed_km into 5 km intervals and
+                    # reports N, mean / median Predicted, mean / median Δ
+                    # (Predicted − Observed, signed bias), MAE and RMSE per
+                    # bin. Highlights where the model systematically over- or
+                    # under-predicts. Bin axis is Observed_km because the
+                    # question is "at this actual thickness, how does the
+                    # model do?" — useful when residuals are not uniform
+                    # across the thickness range.
+                    _vb_obs  = pd.to_numeric(test_bench.get('Observed_km'),  errors='coerce')
+                    _vb_pred = pd.to_numeric(test_bench.get('Predicted_km'), errors='coerce')
+                    _vb_ok   = _vb_obs.notna() & _vb_pred.notna()
+                    if _vb_ok.any():
+                        _vb_df = pd.DataFrame({
+                            'Observed_km':  _vb_obs[_vb_ok].to_numpy(),
+                            'Predicted_km': _vb_pred[_vb_ok].to_numpy(),
+                        })
+                        if 'Model' in test_bench.columns:
+                            _vb_df['Model'] = test_bench.loc[_vb_ok, 'Model'].astype(str).to_numpy()
+                        _vb_df['Delta_km'] = _vb_df['Predicted_km'] - _vb_df['Observed_km']
+                        _vb_lo = max(0, int(np.floor(float(_vb_df['Observed_km'].min()) / 5.0) * 5))
+                        _vb_hi = int(np.ceil(float(_vb_df['Observed_km'].max()) / 5.0) * 5)
+                        if _vb_hi <= _vb_lo:
+                            _vb_hi = _vb_lo + 5
+                        _vb_edges = np.arange(_vb_lo, _vb_hi + 5, 5)
+                        _vb_df['_bin'] = pd.cut(_vb_df['Observed_km'], bins=_vb_edges,
+                                                 right=False, include_lowest=True)
+                        # Optional per-model split — only when multi-model is
+                        # active; single-model collapses to one row per bin.
+                        _vb_split_models = ('Model' in _vb_df.columns
+                                            and _vb_df['Model'].nunique() > 1)
+                        _vb_group_keys = (['Model', '_bin'] if _vb_split_models else ['_bin'])
+                        _vb_rows = []
+                        for _gk, _g in _vb_df.groupby(_vb_group_keys, dropna=True, observed=True):
+                            if _g.empty:
+                                continue
+                            _bin_obj = _gk[-1] if _vb_split_models else _gk
+                            _r = _g['Delta_km']
+                            _row = {
+                                'Observed bin [km]':   f'{int(_bin_obj.left)}–{int(_bin_obj.right)}',
+                                'N':                    int(len(_g)),
+                                'Mean Predicted [km]':  round(float(_g['Predicted_km'].mean()),  2),
+                                'Median Predicted [km]':round(float(_g['Predicted_km'].median()),2),
+                                'Mean Δ [km]':          round(float(_r.mean()),                 2),
+                                'Median Δ [km]':        round(float(_r.median()),               2),
+                                'MAE [km]':             round(float(_r.abs().mean()),           2),
+                                'RMSE [km]':            round(float(np.sqrt((_r ** 2).mean())), 2),
+                            }
+                            if _vb_split_models:
+                                _row = {'Model': _gk[0], **_row}
+                            _vb_rows.append(_row)
+                        if _vb_rows:
+                            _vb_table = pd.DataFrame(_vb_rows)
+                            st.caption(
+                                'Performance sliced by **Observed_km** in 5 km intervals. '
+                                'Δ is signed (Predicted − Observed) so its sign shows the '
+                                'direction of bias inside each band; MAE and RMSE show the '
+                                'magnitude. Bins where |Δ| or RMSE spike are where the '
+                                'model is struggling.'
+                            )
+                            table_action_card(
+                                'Performance by Observed thickness bin (5 km)',
+                                _vb_table,
+                                'validation_by_thickness_bin.csv',
+                                'val_perf_by_bin',
+                            )
+
                     if not importance_df.empty:
                         with st.expander('Feature importance', expanded=False):
                             _render_feature_importance_panel(
@@ -11925,9 +11974,6 @@ with t_validation:
                                 f'validation_{_val_group_col}_averages.csv',
                                 f'val_group_averages_{_val_group_col}',
                             )
-                    fig=benchmark_figure(tidy_numbers(_plot_bench),point_size,color_by,show_best_fit,show_point_error,show_envelope,'Window',10.0,10,False,10.0,show_tree_ci,show_moving_avg=show_ma,moving_avg_n=ma_n,moving_avg_type=ma_type,show_points=show_pts)
-                    st.plotly_chart(fig,width='stretch')
-
                     # ── Validation plot ─────────────────────────────────────
                     # One-stop scatter that replaces the legacy "Proxy comparison"
                     # block + the standalone proxy-thickness chart. X / Y / Colour
