@@ -10702,9 +10702,22 @@ with t0:
                 )
 
         # ── Reference dataset map ─────────────────────────────────────────────
+        # Gate same as the Training sample map (st.expander is visual only —
+        # its body re-runs on every Streamlit rerun regardless of the open
+        # state and regardless of which tab is active).
         with st.expander('Reference dataset map', expanded=False):
+            _rm_render = st.checkbox(
+                'Render map',
+                value=False,
+                key='ratio_ref_map_render',
+                help='Off by default — rebuilds the geo-scatter (plus optional '
+                     'CRUST1.0 / LithoRef18 background) on every Streamlit '
+                     'rerun. Tick to render.',
+            )
             _rm_src = _rat_enriched if not _rat_enriched.empty else pd.DataFrame()
-            if {'Lat', 'Lon'}.issubset(_rm_src):
+            if not _rm_render:
+                st.caption('🗺️ Tick **Render map** above to compute and display the reference dataset map.')
+            elif {'Lat', 'Lon'}.issubset(_rm_src):
                 _rm_color_opts = []
                 if _primary_proxy_col in _rm_src:
                     _rm_color_opts.append(_primary_proxy_col)
@@ -13957,35 +13970,52 @@ with t_result_summary:
             # (downloads consolidated into the Export results section below)
             table_action_card('Group prediction summary',tidy_numbers(_rs_sum),'result_summary.csv','rs_group_summary_table')
             # ── Summary map ───────────────────────────────────────────────────
+            # Same lazy-execution pattern as the Training sample map: the
+            # Summary tab body re-executes on every interaction in Group /
+            # Validate / Predict (Streamlit re-runs every tab body), so a
+            # Mapbox scatter that touches the full prediction bench would
+            # rebuild even when the user is working elsewhere. Default OFF
+            # so users coming here just to export don't pay the cost; tick
+            # to view.
             if {'Lat','Lon'}.issubset(_rs_vdf.columns):
                 st.divider()
                 st.subheader('Prediction map')
-                _rs_mc1,_rs_mc2=st.columns([4,1])
-                _rs_map_colour_opts = [c for c in ['Predicted_km','Predicted_CI90_Width_km',_rs_x,'Age_Ma','Model'] if c in _rs_vdf]
-                _rs_map_col=_rs_mc2.selectbox('Map colour', _rs_map_colour_opts,
-                    format_func=lambda c: 'Prediction uncertainty [90% CI width, Km]' if c == 'Predicted_CI90_Width_km' else c,
-                    key='rs_map_col')
-                _rs_map_num=pd.api.types.is_numeric_dtype(pd.to_numeric(_rs_vdf[_rs_map_col],errors='coerce'))
-                _rs_map_cscale = 'RdYlGn_r' if _rs_map_col == 'Predicted_CI90_Width_km' else ('plasma' if _rs_map_num else None)
-                _rs_mapdf=_rs_vdf.dropna(subset=['Lat','Lon']).copy()
-                _rs_mapfig=px.scatter_map(
-                    _rs_mapdf,lat='Lat',lon='Lon',color=_rs_map_col,
-                    color_continuous_scale=_rs_map_cscale,
-                    hover_name=_rs_x if _rs_x in _rs_mapdf.columns else None,
-                    hover_data={c:':.1f' if _rs_map_num else True
-                                for c in ['Predicted_km','Predicted_CI90_Width_km','Age_Ma','Model'] if c in _rs_mapdf and c!=_rs_map_col},
-                    zoom=1,height=440,
-                )
-                _rs_mapfig.update_layout(margin=dict(l=0,r=0,t=0,b=0))
-                with _rs_mc1:
-                    st.plotly_chart(_rs_mapfig,use_container_width=True,key='rs_map_fig')
-                # CI width stats callout
-                if _rs_map_col == 'Predicted_CI90_Width_km' and 'Predicted_CI90_Width_km' in _rs_mapdf.columns:
-                    _ci_s = pd.to_numeric(_rs_mapdf['Predicted_CI90_Width_km'], errors='coerce').dropna()
-                    if not _ci_s.empty:
-                        _ci_med = _ci_s.median(); _ci_p90 = _ci_s.quantile(0.9)
-                        _ci_high_n = (_ci_s > _ci_p90).sum()
-                        st.caption(f'Median 90% CI width: **{_ci_med:.1f} Km** · P90: {_ci_p90:.1f} Km · {_ci_high_n} samples above P90 (high uncertainty)')
+                if not st.checkbox(
+                    'Render prediction map',
+                    value=False,
+                    key='rs_map_render',
+                    help='Off by default — the map redraws on every Streamlit '
+                         'rerun (including widget interactions in other tabs). '
+                         'Tick to compute and display.',
+                ):
+                    st.caption('🗺️ Tick **Render prediction map** above to compute and display the map.')
+                else:
+                    _rs_mc1,_rs_mc2=st.columns([4,1])
+                    _rs_map_colour_opts = [c for c in ['Predicted_km','Predicted_CI90_Width_km',_rs_x,'Age_Ma','Model'] if c in _rs_vdf]
+                    _rs_map_col=_rs_mc2.selectbox('Map colour', _rs_map_colour_opts,
+                        format_func=lambda c: 'Prediction uncertainty [90% CI width, Km]' if c == 'Predicted_CI90_Width_km' else c,
+                        key='rs_map_col')
+                    _rs_map_num=pd.api.types.is_numeric_dtype(pd.to_numeric(_rs_vdf[_rs_map_col],errors='coerce'))
+                    _rs_map_cscale = 'RdYlGn_r' if _rs_map_col == 'Predicted_CI90_Width_km' else ('plasma' if _rs_map_num else None)
+                    _rs_mapdf=_rs_vdf.dropna(subset=['Lat','Lon']).copy()
+                    _rs_mapfig=px.scatter_map(
+                        _rs_mapdf,lat='Lat',lon='Lon',color=_rs_map_col,
+                        color_continuous_scale=_rs_map_cscale,
+                        hover_name=_rs_x if _rs_x in _rs_mapdf.columns else None,
+                        hover_data={c:':.1f' if _rs_map_num else True
+                                    for c in ['Predicted_km','Predicted_CI90_Width_km','Age_Ma','Model'] if c in _rs_mapdf and c!=_rs_map_col},
+                        zoom=1,height=440,
+                    )
+                    _rs_mapfig.update_layout(margin=dict(l=0,r=0,t=0,b=0))
+                    with _rs_mc1:
+                        st.plotly_chart(_rs_mapfig,use_container_width=True,key='rs_map_fig')
+                    # CI width stats callout
+                    if _rs_map_col == 'Predicted_CI90_Width_km' and 'Predicted_CI90_Width_km' in _rs_mapdf.columns:
+                        _ci_s = pd.to_numeric(_rs_mapdf['Predicted_CI90_Width_km'], errors='coerce').dropna()
+                        if not _ci_s.empty:
+                            _ci_med = _ci_s.median(); _ci_p90 = _ci_s.quantile(0.9)
+                            _ci_high_n = (_ci_s > _ci_p90).sum()
+                            st.caption(f'Median 90% CI width: **{_ci_med:.1f} Km** · P90: {_ci_p90:.1f} Km · {_ci_high_n} samples above P90 (high uncertainty)')
 
     # ══════════════════════════════════════════════════════════════════════════
     # ── Export results ────────────────────────────────────────────────────────
