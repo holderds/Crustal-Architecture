@@ -119,7 +119,7 @@ ALIASES = {
  'longitude':'Lon','long':'Lon','lon':'Lon','longitude e':'Lon','longitude x':'Lon','latitude':'Lat','lat':'Lat','latitude n':'Lat','latitude y':'Lat',
  'latitude min':'Lat_Min','latitude max':'Lat_Max','longitude min':'Lon_Min','longitude max':'Lon_Max','lat min':'Lat_Min','lat max':'Lat_Max','lon min':'Lon_Min','lon max':'Lon_Max',
  'min age ma':'Age_Min_Ma','max age ma':'Age_Max_Ma',
- 'age':'Age_Ma','age ma':'Age_Ma','age_ma':'Age_Ma','absolute age':'Age_Ma','age numeric':'Age_Ma','epoch':'Geologic_Epoch','period':'Geologic_Period','era':'Geologic_Era','stage':'Geologic_Stage','arc':'Arc','segment':'Segment','belt':'Belt','domain':'Geologic_Domain','location':'Location','dataset':'Dataset','citations':'Dataset','geochemistry reference':'Dataset','geochem reference':'Dataset','setting':'Tectonic_Setting','tectonic':'Tectonic_Setting','tectonic setting':'Tectonic_Setting',
+ 'age':'Age_Ma','age ma':'Age_Ma','age_ma':'Age_Ma','absolute age':'Age_Ma','age numeric':'Age_Ma','eon':'Geologic_Eon','epoch':'Geologic_Epoch','period':'Geologic_Period','era':'Geologic_Era','stage':'Geologic_Stage','arc':'Arc','segment':'Segment','belt':'Belt','domain':'Geologic_Domain','location':'Location','dataset':'Dataset','citations':'Dataset','geochemistry reference':'Dataset','geochem reference':'Dataset','setting':'Tectonic_Setting','tectonic':'Tectonic_Setting','tectonic setting':'Tectonic_Setting',
  'rock':'Lithology_Type','rock_type':'Lithology_Type','rock type':'Lithology_Type','rock name':'Lithology_Type','lithology':'Lithology_Type','lithology type':'Lithology_Type','crustal thickness':'Crust_Thickness','crust thickness':'Crust_Thickness','moho':'Crust_Thickness','moho depth':'Crust_Thickness','elevation':'Elevation_km','elevation km':'Elevation_km','mean elevation':'Elevation_km','median elevation':'Elevation_km',
  'sio2':'SiO2','tio2':'TiO2','al2o3':'Al2O3','feo':'FeO','feot':'FeO','tfeo':'FeO','totalfeo':'FeO','total feo':'FeO','fe2o3':'Fe2O3','fe2o3t':'Fe2O3T','totalfe2o3':'Fe2O3T','total fe2o3':'Fe2O3T',
  'mno':'MnO','mgo':'MgO','cao':'CaO','ca0':'CaO','na2o':'Na2O','k2o':'K2O','p2o5':'P2O5','loi':'LOI',
@@ -479,14 +479,368 @@ def classify_rock_text(value):
             return cls
     return np.nan
 
+# ── ICS chronostratigraphy lookup (geological_age_spec.md) ────────────────────
+# Loaded once per session from ics_chronostratigraphy.csv (mtime-keyed cache).
+# Replaces the coarse GEO_TIME_BINS + _DP_GEOLOGIC_AGE_MA tables with the full
+# ICS v2023/09 hierarchy at Stage resolution plus full Precambrian coverage.
+# The two old structures stay defined above for legacy callers but their lookups
+# are routed through the ICS layer below.
+_ICS_CSV_PATH = _APP_DIR / 'ics_chronostratigraphy.csv'
+
+# Column-name bridge between spec ('eon', 'era', 'period', 'epoch', 'stage')
+# and Mohometer's bench columns. 'Geologic_Stage' is an input alias from the
+# Prepare mapping registry — when present it's mirrored into Geologic_Age_Label
+# (the canonical downstream column).
+_ICS_LEVELS = ('eon', 'era', 'period', 'epoch', 'stage')
+_ICS_COL = {
+    'eon':    'Geologic_Eon',
+    'era':    'Geologic_Era',
+    'period': 'Geologic_Period',
+    'epoch': 'Geologic_Epoch',
+    'stage':  'Geologic_Age_Label',
+}
+
+@st.cache_data(show_spinner=False)
+def _load_ics_table_cached(mtime: float) -> pd.DataFrame:
+    """Cached body — keyed on file mtime so editing the CSV invalidates the
+    cache. Returns an ICS lookup DataFrame sorted by top_ma ascending so a
+    binary search over top_ma resolves the [top_ma, base_ma) half-open
+    interval for an age in one shot."""
+    try:
+        df = pd.read_csv(_ICS_CSV_PATH)
+    except Exception:
+        return pd.DataFrame(columns=['eon','era','period','epoch','stage','base_ma','top_ma'])
+    for c in _ICS_LEVELS:
+        if c in df.columns:
+            df[c] = df[c].astype('string').str.strip()
+            df.loc[df[c] == '', c] = pd.NA
+    for c in ('base_ma', 'top_ma'):
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors='coerce')
+    df = df.dropna(subset=['base_ma','top_ma']).sort_values('top_ma').reset_index(drop=True)
+    return df
+
+
+def _load_ics_table() -> pd.DataFrame:
+    """Public entry — wraps the cached loader with a mtime guard. Returns an
+    empty DataFrame (not None) when the CSV is missing so callers can
+    short-circuit cleanly via .empty."""
+    if not _ICS_CSV_PATH.exists():
+        return pd.DataFrame(columns=['eon','era','period','epoch','stage','base_ma','top_ma'])
+    try:
+        return _load_ics_table_cached(_ICS_CSV_PATH.stat().st_mtime)
+    except Exception:
+        return pd.DataFrame(columns=['eon','era','period','epoch','stage','base_ma','top_ma'])
+
+
+def ics_forward_lookup(age_ma) -> dict:
+    """Forward: age in Ma → {eon, era, period, epoch, stage}.
+
+    Returns a dict with None for any hierarchy level not formally defined at
+    that age (e.g., Precambrian Stage / Epoch are typically None). Returns
+    all-None dict for NaN / out-of-range ages.
+
+    Boundary convention: ages exactly on a row's base_ma fall in the OLDER
+    row (the unit whose base equals that age) — implemented by the half-open
+    interval [top_ma, base_ma). E.g., age=66.0 → Maastrichtian, not Danian.
+    """
+    out = {lvl: None for lvl in _ICS_LEVELS}
+    if pd.isna(age_ma):
+        return out
+    try:
+        a = float(age_ma)
+    except (TypeError, ValueError):
+        return out
+    if a < 0:
+        return out
+    tab = _load_ics_table()
+    if tab.empty:
+        return out
+    # Half-open [top_ma, base_ma) — boundaries fall in the older unit.
+    mask = (tab['top_ma'] <= a) & (a < tab['base_ma'])
+    if not mask.any():
+        # Age exactly equals the oldest base_ma (4567 for Hadean) — assign it
+        # to that oldest row.
+        mask = (tab['base_ma'] == a)
+    if not mask.any():
+        return out
+    row = tab[mask].iloc[0]
+    for lvl in _ICS_LEVELS:
+        v = row.get(lvl)
+        out[lvl] = (None if pd.isna(v) else str(v))
+    return out
+
+
+def ics_forward_lookup_series(ages) -> pd.DataFrame:
+    """Vectorised forward lookup — returns a DataFrame with one row per
+    input age, columns ['eon','era','period','epoch','stage']. Faster
+    than per-row apply for bench-scale inputs."""
+    ages_arr = pd.to_numeric(pd.Series(ages), errors='coerce').to_numpy(dtype=float)
+    tab = _load_ics_table()
+    n = len(ages_arr)
+    cols = {lvl: np.array([None] * n, dtype=object) for lvl in _ICS_LEVELS}
+    if tab.empty or n == 0:
+        return pd.DataFrame(cols)
+    top  = tab['top_ma'].to_numpy(dtype=float)
+    base = tab['base_ma'].to_numpy(dtype=float)
+    # Search by top_ma (sorted asc). idx-1 = row whose top_ma <= age.
+    idx = np.searchsorted(top, ages_arr, side='right') - 1
+    valid = (idx >= 0) & np.isfinite(ages_arr)
+    # Validate the < base_ma side AND handle exact-equality to oldest base.
+    valid_idx = np.where(valid, np.clip(idx, 0, len(tab) - 1), 0)
+    in_range = valid & (ages_arr < base[valid_idx])
+    # Allow exact match to the very oldest base_ma (Hadean base = 4567).
+    in_range = in_range | (valid & (ages_arr == base[valid_idx]))
+    for lvl in _ICS_LEVELS:
+        vals = tab[lvl].to_numpy(dtype=object)
+        cols[lvl] = np.where(in_range, vals[valid_idx], None)
+    return pd.DataFrame(cols, index=pd.RangeIndex(n))
+
+
+def ics_reverse_lookup(eon=None, era=None, period=None, epoch=None, stage=None) -> dict | None:
+    """Reverse: smallest filled category → age + bounds + error + source level.
+
+    Priority (smallest first): stage > epoch > period > era > eon.
+    A smaller filled level wins over larger ones even if the larger ones are
+    also filled (tighter range). Returns:
+
+        {age_ma, age_min_ma, age_max_ma, age_error_ma, source_level}
+
+    Returns None when no level is filled or the value doesn't match any row.
+    Case-insensitive matching against the canonical ICS spelling.
+    """
+    cand = [('stage', stage), ('epoch', epoch), ('period', period),
+            ('era', era), ('eon', eon)]
+    target_col = target_val = None
+    for col, val in cand:
+        if val is None:
+            continue
+        try:
+            if pd.isna(val):
+                continue
+        except (TypeError, ValueError):
+            pass
+        s = str(val).strip()
+        if not s or s.lower() in ('unknown', 'nan', 'none', '<na>', ''):
+            continue
+        target_col, target_val = col, s
+        break
+    if target_col is None:
+        return None
+    tab = _load_ics_table()
+    if tab.empty:
+        return None
+    col_norm = tab[target_col].astype('string').str.strip().str.lower()
+    matches = tab[col_norm == target_val.lower()]
+    if matches.empty:
+        # Try GEO_TIME_ALIASES — user-spelling variants → canonical
+        alias = GEO_TIME_ALIASES.get(target_val.lower())
+        if alias:
+            col_norm_alias = tab[target_col].astype('string').str.strip().str.lower()
+            matches = tab[col_norm_alias == alias.lower()]
+        if matches.empty:
+            return None
+    span_min = float(matches['top_ma'].min())
+    span_max = float(matches['base_ma'].max())
+    return {
+        'age_ma':        (span_min + span_max) / 2.0,
+        'age_min_ma':    span_min,
+        'age_max_ma':    span_max,
+        'age_error_ma':  (span_max - span_min) / 2.0,
+        'source_level':  target_col,
+    }
+
+
 def geologic_from_age(age):
-    if pd.isna(age):
-        return pd.Series({'Geologic_Epoch':'unknown','Geologic_Period':'unknown','Geologic_Era':'unknown'})
-    a = float(age)
-    for epoch, period, era, young, old in GEO_TIME_BINS:
-        if a >= young and a < old:
-            return pd.Series({'Geologic_Epoch':epoch,'Geologic_Period':period,'Geologic_Era':era})
-    return pd.Series({'Geologic_Epoch':'unknown','Geologic_Period':'unknown','Geologic_Era':'unknown'})
+    """Legacy 3-key Series API for backward compatibility.
+
+    Returns {Geologic_Epoch, Geologic_Period, Geologic_Era}. Internally
+    delegates to the new ICS forward lookup so the data is the richer
+    v2023/09 stage-level table. Unknown / out-of-range ages return
+    'unknown' for all three (matches the legacy contract used by callers
+    like add_geologic_time_categories at line ~530).
+    """
+    result = ics_forward_lookup(age)
+    return pd.Series({
+        'Geologic_Epoch':  result.get('epoch')  or 'unknown',
+        'Geologic_Period': result.get('period') or 'unknown',
+        'Geologic_Era':    result.get('era')    or 'unknown',
+    })
+
+
+def ics_auto_populate(df: pd.DataFrame, disable: bool = False) -> tuple:
+    """Orchestrator: fill missing geological age fields on a sample table.
+
+    Logic per row:
+      • has_age and not has_cats  → forward lookup, fill EMPTY categories
+      • not has_age and has_cats  → reverse lookup, write
+                                    Age_Ma / Age_Min_Ma / Age_Max_Ma /
+                                    Age_Error_Ma / Age_Source, THEN forward
+                                    lookup to fill higher-level empty cats.
+      • has_age and has_cats      → forward lookup, fill any EMPTY cats,
+                                    compare user-entered cats vs expected,
+                                    record mismatch in Age_Conflict (do not
+                                    auto-overwrite user values).
+
+    User-entered values are NEVER overwritten. The function reads the
+    Geologic_Stage column (Prepare-tab input alias) AND Geologic_Age_Label
+    (canonical downstream) interchangeably for the Stage level.
+
+    Returns (df_out, stats) where stats is a dict:
+        {forward_filled: int, reverse_filled: int, conflicts: int,
+         conflict_rows: pd.DataFrame}
+
+    Behaviour is a no-op when ``disable=True`` (kill switch). Stats are
+    still returned with zero counts so callers can format the panel
+    uniformly.
+    """
+    _empty_stats = {'forward_filled': 0, 'reverse_filled': 0,
+                    'conflicts': 0, 'conflict_rows': pd.DataFrame()}
+    if df is None or df.empty:
+        return df, _empty_stats
+    out = df.copy()
+    if disable:
+        return out, _empty_stats
+    if _load_ics_table().empty:
+        return out, _empty_stats   # silent no-op if reference table missing
+
+    # Coalesce the Prepare-tab input alias 'Geologic_Stage' into the
+    # canonical 'Geologic_Age_Label' column so downstream logic only
+    # reads from one place. Both columns survive on the frame for any
+    # legacy consumer that explicitly references either.
+    if 'Geologic_Stage' in out.columns:
+        if 'Geologic_Age_Label' not in out.columns:
+            out['Geologic_Age_Label'] = pd.NA
+        _alias_ser = out['Geologic_Stage'].astype('string').str.strip()
+        _canon_ser = out['Geologic_Age_Label'].astype('string').str.strip()
+        _need_fill = (_canon_ser.isna() | (_canon_ser == '')
+                       | (_canon_ser.str.lower() == 'unknown')).fillna(True).astype(bool)
+        out.loc[_need_fill & _alias_ser.notna(), 'Geologic_Age_Label'] = (
+            _alias_ser[_need_fill & _alias_ser.notna()].values)
+
+    # _read_col maps spec levels to the bench column name used for I/O.
+    # After the coalesce above, stage is always read from Geologic_Age_Label.
+    _read_col = dict(_ICS_COL)
+    _stage_canon = _ICS_COL['stage']  # Geologic_Age_Label
+
+    # Ensure every column we'll touch exists on the frame.
+    for col in (list(_ICS_COL.values()) +
+                ['Age_Ma', 'Age_Min_Ma', 'Age_Max_Ma', 'Age_Error_Ma',
+                 'Age_Source', 'Age_Conflict']):
+        if col not in out.columns:
+            out[col] = pd.NA
+
+    _age = pd.to_numeric(out['Age_Ma'], errors='coerce')
+    _age_filled_mask = _age.notna()
+    # Per-row "any category filled" — based on the READ columns.
+    # Use a string-dtype-safe construction: pd.NA != 'unknown' returns NA
+    # (BooleanDtype with NA propagation) and would silently kill rows whose
+    # comparison hit NA. .fillna(False).astype(bool) collapses NA → False.
+    _cat_filled_any = pd.Series(False, index=out.index)
+    for lvl in _ICS_LEVELS:
+        col = _read_col[lvl]
+        if col in out.columns:
+            _ser = out[col].astype('string').str.strip()
+            _filled = (_ser.notna()
+                       & (_ser.str.lower() != 'unknown')
+                       & (_ser != '')).fillna(False).astype(bool)
+            _cat_filled_any = _cat_filled_any | _filled
+
+    # ── Branch A: age filled, fill missing categories from forward lookup ──
+    _branch_a_mask = _age_filled_mask
+    _forward_fills = 0
+    if _branch_a_mask.any():
+        _fl = ics_forward_lookup_series(_age[_branch_a_mask].to_numpy())
+        _fl.index = out.index[_branch_a_mask]
+        for lvl in _ICS_LEVELS:
+            col = _read_col[lvl]
+            if col not in out.columns:
+                continue
+            _existing = out.loc[_branch_a_mask, col].astype('string').str.strip()
+            _empty = (_existing.isna()
+                      | (_existing == '')
+                      | (_existing.str.lower() == 'unknown')).fillna(True).astype(bool)
+            _new = _fl[lvl].astype('string')
+            _fill_rows = _empty & _new.notna().astype(bool)
+            n = int(_fill_rows.sum())
+            if n > 0:
+                out.loc[_fill_rows[_fill_rows].index, col] = _new[_fill_rows].values
+                _forward_fills += n
+
+    # ── Branch B: no age, fill from smallest filled category ──────────────
+    _branch_b_mask = (~_age_filled_mask) & _cat_filled_any
+    _reverse_fills = 0
+    if _branch_b_mask.any():
+        for i in out.index[_branch_b_mask]:
+            kw = {lvl: out.at[i, _read_col[lvl]] for lvl in _ICS_LEVELS
+                  if _read_col[lvl] in out.columns}
+            res = ics_reverse_lookup(**kw)
+            if res is None:
+                continue
+            out.at[i, 'Age_Ma']       = res['age_ma']
+            out.at[i, 'Age_Min_Ma']   = res['age_min_ma']
+            out.at[i, 'Age_Max_Ma']   = res['age_max_ma']
+            out.at[i, 'Age_Error_Ma'] = res['age_error_ma']
+            out.at[i, 'Age_Source']   = f'derived_from_{res["source_level"]}'
+            _reverse_fills += 1
+            # Forward-fill higher levels that were empty.
+            fwd = ics_forward_lookup(res['age_ma'])
+            for lvl in _ICS_LEVELS:
+                col = _read_col[lvl]
+                if col not in out.columns:
+                    continue
+                _ex = out.at[i, col]
+                if pd.isna(_ex) or (isinstance(_ex, str) and (not _ex.strip() or _ex.strip().lower() == 'unknown')):
+                    if fwd.get(lvl) is not None:
+                        out.at[i, col] = fwd[lvl]
+    # Mark measured rows whose Age_Source is still NA.
+    _measured_mask = _age_filled_mask & out['Age_Source'].isna()
+    if _measured_mask.any():
+        out.loc[_measured_mask, 'Age_Source'] = 'measured'
+
+    # ── Conflict detection — only for rows where both age and cats are
+    # filled. Compare each user-filled category to the forward-lookup
+    # expectation. Do NOT auto-correct.
+    _conflict_mask = _age_filled_mask & _cat_filled_any
+    _conflict_rows = []
+    if _conflict_mask.any():
+        _ages_for_check = pd.to_numeric(out.loc[_conflict_mask, 'Age_Ma'], errors='coerce')
+        _expected = ics_forward_lookup_series(_ages_for_check.to_numpy())
+        _expected.index = out.index[_conflict_mask]
+        for i in out.index[_conflict_mask]:
+            mismatches = []
+            for lvl in _ICS_LEVELS:
+                col = _read_col[lvl]
+                if col not in out.columns:
+                    continue
+                _user_val = out.at[i, col]
+                if pd.isna(_user_val):
+                    continue
+                _user_s = str(_user_val).strip()
+                if not _user_s or _user_s.lower() == 'unknown':
+                    continue
+                _exp = _expected.at[i, lvl]
+                if _exp is None:
+                    continue   # Precambrian rows with no formal stage/epoch
+                if str(_exp).strip().lower() != _user_s.lower():
+                    mismatches.append(f'{col}={_user_s} (expected {_exp})')
+            if mismatches:
+                _msg = f'Age_Ma={out.at[i, "Age_Ma"]:.1f}: ' + '; '.join(mismatches)
+                out.at[i, 'Age_Conflict'] = _msg
+                _row = {'Row': int(out.index.get_loc(i)),
+                        'Age_Ma': float(out.at[i, 'Age_Ma']),
+                        'Conflict': _msg}
+                if 'Sample_ID' in out.columns and pd.notna(out.at[i, 'Sample_ID']):
+                    _row['Sample_ID'] = str(out.at[i, 'Sample_ID'])
+                _conflict_rows.append(_row)
+
+    stats = {
+        'forward_filled': _forward_fills,
+        'reverse_filled': _reverse_fills,
+        'conflicts':      len(_conflict_rows),
+        'conflict_rows':  pd.DataFrame(_conflict_rows),
+    }
+    return out, stats
 
 def geologic_midpoint(label):
     if pd.isna(label):
@@ -748,9 +1102,11 @@ _DP_REGISTRY = [
     ('Lon max',           'Lon_Max',            'location', 'DD', None),
     # Age
     ('Age',               'Age_Ma',             'age', 'Ma', None),
-    ('Age error',         'Age_Err_Ma',         'age', 'Ma', None),
+    ('Age error',         'Age_Error_Ma',       'age', 'Ma', None),
     ('Age min',           'Age_Min_Ma',         'age', 'Ma', None),
     ('Age max',           'Age_Max_Ma',         'age', 'Ma', None),
+    ('Age source',        'Age_Source',         'age', None, None),
+    ('Eon',               'Geologic_Eon',       'age', None, None),
     ('Era',               'Geologic_Era',       'age', None, None),
     ('Period',            'Geologic_Period',    'age', None, None),
     ('Epoch',             'Geologic_Epoch',     'age', None, None),
@@ -953,6 +1309,9 @@ _EXPORT_COL_LABELS: dict = {
     'Lat_Min': 'Lat min [DD]', 'Lat_Max': 'Lat max [DD]',
     'Lon_Min': 'Lon min [DD]', 'Lon_Max': 'Lon max [DD]',
     'Age_Ma': 'Age [Ma]', 'Age_Min_Ma': 'Age min [Ma]', 'Age_Max_Ma': 'Age max [Ma]',
+    'Age_Error_Ma': 'Age error [Ma]', 'Age_Source': 'Age source',
+    'Age_Conflict': 'Age conflict',
+    'Geologic_Eon': 'Eon',
     'Geologic_Era': 'Era', 'Geologic_Period': 'Period',
     'Geologic_Epoch': 'Epoch', 'Geologic_Stage': 'Stage',
     'Geologic_Age_Label': 'Geologic age',
@@ -1358,25 +1717,30 @@ _DP_GEOLOGIC_AGE_MA: dict = {
 }
 
 def _dp_infer_age_from_geologic_time(df: pd.DataFrame) -> pd.DataFrame:
-    """Fill Age_Ma from Geologic_Epoch/Stage/Period/Era/Age where absent."""
-    age_src_cols = [c for c in ['Geologic_Stage','Geologic_Epoch','Geologic_Period',
-                                'Geologic_Era','Geologic_Age'] if c in df.columns]
-    if not age_src_cols:
-        return df
-    if 'Age_Ma' not in df.columns:
-        df = df.copy(); df['Age_Ma'] = np.nan
-    mask = df['Age_Ma'].isna()
-    if not mask.any():
-        return df
-    df = df.copy()
-    for col in age_src_cols:
-        still_missing = df['Age_Ma'].isna()
-        if not still_missing.any():
-            break
-        vals = df.loc[still_missing, col].astype(str).str.strip().str.lower()
-        inferred = vals.map(_DP_GEOLOGIC_AGE_MA)
-        df.loc[still_missing & inferred.notna(), 'Age_Ma'] = inferred[inferred.notna()]
-    return df
+    """Fill Age_Ma from chronostratigraphic category columns (and vice versa).
+
+    Delegates to the new ICS auto-populate orchestrator so we get:
+      • Stage-resolution forward lookup (Age_Ma → Stage / Epoch / Period / Era / Eon)
+      • Reverse lookup from the smallest filled category, with Age_Min_Ma /
+        Age_Max_Ma / Age_Error_Ma / Age_Source columns
+      • Conflict detection (Age_Conflict column) when both age and category
+        values are present and disagree
+      • Honours the session-state kill switch `_dp_disable_ics_autofill`
+        for users who want the raw uploaded values untouched.
+
+    Stats from the auto-populate pass are stashed in session_state under
+    `_ics_autofill_stats` so the Prepare-tab panel can render them next to
+    the file's data-quality checks. Kept as a thin wrapper so callers
+    (including the Prepare-tab apply-mapping pipeline at line ~1979) need
+    no further change.
+    """
+    disable = bool(st.session_state.get('_dp_disable_ics_autofill', False))
+    out, stats = ics_auto_populate(df, disable=disable)
+    try:
+        st.session_state['_ics_autofill_stats'] = stats
+    except Exception:
+        pass
+    return out
 
 
 # Ratios computed automatically from element columns — not exposed in the mapper dropdown
@@ -5681,7 +6045,18 @@ def game_reliability_summary(df, x_col='Observed_km'):
 
 @st.cache_data(show_spinner=False)
 def enrich(df,la_yb_mode='raw_ppm',include_game=False):
-    out = df.copy(); sio2 = out['SiO2'] if 'SiO2' in out else pd.Series(np.nan,index=out.index); mgo = out['MgO'] if 'MgO' in out else pd.Series(np.nan,index=out.index)
+    out = df.copy()
+    # Geological age auto-population from the ICS table — fills missing
+    # Age_Ma from category labels and vice versa, plus Age_Min_Ma /
+    # Age_Max_Ma / Age_Error_Ma / Age_Source / Age_Conflict columns. Idempotent
+    # so running here is safe even if the Prepare-tab pipeline already ran
+    # the same pass. Always enabled in enrich (the kill-switch only affects
+    # the user-visible Prepare-tab pass).
+    try:
+        out, _ = ics_auto_populate(out, disable=False)
+    except Exception:
+        pass
+    sio2 = out['SiO2'] if 'SiO2' in out else pd.Series(np.nan,index=out.index); mgo = out['MgO'] if 'MgO' in out else pd.Series(np.nan,index=out.index)
     text_class = out['Rock_Type'].map(classify_rock_text) if 'Rock_Type' in out else pd.Series(np.nan,index=out.index)
     out['Rock_Type_Text_Class'] = text_class
     out['Rock_Type_Model'] = text_class.fillna('unclassified')
@@ -6219,7 +6594,8 @@ def simple_xy_column_category(col):
         return 'Value: Trace element'
     if s in _SXY_VOLATILES:
         return 'Value: Volatile'
-    if s in {'Lat','Lon','Latitude','Longitude','Age_Ma','Elevation_km',
+    if s in {'Lat','Lon','Latitude','Longitude','Age_Ma',
+             'Age_Min_Ma','Age_Max_Ma','Age_Error_Ma','Elevation_km',
              'GMRT_elevation_km'}:
         return 'Location / age'
     if s in PROXY_VALUE_LIBRARY:            # Sr_Y, La_Yb_N, Ce_Y, Rb_Sr, …
@@ -6258,13 +6634,15 @@ def simple_xy_axis_options(bench_df):
         'Observed_km', 'Predicted_km', 'Residual_km',
         'Sr_Y', 'La_Yb_N', 'Ce_Y', 'Dy_Yb', 'Gd_Yb', 'Rb_Sr',
         'SiO2', 'MgO', 'CaO', 'K2O', 'TiO2', 'Al2O3', 'FeO', 'Na2O',
-        'Age_Ma', 'Elevation_km',
+        'Age_Ma', 'Age_Error_Ma', 'Age_Min_Ma', 'Age_Max_Ma', 'Elevation_km',
         'H_GAME_LuffiDucea2022_km', 'H_Sundell2021_Paired_km',
         'H_Profeta2015_SrY_km', 'H_Sundell2021_SrY_km', 'H_Zou2021_SrY_SVRE_km',
         'H_Profeta2015_LaYbN_km', 'H_Sundell2021_LaYbN_km', 'H_Zou2021_LaYbN_SVRE_km',
         'CRUST1_Total_Crust_km', 'LithoRef18_Total_Crust_km',
         'Tectonic_Setting', 'Arc_or_Segment', 'Geologic_Domain',
-        'Geologic_Era', 'Geologic_Period', 'Rock_Type_Model',
+        'Geologic_Eon', 'Geologic_Era', 'Geologic_Period',
+        'Geologic_Epoch', 'Geologic_Age_Label', 'Age_Source',
+        'Rock_Type_Model',
         'Model', 'Algorithm', 'Group_Name',
     ]
     out = []
@@ -10130,78 +10508,90 @@ with t_data_prep:
             with st.expander('Major element QC', expanded=False):
                 _dp_major_qc_panel(_dp_processed, key_prefix=f'{_dp_key}_{_dp_fi}_{_dp_f.name}')
 
-            # ── Geologic age consistency check ────────────────────────────────
-            # Flag rows where numeric Age_Ma disagrees with a named era/period/
-            # epoch column (e.g. Age_Ma=120 but Geologic_Period='Triassic').
-            _geo_chk_cols = [c for c in ['Geologic_Era', 'Geologic_Period', 'Geologic_Epoch']
-                             if c in _dp_processed.columns]
-            if 'Age_Ma' in _dp_processed.columns and _geo_chk_cols:
-                # Build Ma-range lookups from GEO_TIME_BINS (epoch/period/era)
-                _geo_era_rng:    dict = {}
-                _geo_period_rng: dict = {}
-                _geo_epoch_rng:  dict = {}
-                for _gep, _gper, _gera, _gyo, _gol in GEO_TIME_BINS:
-                    _geo_epoch_rng[_gep.lower()] = (_gyo, _gol)
-                    _k = _gper.lower()
-                    _geo_period_rng[_k] = (
-                        min(_geo_period_rng.get(_k, (_gyo, _gol))[0], _gyo),
-                        max(_geo_period_rng.get(_k, (_gyo, _gol))[1], _gol),
+            # ── Geological age auto-population panel ─────────────────────────
+            # Replaces the old GEO_TIME_BINS conflict-only check. The ICS
+            # auto-populate orchestrator runs upstream in _dp_apply_mapping
+            # (via _dp_infer_age_from_geologic_time) and writes the new
+            # Age_Min/Max/Error/Source/Conflict columns into _dp_processed.
+            # Re-running it here is cheap (idempotent) and gives this file's
+            # stats independent of session-state ordering across files.
+            _ics_age_cols_present = (
+                'Age_Ma' in _dp_processed.columns
+                or any(c in _dp_processed.columns for c in
+                       ['Geologic_Era', 'Geologic_Period', 'Geologic_Epoch',
+                        'Geologic_Age_Label', 'Geologic_Stage', 'Geologic_Eon'])
+            )
+            if _ics_age_cols_present:
+                _ics_disabled = bool(st.session_state.get('_dp_disable_ics_autofill', False))
+                _, _ics_stats = ics_auto_populate(_dp_processed, disable=_ics_disabled)
+                _ics_title = ('🌍 Geological age auto-population — DISABLED'
+                              if _ics_disabled else
+                              (f'🌍 Geological age auto-population — '
+                               f'{_ics_stats["forward_filled"]} forward, '
+                               f'{_ics_stats["reverse_filled"]} reverse, '
+                               f'{_ics_stats["conflicts"]} conflict(s)'))
+                with st.expander(_ics_title,
+                                 expanded=int(_ics_stats.get('conflicts', 0)) > 0):
+                    st.caption(
+                        'Auto-fills missing chronostratigraphic categories from '
+                        '`Age_Ma` (forward) AND missing `Age_Ma` from category '
+                        'labels (reverse, using the midpoint of the smallest '
+                        'filled level with min/max/error bounds). User-entered '
+                        'values are never overwritten. Reverse-derived ages get '
+                        '`Age_Min_Ma` / `Age_Max_Ma` / `Age_Error_Ma` columns '
+                        'and `Age_Source = derived_from_<level>`; measured '
+                        'ages get `Age_Source = measured`. Conflicts (Age_Ma '
+                        'inconsistent with a user-entered category) are '
+                        'flagged in the `Age_Conflict` column. Reference '
+                        'table: `ics_chronostratigraphy.csv` (ICS v2023/09).'
                     )
-                    _k = _gera.lower()
-                    _geo_era_rng[_k] = (
-                        min(_geo_era_rng.get(_k, (_gyo, _gol))[0], _gyo),
-                        max(_geo_era_rng.get(_k, (_gyo, _gol))[1], _gol),
+                    st.checkbox(
+                        'Disable auto-fill (keep uploaded values untouched)',
+                        value=_ics_disabled,
+                        key='_dp_disable_ics_autofill',
+                        help='Off by default. Tick to keep the raw uploaded '
+                             'Age_Ma / Geologic_* values as-is, without any '
+                             'forward or reverse fill. Conflict detection also '
+                             'pauses. Useful when debugging an unexpected '
+                             'auto-fill behaviour. Only affects this Prepare '
+                             'panel — the downstream `enrich()` pipeline '
+                             'still runs auto-fill so the bench used for '
+                             'Model / Validate / Predict always sees the '
+                             'enriched values.',
                     )
-                _geo_col_rng = {
-                    'Geologic_Era':    _geo_era_rng,
-                    'Geologic_Period': _geo_period_rng,
-                    'Geologic_Epoch':  _geo_epoch_rng,
-                }
-                # Vectorised conflict detection (per-column .map() + boolean
-                # mask). Replaces a Python row-by-row loop that ran N × 3
-                # iterations on every Prepare rerun.
-                _geo_age = pd.to_numeric(_dp_processed['Age_Ma'], errors='coerce')
-                _geo_pos = np.arange(len(_dp_processed))
-                _geo_sid = (_dp_processed['Sample_ID'].astype(str)
-                            if 'Sample_ID' in _dp_processed.columns
-                            else pd.Series(_geo_pos.astype(str), index=_dp_processed.index))
-                _geo_conflict_frames = []
-                for _gc in _geo_chk_cols:
-                    _rng_lkp = _geo_col_rng[_gc]
-                    _key_ser = _dp_processed[_gc].astype(str).str.strip().str.lower()
-                    _lo_ser  = _key_ser.map(lambda k, _r=_rng_lkp: _r[k][0] if k in _r else np.nan)
-                    _hi_ser  = _key_ser.map(lambda k, _r=_rng_lkp: _r[k][1] if k in _r else np.nan)
-                    _mask = (
-                        _geo_age.notna()
-                        & _dp_processed[_gc].notna()
-                        & _lo_ser.notna()
-                        & ((_geo_age < _lo_ser) | (_geo_age >= _hi_ser))
-                    ).to_numpy()
-                    if _mask.any():
-                        _geo_conflict_frames.append(pd.DataFrame({
-                            'Row':               _geo_pos[_mask],
-                            'Sample_ID':         _geo_sid.to_numpy()[_mask],
-                            'Age_Ma':            _geo_age.to_numpy()[_mask],
-                            _gc:                 _dp_processed[_gc].astype(str).to_numpy()[_mask],
-                            'Expected Ma range': [f'{lo}–{hi}' for lo, hi in
-                                                  zip(_lo_ser.to_numpy()[_mask],
-                                                      _hi_ser.to_numpy()[_mask])],
-                        }))
-                if _geo_conflict_frames:
-                    _geo_conflict_df = pd.concat(_geo_conflict_frames, ignore_index=True)
-                    with st.expander(
-                        f'⚠️ Geologic age conflicts — {len(_geo_conflict_df)} row(s)',
-                        expanded=False,
-                    ):
-                        st.caption(
-                            '`Age_Ma` falls outside the expected Ma range for the named '
-                            'geologic label. Common causes: Ka entered as Ma (divide by 1000), '
-                            'typo in era/period name, or mismatched column assignment.'
+                    if _ics_disabled:
+                        st.info(
+                            'Auto-fill is disabled. No conflicts flagged and '
+                            'no `Age_Min_Ma` / `Age_Max_Ma` / `Age_Error_Ma` / '
+                            '`Age_Source` columns written here. The downstream '
+                            'enrich() still auto-fills for the modelling bench.'
                         )
-                        st.dataframe(
-                            _geo_conflict_df,
-                            hide_index=True, use_container_width=True,
-                        )
+                    else:
+                        _c1, _c2, _c3 = st.columns(3)
+                        _c1.metric('Forward-filled cells',
+                                   int(_ics_stats['forward_filled']),
+                                   help='Empty category cells filled from Age_Ma.')
+                        _c2.metric('Reverse-filled ages',
+                                   int(_ics_stats['reverse_filled']),
+                                   help='Missing Age_Ma values derived from the '
+                                        'smallest filled category (midpoint, '
+                                        'min, max, error written too).')
+                        _c3.metric('Conflicts flagged',
+                                   int(_ics_stats['conflicts']),
+                                   help='Rows where the user-entered category '
+                                        'disagrees with what Age_Ma would imply.')
+                        if int(_ics_stats['conflicts']) > 0 and not _ics_stats['conflict_rows'].empty:
+                            st.markdown('**Rows with Age_Ma ↔ category conflicts:**')
+                            st.dataframe(
+                                _ics_stats['conflict_rows'],
+                                hide_index=True, use_container_width=True,
+                            )
+                            st.caption(
+                                'The same message is written into the '
+                                '`Age_Conflict` column on the bench. Conflicts '
+                                'are flags only — no values are auto-corrected, '
+                                'so you can review and decide which one to fix.'
+                            )
 
             # ── Build export df (anhydrous + row-ignore applied) ─────────────
             # Column-ignore is now handled inside _dp_apply_mapping via the
