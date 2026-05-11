@@ -1,0 +1,721 @@
+Sample_ID,Dataset,Lat,Lon,Age_Ma,Tectonic_Setting,Arc,Segment,Geologic_Domain,Rock_Type,SiO2,TiO2,Al2O3,FeO,MgO,CaO,Na2O,K2O,Sr,Y,La,Yb,Ce,Crust_Thickness
+SYNTH_00001,Synthetic_Andes,-22.2604,-67.8056,22.17,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,56.09,1.06,15.65,5.48,3.13,5.62,3.89,1.84,724.9,12.7,57.8,1.6,106.6,59.7
+SYNTH_00002,Synthetic_Andes,-21.7237,-66.8417,20.16,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,63.67,0.91,17.03,5.08,2.85,5.49,3.71,2.06,778.5,13.9,25.7,1.4,54.7,51.6
+SYNTH_00003,Synthetic_Andes,-28.1053,-69.3504,14.51,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.86,0.38,15.12,2.19,1.07,1.97,4.15,3.66,666.7,15.2,23.5,1.2,54.0,50.9
+SYNTH_00004,Synthetic_Andes,-22.1927,-67.7054,16.37,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,73.74,0.37,14.67,0.65,0.37,3.27,4.03,4.0,507.4,10.7,13.9,0.7,29.1,53.6
+SYNTH_00005,Synthetic_Andes,-21.466,-68.8303,6.17,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.73,0.42,14.69,2.5,0.59,2.63,3.54,3.25,452.2,11.0,12.9,0.6,27.8,57.5
+SYNTH_00006,Synthetic_Andes,-28.4769,-66.5184,13.92,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,58.73,0.5,15.18,3.76,2.92,3.98,3.7,1.26,747.6,19.3,55.4,1.8,117.2,54.5
+SYNTH_00007,Synthetic_Andes,-27.2776,-69.518,23.05,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.09,0.27,15.07,0.84,0.92,2.02,3.89,3.52,370.6,6.1,27.1,0.9,49.6,59.2
+SYNTH_00008,Synthetic_Andes,-25.0601,-68.3507,7.89,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,56.43,0.99,15.12,5.03,2.36,4.89,3.39,0.92,427.8,11.0,61.9,1.5,132.7,62.3
+SYNTH_00009,Synthetic_Andes,-20.6217,-67.1414,14.47,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.96,0.33,15.16,2.85,0.49,2.39,3.39,2.33,566.9,14.5,35.0,1.3,65.6,56.3
+SYNTH_00010,Synthetic_Andes,-20.8399,-68.8489,5.75,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,66.39,0.92,17.43,4.42,2.18,7.01,3.42,1.78,357.1,10.5,31.9,1.5,79.5,51.4
+SYNTH_00011,Synthetic_Andes,-21.0832,-66.257,22.82,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,63.92,1.26,16.93,6.83,3.22,5.51,3.59,1.07,605.2,20.0,34.9,1.1,67.2,54.4
+SYNTH_00012,Synthetic_Andes,-24.0062,-65.6272,8.93,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.61,0.56,15.34,1.87,0.6,2.5,3.84,3.95,316.3,14.0,20.6,1.1,40.1,50.5
+SYNTH_00013,Synthetic_Andes,-21.9588,-66.423,19.78,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.47,1.2,17.04,6.7,2.52,5.61,3.42,1.38,712.9,17.6,27.1,1.0,51.5,55.2
+SYNTH_00014,Synthetic_Andes,-25.8089,-65.1688,16.92,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.14,0.58,17.71,5.88,1.54,5.29,3.17,0.51,758.6,20.4,25.5,1.7,53.3,50.7
+SYNTH_00015,Synthetic_Andes,-26.2582,-67.8706,18.04,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,66.39,0.45,19.41,7.7,1.71,4.68,3.32,2.0,541.9,11.7,24.8,2.1,47.5,46.2
+SYNTH_00016,Synthetic_Andes,-27.1528,-69.2319,7.31,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.2,0.85,17.51,6.07,3.23,5.33,3.68,1.83,433.3,10.5,22.4,1.1,44.0,53.8
+SYNTH_00017,Synthetic_Andes,-27.5061,-67.1438,13.33,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,60.78,0.28,16.98,5.82,1.89,7.43,3.96,2.07,584.4,19.4,31.0,1.7,72.8,51.2
+SYNTH_00018,Synthetic_Andes,-28.6545,-67.3197,15.28,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,52.3,0.27,16.13,5.86,2.76,6.21,3.66,2.84,471.9,13.9,62.3,1.4,142.0,62.4
+SYNTH_00019,Synthetic_Andes,-27.0312,-65.2557,23.33,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.1,0.36,14.7,2.66,1.67,2.85,3.52,4.19,619.3,16.2,26.6,0.6,59.3,63.7
+SYNTH_00020,Synthetic_Andes,-29.049,-66.3714,6.69,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.8,0.59,17.14,7.31,1.83,5.38,2.99,1.82,463.0,17.4,15.1,1.1,33.2,47.1
+SYNTH_00021,Synthetic_Andes,-24.2757,-67.6701,15.45,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,74.04,0.57,13.42,2.47,0.1,2.03,3.95,4.09,352.1,9.3,43.4,1.5,101.3,55.4
+SYNTH_00022,Synthetic_Andes,-27.2947,-68.179,11.29,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,70.96,0.24,16.48,1.9,1.3,1.65,3.47,3.64,866.0,17.8,29.9,1.3,73.7,54.2
+SYNTH_00023,Synthetic_Andes,-28.8152,-65.7473,17.74,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,58.63,0.32,15.25,3.58,3.11,7.57,3.1,2.06,415.9,11.3,31.8,2.2,76.8,45.0
+SYNTH_00024,Synthetic_Andes,-27.1609,-65.8155,7.13,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.9,0.38,14.82,1.44,0.91,2.92,4.13,3.22,240.0,5.1,11.3,0.5,25.0,55.7
+SYNTH_00025,Synthetic_Andes,-21.9852,-68.8072,21.99,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.29,0.55,14.93,3.06,0.9,3.37,3.84,2.91,259.4,7.5,10.3,0.7,23.7,51.6
+SYNTH_00026,Synthetic_Andes,-20.198,-66.9423,6.09,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.19,0.27,14.39,2.74,0.73,1.04,3.37,3.04,507.4,12.4,10.1,0.6,24.8,49.8
+SYNTH_00027,Synthetic_Andes,-26.9866,-67.1099,19.0,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.15,0.82,18.58,7.84,2.87,6.42,3.58,2.45,596.5,17.6,34.3,1.4,71.6,53.3
+SYNTH_00028,Synthetic_Andes,-27.8237,-67.0585,11.34,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.27,0.29,15.35,1.23,1.77,3.38,3.69,3.63,548.2,12.1,18.5,0.9,41.4,52.7
+SYNTH_00029,Synthetic_Andes,-26.3934,-67.4363,19.73,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.83,1.0,15.65,6.02,2.83,5.06,4.04,2.02,485.7,12.1,36.2,1.3,84.1,55.5
+SYNTH_00030,Synthetic_Andes,-29.8532,-65.8641,22.13,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,72.24,0.71,14.46,0.5,0.44,1.3,3.97,3.11,531.1,10.0,29.7,1.2,53.7,61.8
+SYNTH_00031,Synthetic_Andes,-27.9094,-67.3746,8.28,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,64.89,1.22,16.31,7.1,2.03,4.93,3.28,2.67,628.1,15.6,23.3,1.1,44.8,51.6
+SYNTH_00032,Synthetic_Andes,-20.929,-69.7768,9.66,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.65,0.23,13.31,1.37,1.37,0.58,3.9,3.37,246.5,5.8,24.2,0.8,52.8,58.2
+SYNTH_00033,Synthetic_Andes,-26.6154,-65.7776,14.65,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.78,0.22,13.76,1.17,0.65,1.9,3.77,3.73,414.1,9.4,14.4,0.6,26.1,56.5
+SYNTH_00034,Synthetic_Andes,-20.7254,-67.759,11.15,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.83,0.55,13.55,2.15,0.93,1.78,4.3,3.32,671.6,17.5,11.2,1.3,26.9,47.8
+SYNTH_00035,Synthetic_Andes,-28.859,-66.3379,13.8,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,74.03,0.16,13.35,3.46,0.19,2.7,3.63,3.14,792.4,17.7,18.1,0.9,42.7,50.8
+SYNTH_00036,Synthetic_Andes,-29.1518,-67.2227,21.04,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.91,0.39,13.97,2.43,1.02,1.15,3.23,3.81,577.6,15.4,9.9,0.5,19.4,57.7
+SYNTH_00037,Synthetic_Andes,-23.781,-65.7094,5.09,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.41,0.08,15.46,7.14,2.47,5.51,4.31,3.33,589.6,14.8,20.6,1.3,49.9,56.3
+SYNTH_00038,Synthetic_Andes,-28.1241,-69.5759,11.84,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.75,0.44,14.86,1.73,1.83,2.64,3.11,3.62,221.0,6.7,18.3,0.8,33.8,47.5
+SYNTH_00039,Synthetic_Andes,-27.9802,-69.9117,14.07,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.19,0.34,14.66,1.28,0.1,2.49,3.12,2.37,691.5,14.7,25.9,1.1,58.4,55.9
+SYNTH_00040,Synthetic_Andes,-27.0062,-68.7931,11.45,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,67.15,0.99,17.32,5.3,3.42,6.47,4.13,1.49,669.9,16.7,25.6,1.0,57.7,56.7
+SYNTH_00041,Synthetic_Andes,-20.4465,-67.4363,13.66,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,67.93,0.32,14.08,1.23,0.41,0.64,4.25,3.33,213.8,5.8,40.0,1.2,77.8,59.8
+SYNTH_00042,Synthetic_Andes,-26.9793,-68.0294,13.33,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.75,0.12,13.78,1.83,0.28,2.49,4.07,3.25,308.5,9.2,16.7,0.7,35.6,54.9
+SYNTH_00043,Synthetic_Andes,-23.1674,-68.8587,11.61,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,56.64,0.88,16.31,6.16,3.45,6.07,3.58,2.27,925.8,17.4,25.4,1.2,55.9,58.8
+SYNTH_00044,Synthetic_Andes,-24.098,-65.7528,5.09,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,65.39,0.71,16.51,4.43,3.52,5.55,2.99,3.03,1245.1,19.8,52.4,1.3,123.7,59.7
+SYNTH_00045,Synthetic_Andes,-23.9927,-68.9182,13.28,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,70.85,0.6,13.72,1.56,0.1,2.57,4.49,4.45,318.0,6.6,22.3,0.6,51.1,58.7
+SYNTH_00046,Synthetic_Andes,-28.2706,-67.4635,24.84,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.76,0.81,16.75,5.51,4.8,7.07,3.4,1.15,698.2,17.1,26.6,1.3,60.2,54.7
+SYNTH_00047,Synthetic_Andes,-21.6375,-69.9092,16.91,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,70.1,0.54,15.38,2.28,0.38,1.63,4.24,3.41,412.8,11.7,13.1,0.4,30.9,60.3
+SYNTH_00048,Synthetic_Andes,-24.7977,-67.9602,6.88,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.0,0.57,14.52,1.09,0.92,2.72,3.34,2.02,272.0,9.9,27.8,1.0,64.5,56.6
+SYNTH_00049,Synthetic_Andes,-22.6886,-66.0852,16.4,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.12,0.3,16.84,3.14,0.35,2.24,4.56,3.52,508.7,10.1,13.6,0.8,30.3,49.4
+SYNTH_00050,Synthetic_Andes,-24.1901,-67.9543,17.04,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.78,0.4,15.01,2.22,1.25,2.52,3.97,2.14,289.4,6.3,23.3,1.3,56.3,53.2
+SYNTH_00051,Synthetic_Andes,-27.2189,-68.9896,8.72,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.86,0.23,16.56,6.37,3.28,4.79,2.52,1.79,792.8,20.5,44.5,2.1,110.8,53.0
+SYNTH_00052,Synthetic_Andes,-20.1763,-65.235,6.44,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,63.73,0.63,15.67,3.46,2.57,3.0,3.3,1.82,694.6,17.0,60.4,1.9,121.3,56.4
+SYNTH_00053,Synthetic_Andes,-26.2875,-67.9757,20.2,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,58.13,0.48,16.57,3.97,5.06,5.73,3.12,2.04,855.9,18.5,41.6,2.0,100.3,54.3
+SYNTH_00054,Synthetic_Andes,-26.6068,-67.3457,9.97,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.05,1.36,16.33,4.81,2.13,6.14,3.42,2.05,370.8,11.5,30.9,2.1,65.9,45.6
+SYNTH_00055,Synthetic_Andes,-20.4679,-69.1821,16.09,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,62.82,1.16,16.99,6.56,3.87,6.25,3.64,1.59,784.1,19.8,13.6,1.9,28.9,49.2
+SYNTH_00056,Synthetic_Andes,-28.4712,-65.3967,11.83,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,64.11,1.29,16.91,5.5,2.52,8.69,3.57,1.2,837.1,21.9,25.2,1.3,46.4,51.4
+SYNTH_00057,Synthetic_Andes,-25.4174,-69.3548,8.05,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.85,0.37,16.09,6.83,2.0,4.75,3.72,2.08,525.7,18.1,50.1,2.0,91.6,54.5
+SYNTH_00058,Synthetic_Andes,-25.5037,-65.5376,19.99,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.09,1.19,18.29,7.28,2.52,7.04,3.45,2.01,1083.2,20.9,43.7,1.4,98.5,58.0
+SYNTH_00059,Synthetic_Andes,-26.5764,-67.9592,13.8,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.68,0.57,13.77,2.3,0.61,3.1,3.6,2.34,223.4,6.7,14.4,0.7,27.3,55.0
+SYNTH_00060,Synthetic_Andes,-27.1648,-66.6263,23.21,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.85,0.8,16.54,2.88,0.89,5.56,4.02,2.51,471.6,10.3,35.6,1.4,86.0,57.0
+SYNTH_00061,Synthetic_Andes,-23.8977,-67.7803,23.72,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,62.92,0.64,15.64,4.59,3.7,6.12,3.77,1.23,944.6,19.2,42.9,1.9,91.6,58.4
+SYNTH_00062,Synthetic_Andes,-25.4355,-68.7989,17.9,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,60.36,1.14,16.04,7.24,3.44,5.82,3.18,1.76,695.3,20.1,32.9,1.1,77.0,57.1
+SYNTH_00063,Synthetic_Andes,-28.843,-68.0497,24.97,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,73.3,0.33,15.24,3.15,2.2,2.03,3.97,3.54,251.6,6.5,24.3,1.4,46.7,50.4
+SYNTH_00064,Synthetic_Andes,-25.765,-67.2391,15.02,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,60.54,1.09,16.99,7.4,2.34,7.47,4.12,2.48,929.7,18.1,47.5,1.4,111.8,59.0
+SYNTH_00065,Synthetic_Andes,-21.6788,-65.8938,13.33,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.18,1.14,16.58,5.62,1.85,5.71,3.32,2.01,369.5,10.0,50.6,1.5,118.6,59.2
+SYNTH_00066,Synthetic_Andes,-29.6516,-66.7387,21.46,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.39,0.56,14.31,1.79,0.1,1.78,3.73,4.4,489.0,11.6,31.5,1.3,66.9,54.5
+SYNTH_00067,Synthetic_Andes,-26.321,-68.9041,9.17,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.18,0.49,15.18,2.82,0.61,3.32,3.91,3.11,789.7,16.4,39.9,1.6,96.1,55.1
+SYNTH_00068,Synthetic_Andes,-28.077,-68.896,18.12,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,55.48,0.68,18.3,8.45,2.01,4.97,3.32,1.11,381.9,15.0,42.2,1.9,100.4,53.7
+SYNTH_00069,Synthetic_Andes,-24.3878,-68.0732,10.41,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,62.56,0.71,15.12,5.49,2.2,6.76,3.68,2.17,673.8,15.7,77.3,2.1,142.3,57.1
+SYNTH_00070,Synthetic_Andes,-27.8482,-67.0711,8.91,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,64.45,0.77,16.92,4.92,1.94,4.41,3.17,1.4,466.6,14.3,19.3,1.2,43.0,50.4
+SYNTH_00071,Synthetic_Andes,-27.9461,-65.5582,23.59,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,65.47,0.54,14.96,3.06,0.1,1.54,3.96,4.05,228.9,9.2,19.3,1.5,42.4,41.7
+SYNTH_00072,Synthetic_Andes,-21.9381,-69.1483,24.57,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,60.26,0.99,17.07,5.53,3.33,5.05,4.28,2.57,440.1,14.9,34.1,1.5,76.4,49.1
+SYNTH_00073,Synthetic_Andes,-20.7323,-65.3361,12.83,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,64.55,1.03,15.87,4.63,2.2,6.36,3.48,2.84,467.0,14.7,22.1,1.2,48.5,47.2
+SYNTH_00074,Synthetic_Andes,-22.4446,-68.7129,21.54,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.95,0.91,16.13,7.24,3.59,7.84,3.19,1.81,666.8,16.8,37.2,0.9,86.2,58.3
+SYNTH_00075,Synthetic_Andes,-21.4785,-67.5179,14.32,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,66.68,0.28,15.17,2.66,0.79,4.1,3.64,2.01,783.7,17.5,42.0,1.4,81.1,55.3
+SYNTH_00076,Synthetic_Andes,-24.0573,-65.6093,12.49,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.54,0.53,14.0,0.5,1.18,2.3,2.69,3.26,373.8,15.9,10.1,0.7,20.2,42.3
+SYNTH_00077,Synthetic_Andes,-21.2567,-69.8801,15.41,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,57.72,1.09,16.73,3.62,2.44,5.97,3.65,0.85,490.1,14.1,18.8,1.0,46.3,47.6
+SYNTH_00078,Synthetic_Andes,-25.9501,-65.9552,24.49,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.64,0.42,15.43,1.36,2.16,2.33,3.59,2.78,919.3,14.2,23.0,0.8,56.0,57.3
+SYNTH_00079,Synthetic_Andes,-29.5489,-65.3206,21.75,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.4,0.69,16.25,5.01,2.62,5.39,3.96,0.76,690.4,13.4,54.6,2.2,101.8,56.8
+SYNTH_00080,Synthetic_Andes,-21.327,-66.4608,21.6,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.01,0.38,15.56,2.29,0.1,2.48,3.92,4.53,626.0,10.9,11.6,0.9,23.9,59.1
+SYNTH_00081,Synthetic_Andes,-26.0849,-69.5512,6.55,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.32,0.63,13.13,2.37,1.54,2.07,4.04,3.37,394.0,8.1,9.0,0.5,17.2,56.7
+SYNTH_00082,Synthetic_Andes,-29.3667,-69.0244,16.37,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.96,0.33,18.73,5.0,2.99,6.62,4.13,2.62,549.2,15.3,82.1,2.1,169.4,56.3
+SYNTH_00083,Synthetic_Andes,-22.2923,-67.2976,8.66,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,57.27,0.72,17.25,6.29,3.82,7.11,3.04,1.28,526.0,16.1,57.4,1.5,143.2,62.0
+SYNTH_00084,Synthetic_Andes,-25.1372,-67.6103,13.44,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,66.52,0.58,17.33,2.23,1.52,2.38,3.68,3.08,550.7,13.4,40.5,1.3,85.1,56.8
+SYNTH_00085,Synthetic_Andes,-23.6206,-65.7189,17.62,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,62.89,0.81,17.49,6.05,2.28,4.98,2.86,0.98,415.9,11.6,31.3,1.2,70.1,63.9
+SYNTH_00086,Synthetic_Andes,-22.5273,-65.5266,10.45,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,66.36,0.37,15.56,2.36,0.6,3.86,3.93,4.04,486.0,11.2,31.1,0.6,61.8,65.5
+SYNTH_00087,Synthetic_Andes,-26.9167,-69.3636,16.0,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,56.69,0.63,15.32,6.35,3.32,4.62,3.19,2.6,586.7,14.7,21.0,1.2,48.7,49.6
+SYNTH_00088,Synthetic_Andes,-26.8615,-68.636,7.62,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,62.69,1.19,15.79,5.75,1.0,3.98,3.34,0.64,690.1,20.7,27.2,2.1,64.0,57.7
+SYNTH_00089,Synthetic_Andes,-25.3907,-69.5942,5.32,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.67,0.51,18.51,4.1,3.31,7.18,3.87,0.79,549.4,20.7,22.5,1.3,46.8,44.3
+SYNTH_00090,Synthetic_Andes,-27.3191,-66.9685,23.78,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,57.59,0.63,15.78,3.62,3.55,6.47,3.32,0.97,362.4,12.1,24.5,2.0,48.6,46.1
+SYNTH_00091,Synthetic_Andes,-20.8671,-69.2997,18.55,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,58.1,0.81,14.91,6.38,1.84,6.19,3.39,2.0,464.5,12.6,11.3,0.9,24.9,49.3
+SYNTH_00092,Synthetic_Andes,-20.0592,-69.8068,9.16,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.65,1.08,14.16,3.55,2.3,5.86,3.01,1.53,531.9,17.7,30.5,1.8,75.9,54.2
+SYNTH_00093,Synthetic_Andes,-25.8816,-67.9832,23.47,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.86,0.55,14.69,0.86,1.37,3.51,4.0,3.64,399.2,8.5,26.5,0.7,52.3,62.9
+SYNTH_00094,Synthetic_Andes,-28.6496,-65.281,13.04,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,65.56,0.46,15.05,2.46,0.96,1.89,4.27,3.63,540.4,8.0,14.3,0.5,34.3,69.6
+SYNTH_00095,Synthetic_Andes,-26.942,-66.9054,20.2,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,63.25,0.36,16.3,5.51,1.23,7.17,3.75,0.35,763.9,16.0,26.9,1.6,59.3,54.9
+SYNTH_00096,Synthetic_Andes,-26.049,-66.0655,23.26,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.34,0.09,15.39,0.75,0.61,2.31,4.1,3.59,942.5,13.3,27.2,1.0,67.6,61.4
+SYNTH_00097,Synthetic_Andes,-29.0619,-67.9381,22.51,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.78,0.11,14.77,2.36,0.1,2.61,4.2,3.76,292.5,7.9,31.8,1.3,69.8,56.4
+SYNTH_00098,Synthetic_Andes,-25.0439,-69.724,11.97,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,70.62,0.14,13.43,1.57,0.73,3.2,3.59,2.63,353.1,8.2,13.0,0.7,23.6,52.3
+SYNTH_00099,Synthetic_Andes,-20.4148,-66.4499,17.71,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,74.76,0.26,14.84,2.82,0.57,2.71,2.89,3.95,520.0,16.7,15.0,1.5,30.5,43.4
+SYNTH_00100,Synthetic_Andes,-28.3087,-68.9411,6.8,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.34,0.27,14.06,2.08,1.76,3.4,3.83,3.53,416.2,11.8,20.4,1.3,43.2,48.0
+SYNTH_00101,Synthetic_Andes,-26.5394,-67.6617,8.39,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,69.03,0.23,15.67,0.95,1.54,2.91,3.57,3.72,485.2,14.0,34.1,1.5,68.5,50.9
+SYNTH_00102,Synthetic_Andes,-24.3117,-68.5508,16.09,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,66.8,0.61,15.72,4.09,1.97,6.08,2.97,1.17,614.5,12.7,45.6,1.5,105.7,63.5
+SYNTH_00103,Synthetic_Andes,-27.6294,-65.8513,15.92,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,74.27,0.18,15.21,0.92,1.36,2.74,4.38,4.07,736.8,17.0,12.8,1.0,27.3,55.4
+SYNTH_00104,Synthetic_Andes,-20.378,-67.7471,8.62,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,55.02,0.7,14.65,5.14,2.99,6.33,3.34,1.71,727.8,17.5,40.2,1.3,90.4,60.1
+SYNTH_00105,Synthetic_Andes,-25.8774,-66.2018,9.61,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,70.1,0.35,15.27,0.5,1.28,0.94,3.87,3.18,595.9,11.8,39.4,1.2,94.6,57.4
+SYNTH_00106,Synthetic_Andes,-20.6707,-68.9807,15.57,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,71.68,0.46,14.77,1.3,1.23,3.75,3.82,2.72,479.8,11.6,24.8,1.2,51.7,50.6
+SYNTH_00107,Synthetic_Andes,-22.5083,-68.3323,11.61,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,55.51,0.68,15.38,5.54,1.69,3.55,3.83,1.42,477.1,10.8,22.6,1.0,50.0,55.1
+SYNTH_00108,Synthetic_Andes,-29.7828,-65.756,8.11,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.97,0.85,16.79,6.73,1.92,7.7,3.4,2.21,414.0,12.4,30.2,1.8,69.6,48.0
+SYNTH_00109,Synthetic_Andes,-24.0057,-65.2343,14.88,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,73.56,0.37,14.54,3.14,0.1,3.08,3.0,3.69,557.0,15.5,40.0,1.3,74.8,58.6
+SYNTH_00110,Synthetic_Andes,-25.2498,-66.983,9.91,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,58.26,0.63,15.42,4.96,1.45,6.54,4.04,2.16,856.6,21.4,23.5,0.9,54.9,53.7
+SYNTH_00111,Synthetic_Andes,-20.298,-65.4705,24.41,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,62.71,0.3,16.03,1.51,1.4,0.5,3.21,2.73,598.2,11.1,17.9,1.0,36.1,57.5
+SYNTH_00112,Synthetic_Andes,-20.3054,-66.3344,12.38,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,54.84,1.28,15.15,7.05,2.6,4.96,3.48,1.1,831.6,21.1,31.8,1.2,72.7,58.7
+SYNTH_00113,Synthetic_Andes,-20.1269,-69.247,6.77,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,67.82,0.25,13.22,2.2,1.8,2.55,3.89,2.78,618.1,13.5,8.1,0.5,19.6,51.2
+SYNTH_00114,Synthetic_Andes,-25.1073,-69.2918,8.05,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,61.46,0.73,17.3,4.98,3.24,5.89,3.35,1.86,929.3,17.8,15.2,1.0,27.5,51.3
+SYNTH_00115,Synthetic_Andes,-27.5171,-67.7173,12.88,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.24,0.56,15.73,5.74,2.21,5.65,2.82,2.03,758.6,17.2,41.5,1.9,83.0,52.2
+SYNTH_00116,Synthetic_Andes,-22.1244,-66.8382,23.58,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,58.64,1.14,15.1,5.8,2.33,6.52,3.45,1.13,1018.4,15.8,115.8,2.2,247.0,66.1
+SYNTH_00117,Synthetic_Andes,-28.6908,-69.7414,23.91,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,68.35,0.37,14.21,2.01,1.09,2.88,3.77,2.57,488.8,16.1,25.0,0.9,54.3,55.8
+SYNTH_00118,Synthetic_Andes,-20.2347,-69.0676,11.03,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,70.28,0.39,14.01,2.8,1.17,2.13,4.17,3.96,542.8,9.7,26.5,1.4,58.4,53.0
+SYNTH_00119,Synthetic_Andes,-27.8617,-65.4995,11.85,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,felsic,72.9,0.08,14.51,2.47,2.23,2.79,3.56,2.73,231.1,7.1,42.6,1.0,92.6,58.8
+SYNTH_00120,Synthetic_Andes,-28.2209,-66.9345,5.28,Continental arc,Andes,Central Volcanic Zone,Cordillera Occidental,intermediate,59.41,0.82,16.24,3.13,2.66,4.31,2.86,1.78,628.7,13.9,16.7,1.0,30.4,57.7
+SYNTH_00121,Synthetic_Cascades,41.6169,-121.2168,11.89,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.6,0.84,17.13,5.73,2.37,6.56,3.91,1.86,644.7,21.2,10.5,1.0,26.2,37.3
+SYNTH_00122,Synthetic_Cascades,46.1607,-124.5336,7.91,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.44,1.48,14.7,7.43,5.58,11.6,3.0,1.0,707.1,22.7,18.1,2.0,43.8,37.3
+SYNTH_00123,Synthetic_Cascades,42.1627,-120.5313,5.17,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.38,1.19,17.71,9.29,6.62,9.46,3.01,1.23,719.8,27.4,34.0,2.8,81.1,36.7
+SYNTH_00124,Synthetic_Cascades,41.1368,-122.3677,2.12,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.52,1.11,15.89,13.06,6.33,9.0,2.45,0.42,719.9,24.1,13.2,1.8,29.8,36.0
+SYNTH_00125,Synthetic_Cascades,40.9494,-120.3147,10.75,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,57.57,1.19,15.56,4.87,3.68,5.11,3.82,2.16,683.9,21.2,28.2,2.1,57.0,36.8
+SYNTH_00126,Synthetic_Cascades,42.8413,-122.7377,5.05,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.01,0.69,17.1,6.11,3.05,6.58,4.56,1.94,249.7,19.0,10.0,2.0,19.0,31.4
+SYNTH_00127,Synthetic_Cascades,42.5613,-123.1583,6.49,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.0,1.41,15.32,6.22,6.57,9.76,2.69,0.47,527.2,22.5,18.6,2.2,46.0,37.2
+SYNTH_00128,Synthetic_Cascades,44.1758,-120.451,9.54,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.7,0.54,18.28,7.05,3.79,7.18,3.51,1.81,518.8,20.4,12.7,1.7,28.3,36.8
+SYNTH_00129,Synthetic_Cascades,46.0366,-120.7877,10.44,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.74,0.41,15.42,6.08,5.19,6.33,4.29,1.25,377.4,19.2,9.1,1.2,18.3,35.7
+SYNTH_00130,Synthetic_Cascades,47.7766,-121.4591,7.37,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.98,1.87,15.45,7.88,5.38,7.13,2.28,0.77,706.6,23.2,8.7,1.9,18.9,37.8
+SYNTH_00131,Synthetic_Cascades,43.4492,-122.0092,10.79,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.28,1.31,16.11,10.18,6.15,10.22,1.88,0.62,441.2,22.8,5.9,1.5,11.8,27.9
+SYNTH_00132,Synthetic_Cascades,47.8882,-123.9552,2.46,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,54.05,0.94,16.78,6.83,4.24,6.02,3.68,2.22,359.0,10.8,9.3,1.1,17.1,33.4
+SYNTH_00133,Synthetic_Cascades,45.823,-123.5597,8.71,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.5,0.29,14.61,8.26,5.59,9.04,2.58,0.95,579.0,24.0,34.7,2.8,66.1,37.8
+SYNTH_00134,Synthetic_Cascades,46.6456,-124.7413,5.78,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.99,1.29,17.73,9.61,7.16,9.07,3.01,1.3,670.6,22.4,12.4,1.6,29.9,35.2
+SYNTH_00135,Synthetic_Cascades,44.817,-124.3311,8.36,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,60.78,1.05,19.27,5.6,2.97,5.41,4.02,2.31,404.5,14.3,5.7,0.9,12.7,32.3
+SYNTH_00136,Synthetic_Cascades,47.93,-123.7119,2.35,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.25,0.44,16.7,5.46,3.65,6.75,2.41,1.89,638.5,21.2,22.0,1.8,54.7,39.5
+SYNTH_00137,Synthetic_Cascades,43.3353,-122.3128,5.9,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.84,0.77,16.26,4.18,2.12,6.95,4.3,1.59,264.8,18.3,18.8,1.7,43.7,39.4
+SYNTH_00138,Synthetic_Cascades,46.6256,-121.4082,7.08,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.05,0.79,17.62,6.3,2.39,4.07,2.52,2.22,240.9,15.8,12.1,1.6,22.3,33.4
+SYNTH_00139,Synthetic_Cascades,43.2342,-122.0851,7.06,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.56,1.26,15.79,6.53,5.24,8.2,1.61,0.59,390.3,20.7,22.5,2.4,53.5,33.7
+SYNTH_00140,Synthetic_Cascades,44.7477,-122.0432,4.13,Continental arc,Cascades,High Cascades,Cascade arc,mafic,45.35,1.44,15.06,11.32,3.15,9.08,3.37,1.64,477.2,20.8,13.1,1.5,26.7,36.8
+SYNTH_00141,Synthetic_Cascades,46.5258,-123.0833,9.29,Continental arc,Cascades,High Cascades,Cascade arc,mafic,46.65,1.43,15.37,10.49,4.73,9.91,3.09,0.41,596.4,24.0,10.8,1.4,24.7,32.1
+SYNTH_00142,Synthetic_Cascades,47.604,-120.8542,3.4,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.62,0.62,17.5,5.61,2.17,5.51,2.58,0.65,203.6,11.7,6.3,1.2,13.7,33.8
+SYNTH_00143,Synthetic_Cascades,41.721,-124.184,6.8,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.08,1.41,14.59,9.88,5.72,9.99,1.78,0.88,885.1,29.5,18.0,2.2,42.1,37.0
+SYNTH_00144,Synthetic_Cascades,43.0183,-124.938,6.17,Continental arc,Cascades,High Cascades,Cascade arc,mafic,51.7,1.71,14.8,10.22,8.98,9.5,2.42,1.24,1040.4,29.4,13.6,1.8,31.2,35.3
+SYNTH_00145,Synthetic_Cascades,40.2003,-123.6881,5.62,Continental arc,Cascades,High Cascades,Cascade arc,mafic,51.84,1.16,15.19,10.36,9.24,10.04,3.65,0.89,732.6,24.7,20.9,2.5,49.6,36.5
+SYNTH_00146,Synthetic_Cascades,44.3616,-121.9004,8.39,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.57,1.25,15.43,10.02,3.26,12.34,3.34,0.58,972.5,27.2,30.7,2.7,69.2,40.3
+SYNTH_00147,Synthetic_Cascades,40.9953,-123.523,10.97,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.89,0.79,17.29,5.12,3.48,6.49,3.26,1.61,502.0,18.0,5.1,1.4,12.3,30.1
+SYNTH_00148,Synthetic_Cascades,46.5541,-122.5358,9.3,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,53.7,0.81,16.86,7.29,3.84,7.72,4.16,2.81,429.3,15.1,9.4,1.6,19.2,33.9
+SYNTH_00149,Synthetic_Cascades,42.3084,-123.7934,1.08,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.85,1.95,16.77,7.55,7.19,8.28,2.3,1.19,786.5,28.4,19.1,1.8,46.1,39.4
+SYNTH_00150,Synthetic_Cascades,45.8353,-121.0063,8.01,Continental arc,Cascades,High Cascades,Cascade arc,mafic,54.32,1.9,14.68,6.59,7.35,10.57,2.94,0.1,746.3,28.1,11.5,2.0,23.8,32.5
+SYNTH_00151,Synthetic_Cascades,41.9678,-122.5419,9.69,Continental arc,Cascades,High Cascades,Cascade arc,mafic,47.34,0.66,15.11,8.1,3.5,10.74,2.46,0.8,758.1,26.9,11.7,1.9,27.6,34.4
+SYNTH_00152,Synthetic_Cascades,46.8292,-124.2325,7.03,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,64.06,0.5,16.59,5.45,4.47,5.02,3.47,1.8,303.9,10.4,13.0,1.4,31.3,34.5
+SYNTH_00153,Synthetic_Cascades,45.51,-122.3363,4.72,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.89,2.36,15.79,8.23,6.22,11.96,2.27,0.1,653.8,24.0,14.9,2.8,27.0,32.1
+SYNTH_00154,Synthetic_Cascades,44.4519,-122.4386,9.71,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.6,1.24,15.62,8.37,5.87,7.36,2.66,0.79,411.7,22.0,12.9,1.8,27.4,32.0
+SYNTH_00155,Synthetic_Cascades,41.4522,-122.3519,8.51,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.91,0.81,14.81,10.49,8.72,9.17,2.87,0.1,651.0,26.7,27.0,2.6,50.1,36.5
+SYNTH_00156,Synthetic_Cascades,47.0566,-121.0124,10.45,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.49,0.47,17.36,4.47,3.15,6.47,3.92,2.51,561.8,20.1,19.0,2.2,36.4,37.9
+SYNTH_00157,Synthetic_Cascades,46.3961,-120.5629,0.68,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.72,0.97,16.54,9.24,6.62,9.67,2.89,1.32,412.1,26.2,16.8,2.2,41.2,34.8
+SYNTH_00158,Synthetic_Cascades,43.0833,-120.8207,0.99,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,56.09,0.52,16.1,5.47,4.73,5.45,3.38,3.27,462.4,17.2,5.4,1.1,10.7,31.5
+SYNTH_00159,Synthetic_Cascades,42.6302,-121.3449,2.29,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.25,1.12,16.61,3.56,3.39,5.53,2.9,2.18,260.9,10.6,17.3,2.1,43.0,33.6
+SYNTH_00160,Synthetic_Cascades,45.9126,-122.6739,2.72,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,54.54,0.97,17.47,6.42,4.75,6.99,3.38,1.7,215.8,10.5,19.8,1.9,41.6,32.9
+SYNTH_00161,Synthetic_Cascades,43.5059,-123.7732,2.59,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.77,1.22,14.92,8.92,6.67,9.52,3.54,0.76,500.2,23.2,18.3,2.4,38.7,36.5
+SYNTH_00162,Synthetic_Cascades,43.3154,-122.3736,3.88,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.22,0.83,15.64,4.32,3.97,7.05,4.36,0.65,299.5,12.6,6.2,1.3,12.9,33.1
+SYNTH_00163,Synthetic_Cascades,44.2323,-124.9951,2.03,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.26,0.49,17.18,5.86,3.84,4.15,3.5,1.73,481.3,17.3,17.8,2.2,33.1,30.6
+SYNTH_00164,Synthetic_Cascades,47.796,-123.9799,7.51,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.78,1.33,15.58,10.79,7.5,9.85,3.35,1.03,775.8,26.5,11.6,1.6,25.2,36.5
+SYNTH_00165,Synthetic_Cascades,45.3881,-122.7188,1.94,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,60.73,0.7,16.63,5.43,2.18,7.89,3.06,0.92,455.5,14.4,14.9,1.8,33.1,39.3
+SYNTH_00166,Synthetic_Cascades,41.6611,-122.1843,10.59,Continental arc,Cascades,High Cascades,Cascade arc,mafic,46.31,0.5,15.62,6.16,5.28,7.89,2.14,0.59,495.1,23.0,16.9,1.9,39.8,36.7
+SYNTH_00167,Synthetic_Cascades,47.6615,-120.6235,1.93,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.81,0.6,16.41,6.01,2.67,5.02,3.17,1.07,506.2,16.5,11.2,1.3,22.3,36.5
+SYNTH_00168,Synthetic_Cascades,44.5908,-124.0834,5.68,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,60.12,0.65,17.04,4.06,4.14,6.02,4.44,1.8,143.3,11.2,12.8,1.7,23.7,33.8
+SYNTH_00169,Synthetic_Cascades,41.9303,-124.6965,6.63,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.07,0.39,16.78,6.46,2.32,7.08,3.34,1.35,582.1,20.0,16.4,1.7,32.3,35.7
+SYNTH_00170,Synthetic_Cascades,45.9654,-124.5776,9.32,Continental arc,Cascades,High Cascades,Cascade arc,mafic,53.29,1.49,15.37,8.56,8.78,9.54,3.6,0.97,486.1,19.1,15.3,1.9,30.0,32.7
+SYNTH_00171,Synthetic_Cascades,43.146,-121.2883,5.74,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,60.34,0.89,16.47,3.98,3.18,8.34,3.13,1.82,270.1,18.5,13.9,1.7,25.1,31.9
+SYNTH_00172,Synthetic_Cascades,41.4745,-121.8223,4.62,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,60.36,1.49,15.89,5.35,3.32,5.06,3.46,2.73,378.5,17.4,11.2,1.5,24.9,33.2
+SYNTH_00173,Synthetic_Cascades,41.2133,-123.9221,3.31,Continental arc,Cascades,High Cascades,Cascade arc,mafic,53.25,0.92,14.73,8.27,6.39,13.09,3.97,1.13,725.7,27.8,29.3,2.4,70.7,39.2
+SYNTH_00174,Synthetic_Cascades,47.2545,-123.3126,7.37,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.19,0.84,16.08,5.08,3.74,8.83,3.99,1.46,498.2,21.0,22.7,2.0,55.4,38.2
+SYNTH_00175,Synthetic_Cascades,46.8021,-120.1771,5.64,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.49,0.88,15.66,3.87,3.01,6.88,3.45,2.14,233.9,12.2,18.6,2.1,37.4,36.2
+SYNTH_00176,Synthetic_Cascades,42.0415,-121.4442,7.91,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.64,0.95,16.13,5.74,2.11,5.41,3.76,2.33,437.5,12.3,18.3,1.6,34.6,38.8
+SYNTH_00177,Synthetic_Cascades,45.5112,-120.2803,5.18,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.37,1.28,15.67,12.71,8.62,9.8,2.8,0.9,468.5,18.8,25.4,2.6,57.0,33.6
+SYNTH_00178,Synthetic_Cascades,45.8806,-121.4414,10.32,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.97,0.47,16.03,6.76,1.27,4.49,3.61,1.49,432.9,21.8,16.2,2.2,30.8,32.4
+SYNTH_00179,Synthetic_Cascades,45.7194,-121.996,8.32,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,65.48,0.98,18.51,4.71,1.87,7.59,2.99,1.49,311.3,10.1,17.0,1.6,41.7,37.8
+SYNTH_00180,Synthetic_Cascades,42.0586,-122.5424,2.17,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,63.65,0.6,17.25,5.84,4.62,6.94,3.42,1.31,273.6,14.7,13.7,1.6,25.6,35.7
+SYNTH_00181,Synthetic_Cascades,41.2344,-120.341,9.16,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.74,1.19,14.88,9.08,7.7,8.5,2.24,1.31,771.8,25.1,14.6,1.6,33.9,36.2
+SYNTH_00182,Synthetic_Cascades,42.8384,-124.935,3.44,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.74,1.51,15.74,11.67,8.0,9.33,2.35,0.97,524.9,23.3,9.7,1.6,21.0,33.8
+SYNTH_00183,Synthetic_Cascades,40.7995,-124.1787,1.68,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.03,0.52,15.88,4.45,2.36,6.41,2.91,2.44,601.6,20.6,15.2,1.5,37.7,36.6
+SYNTH_00184,Synthetic_Cascades,44.4241,-123.6454,5.92,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,57.04,0.39,17.19,6.18,1.5,5.15,3.01,1.37,298.9,12.7,6.8,1.1,15.9,36.1
+SYNTH_00185,Synthetic_Cascades,47.6123,-124.2991,11.52,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,63.07,1.13,16.19,6.9,2.58,5.31,3.71,1.59,252.9,11.1,7.4,1.1,16.6,31.1
+SYNTH_00186,Synthetic_Cascades,45.0278,-122.8947,1.17,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.93,1.97,16.5,12.35,4.13,11.31,2.84,0.14,499.4,29.3,17.7,1.8,35.0,38.1
+SYNTH_00187,Synthetic_Cascades,47.9953,-121.4066,0.66,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,64.53,1.13,17.05,4.92,1.92,7.04,3.87,2.35,172.5,11.0,9.4,1.3,17.0,30.6
+SYNTH_00188,Synthetic_Cascades,43.4723,-121.4616,9.64,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.62,1.09,15.09,5.45,3.19,7.38,3.31,2.01,255.0,14.2,12.6,1.6,30.5,31.0
+SYNTH_00189,Synthetic_Cascades,42.3387,-122.3961,4.15,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,51.75,0.7,17.58,4.52,2.96,5.62,3.41,1.57,197.2,13.9,8.4,1.5,17.1,33.5
+SYNTH_00190,Synthetic_Cascades,44.4848,-122.597,8.17,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,63.91,0.68,17.57,3.87,2.26,7.21,2.99,1.67,497.3,20.7,5.9,0.9,14.1,33.3
+SYNTH_00191,Synthetic_Cascades,41.3054,-122.4638,5.15,Continental arc,Cascades,High Cascades,Cascade arc,mafic,54.12,1.59,16.02,13.63,8.19,10.96,3.15,0.4,522.9,23.3,12.5,1.8,23.7,35.5
+SYNTH_00192,Synthetic_Cascades,45.5891,-120.1295,0.44,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.27,1.71,15.67,8.53,7.89,7.09,3.26,0.91,695.6,27.8,14.6,2.1,28.8,33.0
+SYNTH_00193,Synthetic_Cascades,44.0478,-124.4959,7.94,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.51,1.71,15.15,6.56,7.38,7.88,3.64,1.11,393.5,22.8,11.9,1.6,25.7,35.2
+SYNTH_00194,Synthetic_Cascades,40.6909,-120.6076,11.1,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.39,0.99,14.98,8.07,5.88,5.44,2.88,0.78,294.0,20.3,13.4,1.5,27.5,37.5
+SYNTH_00195,Synthetic_Cascades,47.0318,-123.3166,8.18,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,55.39,0.99,15.89,5.49,1.52,5.3,3.36,1.22,452.8,19.5,12.1,1.5,28.5,35.4
+SYNTH_00196,Synthetic_Cascades,40.0537,-123.559,9.04,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,55.35,0.49,15.7,3.43,2.49,4.71,3.79,2.16,373.7,19.9,13.8,2.1,33.8,33.5
+SYNTH_00197,Synthetic_Cascades,44.5144,-122.7893,8.49,Continental arc,Cascades,High Cascades,Cascade arc,mafic,51.42,0.59,13.3,8.94,9.51,10.24,2.86,0.66,356.4,22.7,15.3,2.6,32.1,30.5
+SYNTH_00198,Synthetic_Cascades,44.5641,-124.9968,7.77,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.04,2.15,16.03,9.57,11.57,10.06,3.2,0.16,940.1,27.1,19.3,2.3,37.1,38.2
+SYNTH_00199,Synthetic_Cascades,44.3468,-121.1731,6.3,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.09,1.23,15.17,10.66,6.62,8.94,3.29,0.58,583.7,20.0,17.5,2.4,41.2,40.8
+SYNTH_00200,Synthetic_Cascades,41.8264,-122.0391,1.94,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.32,0.39,15.18,3.8,3.77,6.12,3.75,3.04,562.4,20.4,6.5,1.6,13.2,32.2
+SYNTH_00201,Synthetic_Cascades,44.1538,-123.5377,9.61,Continental arc,Cascades,High Cascades,Cascade arc,mafic,45.72,1.76,15.0,9.03,6.1,11.21,3.29,1.32,682.6,28.0,13.5,1.8,31.4,31.1
+SYNTH_00202,Synthetic_Cascades,41.1236,-123.4647,5.4,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.48,1.31,16.58,10.51,9.09,9.44,3.1,0.7,820.0,27.6,15.9,1.9,34.0,34.2
+SYNTH_00203,Synthetic_Cascades,46.2349,-123.537,9.67,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,55.82,0.93,16.2,5.93,2.37,7.29,3.47,1.81,243.9,10.0,5.9,1.1,11.6,31.9
+SYNTH_00204,Synthetic_Cascades,41.5917,-123.8711,7.91,Continental arc,Cascades,High Cascades,Cascade arc,mafic,46.92,1.54,16.81,8.72,6.3,11.84,3.04,0.27,574.8,23.4,14.5,2.6,32.8,31.0
+SYNTH_00205,Synthetic_Cascades,44.4852,-120.5742,8.1,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,64.82,0.44,15.76,6.18,4.05,5.09,4.02,0.78,371.5,13.3,6.5,0.9,15.4,34.2
+SYNTH_00206,Synthetic_Cascades,41.4117,-124.741,9.09,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.49,0.95,15.31,6.36,4.38,8.01,3.93,2.24,362.1,15.0,13.4,2.0,24.6,31.2
+SYNTH_00207,Synthetic_Cascades,41.7014,-120.4583,10.69,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.94,1.41,16.81,5.43,5.05,6.09,2.99,1.92,444.4,20.5,9.9,1.3,21.7,36.7
+SYNTH_00208,Synthetic_Cascades,42.2253,-124.7333,8.88,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.29,0.38,18.92,6.66,1.23,7.68,4.23,1.84,297.9,11.1,7.6,1.6,17.7,33.7
+SYNTH_00209,Synthetic_Cascades,43.3887,-123.5029,0.66,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,60.4,0.9,15.8,6.93,1.15,7.03,3.37,2.0,410.5,20.4,10.9,1.9,27.2,33.6
+SYNTH_00210,Synthetic_Cascades,46.0349,-120.7391,10.01,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.18,0.41,16.33,5.35,4.19,5.22,3.37,2.6,353.1,13.0,11.3,1.8,26.4,36.9
+SYNTH_00211,Synthetic_Cascades,47.4902,-120.4655,6.92,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.73,1.69,16.35,9.39,6.59,11.64,3.11,0.94,712.6,26.6,23.7,1.8,57.2,39.3
+SYNTH_00212,Synthetic_Cascades,42.4766,-123.9986,1.11,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,55.25,0.95,16.64,3.42,3.01,4.68,3.76,2.14,161.5,11.1,6.6,1.2,12.1,34.5
+SYNTH_00213,Synthetic_Cascades,46.3202,-122.4372,4.11,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.66,1.59,16.93,4.04,1.95,6.32,4.18,2.23,279.1,11.0,10.2,2.0,25.1,36.7
+SYNTH_00214,Synthetic_Cascades,41.8095,-122.3759,11.14,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.9,1.31,16.02,7.83,4.9,8.39,2.71,1.04,556.2,27.3,11.5,2.0,22.9,31.3
+SYNTH_00215,Synthetic_Cascades,40.1246,-123.9669,3.82,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,61.37,1.07,17.44,6.34,3.28,6.06,3.45,2.63,404.2,14.7,14.3,1.5,28.6,37.3
+SYNTH_00216,Synthetic_Cascades,45.4866,-120.7953,9.25,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.66,0.32,16.03,4.69,2.51,7.85,3.12,0.77,412.0,15.0,18.2,1.5,36.5,35.2
+SYNTH_00217,Synthetic_Cascades,43.5188,-121.572,0.58,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,62.27,0.92,15.23,5.26,2.77,5.4,2.61,1.53,374.0,14.4,10.2,1.4,22.6,33.1
+SYNTH_00218,Synthetic_Cascades,41.7591,-120.9785,5.31,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.68,0.52,17.59,6.16,1.66,6.5,3.05,2.08,404.2,15.6,7.5,1.4,14.5,37.3
+SYNTH_00219,Synthetic_Cascades,40.8922,-124.4006,11.99,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,65.34,1.02,16.13,7.36,2.51,5.43,2.76,1.7,330.0,21.1,7.0,1.2,13.3,34.0
+SYNTH_00220,Synthetic_Cascades,45.3065,-122.4207,6.33,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,52.12,0.88,16.9,5.38,2.17,6.19,3.35,1.48,505.4,19.8,22.8,2.0,49.8,37.9
+SYNTH_00221,Synthetic_Cascades,46.5591,-122.4435,5.75,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,59.37,0.87,16.73,6.53,2.67,5.69,2.94,1.22,492.0,12.5,14.9,1.6,32.4,38.7
+SYNTH_00222,Synthetic_Cascades,46.6292,-124.3057,10.93,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,55.85,0.1,16.59,7.72,2.91,6.36,3.45,3.44,341.3,12.2,7.1,1.1,15.8,34.5
+SYNTH_00223,Synthetic_Cascades,41.4225,-120.5914,2.6,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.18,2.06,14.32,10.07,7.21,7.68,1.94,0.36,521.3,22.8,15.3,1.8,28.9,31.6
+SYNTH_00224,Synthetic_Cascades,45.5584,-123.6308,4.2,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.8,1.2,15.8,7.05,4.48,9.98,3.5,0.93,510.3,19.7,10.8,2.1,24.4,31.2
+SYNTH_00225,Synthetic_Cascades,40.6987,-122.7949,7.02,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,56.83,0.61,18.29,3.86,3.63,4.08,3.66,2.19,235.3,10.2,4.2,1.0,9.0,30.8
+SYNTH_00226,Synthetic_Cascades,42.7173,-124.0982,8.62,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,64.06,0.73,14.26,3.92,5.42,5.43,3.34,1.41,446.5,21.2,6.0,1.0,13.3,30.5
+SYNTH_00227,Synthetic_Cascades,44.3861,-123.747,5.49,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,55.7,1.13,16.85,6.41,2.24,4.73,3.7,1.93,527.7,16.1,13.1,1.4,29.3,37.4
+SYNTH_00228,Synthetic_Cascades,44.3691,-124.3799,4.77,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.47,1.38,15.44,6.04,6.41,11.46,2.44,1.75,546.5,21.2,15.2,1.9,34.9,37.1
+SYNTH_00229,Synthetic_Cascades,47.5968,-121.6548,6.61,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.68,1.0,14.7,8.64,7.43,8.82,2.28,0.55,479.5,27.5,8.1,1.8,18.6,32.5
+SYNTH_00230,Synthetic_Cascades,47.2807,-124.095,4.78,Continental arc,Cascades,High Cascades,Cascade arc,mafic,51.49,0.85,15.14,8.62,7.9,9.99,2.4,0.55,488.7,26.8,14.5,1.8,31.7,34.2
+SYNTH_00231,Synthetic_Cascades,47.3858,-122.3036,7.44,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.02,1.76,15.75,7.12,6.06,8.53,2.94,1.7,716.7,21.5,18.5,2.3,40.5,36.8
+SYNTH_00232,Synthetic_Cascades,42.4467,-120.4629,1.24,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,65.17,0.7,17.47,7.31,3.17,5.86,3.5,1.92,570.6,20.4,8.2,1.3,17.6,37.1
+SYNTH_00233,Synthetic_Cascades,47.6084,-121.0089,10.66,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.62,1.46,16.66,4.63,3.59,6.71,3.49,1.38,245.0,10.2,12.5,1.6,30.0,35.6
+SYNTH_00234,Synthetic_Cascades,45.6742,-121.0215,4.75,Continental arc,Cascades,High Cascades,Cascade arc,mafic,49.65,1.18,15.9,8.85,6.61,10.83,3.09,0.95,665.6,25.0,11.1,1.4,27.0,33.3
+SYNTH_00235,Synthetic_Cascades,40.5687,-122.7454,2.57,Continental arc,Cascades,High Cascades,Cascade arc,mafic,48.35,1.34,15.28,5.68,6.37,9.36,2.72,1.37,560.8,29.9,11.9,1.8,28.0,35.5
+SYNTH_00236,Synthetic_Cascades,44.4445,-121.9412,11.83,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,58.89,0.67,14.78,4.52,4.03,5.98,3.88,3.17,394.2,15.9,6.6,1.0,15.2,35.2
+SYNTH_00237,Synthetic_Cascades,44.4189,-120.8206,3.43,Continental arc,Cascades,High Cascades,Cascade arc,mafic,50.34,0.43,16.28,8.47,5.1,12.28,3.44,1.39,446.0,18.7,16.5,2.0,32.1,34.3
+SYNTH_00238,Synthetic_Cascades,45.5942,-123.2165,5.45,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,57.88,0.91,15.5,6.38,2.27,5.23,3.87,1.75,407.8,12.6,17.3,2.0,38.4,37.9
+SYNTH_00239,Synthetic_Cascades,41.4117,-122.2167,3.14,Continental arc,Cascades,High Cascades,Cascade arc,mafic,52.77,2.78,15.35,9.46,6.86,7.99,2.94,0.65,662.6,24.1,9.6,2.4,19.1,31.8
+SYNTH_00240,Synthetic_Cascades,46.8359,-124.8961,2.43,Continental arc,Cascades,High Cascades,Cascade arc,intermediate,57.48,1.12,17.84,5.93,2.31,5.33,3.73,1.0,399.1,21.5,18.5,2.1,37.0,36.1
+SYNTH_00241,Synthetic_Japan,39.5356,139.8011,11.26,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.82,0.92,15.99,4.21,3.07,5.1,3.67,0.54,183.4,10.1,10.8,1.4,24.1,32.0
+SYNTH_00242,Synthetic_Japan,34.0381,141.2762,3.44,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.54,1.0,16.08,10.23,10.32,11.0,3.44,0.46,488.2,25.1,7.5,2.1,17.1,28.5
+SYNTH_00243,Synthetic_Japan,36.7743,139.997,21.94,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.02,1.52,15.53,8.48,8.1,11.18,3.08,0.75,705.8,29.2,25.2,2.5,60.3,35.6
+SYNTH_00244,Synthetic_Japan,36.1756,140.7697,12.12,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,56.42,0.6,18.45,5.98,2.31,6.5,3.95,2.5,564.3,15.7,19.7,2.0,36.5,43.1
+SYNTH_00245,Synthetic_Japan,33.1458,135.1746,11.25,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.3,1.49,15.47,9.33,4.61,8.37,3.05,0.55,531.2,18.6,16.6,2.6,37.8,32.6
+SYNTH_00246,Synthetic_Japan,40.6176,137.1972,10.7,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,64.53,1.06,16.03,6.84,2.63,6.35,3.16,1.51,228.2,11.4,12.4,1.6,23.7,34.5
+SYNTH_00247,Synthetic_Japan,37.7243,136.1879,15.92,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.53,0.38,16.91,7.56,6.07,8.93,3.2,0.61,485.4,25.0,14.0,1.7,32.7,31.6
+SYNTH_00248,Synthetic_Japan,37.1514,139.5738,7.91,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.56,2.07,14.84,8.61,6.63,10.18,2.71,0.62,588.7,29.0,7.6,1.9,18.4,26.5
+SYNTH_00249,Synthetic_Japan,34.3074,137.599,1.15,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.11,0.98,16.45,5.47,3.04,6.3,3.23,1.23,261.3,14.6,3.2,1.1,6.0,20.5
+SYNTH_00250,Synthetic_Japan,34.8949,135.2088,6.78,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.71,1.11,18.03,4.07,1.23,8.2,3.79,1.29,453.8,20.5,12.0,2.1,22.5,31.9
+SYNTH_00251,Synthetic_Japan,36.6645,137.6694,10.77,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.21,0.94,15.3,9.78,2.44,10.11,2.84,0.21,324.8,23.1,8.4,2.0,17.0,27.8
+SYNTH_00252,Synthetic_Japan,40.7548,136.2244,3.33,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,58.21,0.76,16.32,6.04,0.81,7.16,3.87,0.87,208.8,12.9,8.0,2.0,19.7,28.5
+SYNTH_00253,Synthetic_Japan,36.6736,139.4514,17.39,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.94,0.71,16.12,6.37,3.47,5.17,3.81,0.82,282.5,14.3,6.6,1.5,14.1,24.7
+SYNTH_00254,Synthetic_Japan,39.8496,140.3939,0.41,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,47.97,2.02,14.81,8.3,4.22,9.43,2.76,1.31,460.7,28.5,8.4,1.6,15.8,28.1
+SYNTH_00255,Synthetic_Japan,35.4026,138.0185,6.57,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.47,1.71,16.66,11.04,7.06,10.05,2.09,0.52,417.2,27.2,11.5,1.8,26.1,29.3
+SYNTH_00256,Synthetic_Japan,36.8518,138.5221,1.98,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.13,0.38,17.32,4.99,4.91,7.02,3.02,2.0,230.2,18.7,8.1,1.3,15.0,32.1
+SYNTH_00257,Synthetic_Japan,38.4662,135.0114,14.87,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.26,0.61,18.97,6.21,1.66,6.49,3.37,1.45,392.9,19.1,5.8,0.9,12.7,30.0
+SYNTH_00258,Synthetic_Japan,37.607,137.1241,19.28,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,54.85,1.75,17.29,7.87,5.03,9.95,2.46,1.01,582.9,29.8,11.1,2.3,25.9,28.7
+SYNTH_00259,Synthetic_Japan,37.0461,141.3892,14.16,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,53.39,1.04,17.26,8.52,4.61,10.14,2.43,0.41,618.0,29.1,11.6,2.8,26.2,30.2
+SYNTH_00260,Synthetic_Japan,38.5994,137.2528,18.86,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.39,0.52,15.49,6.4,2.3,7.92,3.8,1.64,223.2,15.4,8.2,1.6,16.0,24.8
+SYNTH_00261,Synthetic_Japan,40.5089,139.4701,19.79,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.57,1.82,15.57,8.79,4.6,9.98,2.21,0.71,309.2,22.1,7.7,2.4,14.7,23.0
+SYNTH_00262,Synthetic_Japan,34.7674,136.4047,0.02,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.17,1.51,16.56,10.04,7.04,7.84,1.87,0.41,457.1,19.5,12.3,2.0,29.7,31.5
+SYNTH_00263,Synthetic_Japan,40.0567,135.7516,12.63,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.08,1.04,16.96,5.93,4.78,7.95,2.87,2.19,197.5,13.4,9.1,1.8,17.2,27.3
+SYNTH_00264,Synthetic_Japan,33.8909,135.9267,1.71,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.79,1.55,16.54,9.66,9.46,9.97,2.35,0.1,440.4,22.8,17.0,2.3,35.3,31.8
+SYNTH_00265,Synthetic_Japan,36.8279,138.6744,17.07,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,46.59,1.28,15.74,11.32,5.67,10.77,3.18,1.15,406.9,20.3,12.8,1.9,28.4,32.0
+SYNTH_00266,Synthetic_Japan,37.0529,136.0403,9.83,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.57,0.83,16.07,4.13,1.94,7.56,4.5,1.55,236.6,14.1,5.9,1.2,14.5,29.5
+SYNTH_00267,Synthetic_Japan,38.9676,139.7726,1.09,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.54,0.59,17.29,4.85,4.84,6.47,2.98,0.74,166.4,12.4,7.3,1.6,15.1,29.8
+SYNTH_00268,Synthetic_Japan,36.8603,141.4689,11.99,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,53.04,1.07,15.46,8.97,5.4,10.82,2.77,0.49,451.2,24.8,8.0,1.7,18.3,27.6
+SYNTH_00269,Synthetic_Japan,38.1527,137.7813,0.1,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.76,1.12,16.07,8.46,4.8,7.07,4.06,1.15,595.7,28.4,9.9,1.8,23.0,26.5
+SYNTH_00270,Synthetic_Japan,34.0947,139.7919,10.8,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.83,0.47,15.56,6.46,4.32,6.46,4.31,1.86,187.5,10.6,7.7,1.5,18.3,30.6
+SYNTH_00271,Synthetic_Japan,38.8375,137.8602,13.08,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.8,0.77,17.22,5.93,2.26,5.85,4.04,1.8,510.8,18.6,8.4,1.3,18.9,34.4
+SYNTH_00272,Synthetic_Japan,38.6323,137.879,8.85,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.1,1.17,14.62,10.66,7.27,8.66,3.62,1.15,283.5,18.1,7.8,1.6,14.9,26.8
+SYNTH_00273,Synthetic_Japan,40.0314,137.9749,6.05,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,56.83,1.47,16.21,5.31,3.32,5.61,2.38,1.57,509.2,21.4,9.4,1.5,21.0,34.5
+SYNTH_00274,Synthetic_Japan,33.1861,136.951,11.12,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.44,0.28,15.45,4.02,3.25,6.9,3.93,1.95,393.3,18.4,6.6,1.7,14.3,29.7
+SYNTH_00275,Synthetic_Japan,37.4354,136.5533,14.97,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.6,1.82,14.51,9.55,9.39,11.31,2.05,1.44,453.2,21.4,5.6,2.0,11.2,30.7
+SYNTH_00276,Synthetic_Japan,38.5359,138.3664,4.86,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.09,0.82,16.81,4.48,2.65,7.47,2.72,1.01,355.4,18.2,9.2,1.2,17.4,29.7
+SYNTH_00277,Synthetic_Japan,36.7249,137.7118,20.71,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.54,0.8,17.04,5.53,2.55,5.49,3.99,1.52,226.4,18.6,8.2,1.3,19.1,26.5
+SYNTH_00278,Synthetic_Japan,38.0383,140.5129,5.52,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.35,0.85,16.08,8.78,2.26,12.32,2.56,0.53,700.4,27.6,11.1,2.2,26.1,29.8
+SYNTH_00279,Synthetic_Japan,38.2448,139.8379,5.01,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,47.82,0.99,13.49,7.9,5.04,7.08,3.4,0.96,325.9,20.9,5.8,1.7,10.4,24.7
+SYNTH_00280,Synthetic_Japan,35.9636,137.2278,0.69,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.07,0.73,14.74,7.94,2.68,5.76,4.11,0.92,311.7,20.9,5.1,1.2,10.3,27.0
+SYNTH_00281,Synthetic_Japan,34.285,137.1504,7.32,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.33,0.86,15.68,7.22,10.38,9.64,2.2,0.38,406.5,22.2,15.6,2.3,30.4,30.3
+SYNTH_00282,Synthetic_Japan,38.3034,140.368,3.67,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.32,1.15,16.33,7.41,2.65,6.27,3.78,0.92,197.2,13.5,6.9,1.6,14.8,28.9
+SYNTH_00283,Synthetic_Japan,37.8068,138.0621,20.23,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.05,1.02,16.29,10.86,6.83,12.66,2.54,0.76,251.6,24.3,8.7,2.3,16.8,21.7
+SYNTH_00284,Synthetic_Japan,40.1658,136.3307,19.46,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.95,0.83,14.18,9.28,5.89,10.74,3.36,1.28,457.7,20.7,15.7,2.0,34.4,31.1
+SYNTH_00285,Synthetic_Japan,33.9623,140.7177,6.04,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,46.66,1.29,14.98,9.56,7.76,8.07,2.42,0.74,509.4,21.3,13.0,2.1,26.2,27.3
+SYNTH_00286,Synthetic_Japan,35.7492,138.1693,11.13,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.25,1.04,16.11,5.81,10.22,9.62,2.47,1.05,318.3,23.0,8.3,2.5,17.4,22.7
+SYNTH_00287,Synthetic_Japan,40.4989,137.0333,9.07,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.98,1.62,15.65,8.07,1.57,8.83,3.36,0.52,541.7,25.4,14.5,2.6,30.6,29.3
+SYNTH_00288,Synthetic_Japan,34.3176,137.0166,11.22,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.48,0.93,15.82,4.82,1.44,5.92,4.04,1.59,363.0,17.5,6.6,1.3,13.9,28.0
+SYNTH_00289,Synthetic_Japan,37.4344,138.8678,0.92,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.27,0.38,15.23,6.44,2.18,6.36,4.34,2.01,258.4,20.1,5.4,1.7,11.9,23.6
+SYNTH_00290,Synthetic_Japan,35.5518,141.506,7.29,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,58.72,0.23,17.32,5.3,0.38,5.86,4.08,2.29,277.9,13.9,7.3,1.7,15.5,25.8
+SYNTH_00291,Synthetic_Japan,35.4142,141.9384,20.67,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.75,0.98,16.4,11.06,3.25,6.31,2.8,1.21,398.2,18.6,9.8,1.7,17.6,30.0
+SYNTH_00292,Synthetic_Japan,37.0337,138.6982,14.47,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.1,0.71,16.28,4.33,1.95,6.96,3.68,0.53,270.4,11.5,8.9,1.8,21.5,30.3
+SYNTH_00293,Synthetic_Japan,40.7938,138.1014,7.58,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.21,0.83,15.86,4.32,3.85,5.18,3.39,2.23,386.6,15.4,5.6,1.2,13.9,30.2
+SYNTH_00294,Synthetic_Japan,40.2879,137.8332,9.87,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.02,0.99,14.55,12.47,6.05,11.11,2.36,1.44,430.8,18.1,9.2,1.7,18.1,30.0
+SYNTH_00295,Synthetic_Japan,39.402,141.4081,8.93,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.02,1.32,16.3,9.88,7.93,11.97,2.45,1.06,509.7,25.8,8.2,2.1,15.9,29.2
+SYNTH_00296,Synthetic_Japan,33.8235,140.7531,10.54,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.16,1.18,14.13,9.02,4.81,9.52,2.64,0.97,449.0,19.9,14.1,2.6,29.0,31.1
+SYNTH_00297,Synthetic_Japan,33.3979,137.2952,19.14,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,57.72,0.81,16.42,7.45,3.0,4.44,4.18,2.2,357.3,21.5,6.6,1.3,16.4,30.5
+SYNTH_00298,Synthetic_Japan,36.027,136.3981,2.47,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,57.28,1.47,17.52,4.18,2.3,3.73,3.86,1.74,240.2,12.9,5.9,1.2,11.1,30.7
+SYNTH_00299,Synthetic_Japan,37.4322,139.2935,15.97,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.82,0.8,17.12,5.77,6.0,4.71,3.56,1.17,372.2,21.0,7.6,1.4,15.5,27.3
+SYNTH_00300,Synthetic_Japan,33.6919,139.4393,19.0,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.34,0.3,15.31,4.38,3.25,5.43,3.38,0.92,201.1,14.3,8.7,1.9,19.8,27.6
+SYNTH_00301,Synthetic_Japan,38.3268,140.806,6.1,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.39,1.94,13.52,10.39,8.09,10.4,3.0,1.2,479.3,25.9,11.2,2.3,27.3,27.1
+SYNTH_00302,Synthetic_Japan,40.4265,139.1695,9.17,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,58.12,0.74,15.76,5.9,2.76,4.94,3.92,1.38,432.8,13.8,11.7,1.1,29.1,38.2
+SYNTH_00303,Synthetic_Japan,33.2418,139.1814,14.3,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,64.28,0.95,15.24,6.44,4.71,7.77,2.88,0.91,213.7,12.3,7.6,1.5,18.7,26.5
+SYNTH_00304,Synthetic_Japan,37.495,137.7137,21.52,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.22,0.98,15.88,6.83,2.25,7.05,3.17,0.69,213.7,16.6,5.9,1.8,12.2,22.0
+SYNTH_00305,Synthetic_Japan,34.3073,136.5855,18.0,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,57.17,0.53,16.98,7.62,2.23,7.11,3.67,3.26,412.8,19.4,7.1,0.9,17.5,31.2
+SYNTH_00306,Synthetic_Japan,38.1679,141.6545,17.98,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.38,1.94,15.19,9.2,9.22,12.21,3.16,0.41,367.3,19.9,12.4,1.6,29.5,34.0
+SYNTH_00307,Synthetic_Japan,39.5496,140.1713,21.13,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,55.42,1.41,18.13,5.53,2.35,4.99,3.09,2.12,407.8,17.8,7.5,1.1,13.8,31.0
+SYNTH_00308,Synthetic_Japan,38.4825,135.7749,2.34,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.63,0.59,15.62,9.3,8.54,9.78,2.76,0.53,458.8,26.2,14.2,1.6,27.7,33.6
+SYNTH_00309,Synthetic_Japan,36.6076,139.0117,21.97,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.6,0.65,16.37,4.98,1.06,5.93,3.57,2.95,228.6,12.8,7.6,1.3,18.2,29.2
+SYNTH_00310,Synthetic_Japan,35.0041,141.7503,6.74,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.8,0.71,16.49,6.58,2.38,6.09,3.37,2.4,427.0,16.4,8.0,1.5,16.2,31.2
+SYNTH_00311,Synthetic_Japan,33.8813,141.8678,3.87,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,64.81,0.99,16.79,4.51,1.58,4.06,3.72,2.51,172.3,16.2,7.6,1.4,18.2,26.3
+SYNTH_00312,Synthetic_Japan,39.0173,137.0851,13.35,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.09,0.64,17.79,6.43,1.91,6.61,3.96,2.62,145.7,15.5,5.6,1.3,10.3,23.7
+SYNTH_00313,Synthetic_Japan,35.8018,136.2327,14.57,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.75,0.8,17.79,10.51,5.27,9.65,2.96,0.37,469.0,19.9,7.6,1.7,18.5,29.8
+SYNTH_00314,Synthetic_Japan,34.1843,135.1313,11.03,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.18,0.79,14.9,4.65,2.95,7.39,4.15,1.9,267.2,18.6,7.3,2.1,16.1,24.7
+SYNTH_00315,Synthetic_Japan,35.357,138.4267,13.5,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.12,1.59,14.52,8.79,6.21,7.91,3.2,1.39,679.9,28.8,20.8,2.7,45.5,32.5
+SYNTH_00316,Synthetic_Japan,37.4524,135.4029,13.15,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.27,1.41,14.97,10.01,8.1,8.02,3.51,1.12,361.7,18.8,12.9,2.0,26.0,26.5
+SYNTH_00317,Synthetic_Japan,38.1332,139.3019,0.23,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.06,0.65,15.73,6.37,2.4,6.71,2.39,1.15,280.8,18.5,4.9,1.0,10.7,27.8
+SYNTH_00318,Synthetic_Japan,36.1316,140.5788,17.25,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,46.92,1.97,15.57,8.4,5.38,8.89,3.21,0.4,650.6,28.9,16.2,2.5,30.7,30.0
+SYNTH_00319,Synthetic_Japan,38.9738,137.9297,0.34,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,57.84,0.45,16.86,5.7,3.61,5.95,3.05,0.47,341.1,16.2,8.5,2.1,16.2,29.1
+SYNTH_00320,Synthetic_Japan,37.6245,140.281,8.14,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,62.96,0.97,16.34,6.36,3.34,4.79,3.18,1.7,301.6,11.3,14.2,1.6,34.1,36.9
+SYNTH_00321,Synthetic_Japan,38.9958,137.0377,2.73,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.45,1.48,15.38,7.18,7.42,11.51,3.23,0.66,372.8,25.4,17.6,2.5,38.5,31.8
+SYNTH_00322,Synthetic_Japan,40.864,139.8023,2.29,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.98,1.17,15.66,8.17,9.2,7.92,3.19,0.73,437.4,25.8,11.7,1.9,28.4,31.5
+SYNTH_00323,Synthetic_Japan,35.3898,136.9286,19.5,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.33,1.36,15.88,9.95,9.54,11.51,2.17,0.71,458.3,26.2,7.5,1.5,14.5,27.1
+SYNTH_00324,Synthetic_Japan,40.6318,141.7806,21.28,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.79,1.48,18.03,9.71,6.32,9.55,3.13,0.13,479.2,28.9,15.8,2.4,38.7,28.4
+SYNTH_00325,Synthetic_Japan,36.7599,137.893,7.88,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,44.46,1.86,15.95,5.48,8.19,9.49,2.98,1.03,219.7,19.1,6.2,2.8,15.5,22.0
+SYNTH_00326,Synthetic_Japan,36.72,141.0624,5.36,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.13,0.64,17.1,6.43,3.39,4.28,3.41,0.63,212.4,16.2,8.1,2.1,18.4,23.6
+SYNTH_00327,Synthetic_Japan,36.1692,137.8975,13.32,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.63,1.41,15.89,8.17,5.34,10.28,2.65,0.67,423.4,24.3,9.4,2.5,18.8,29.6
+SYNTH_00328,Synthetic_Japan,34.6153,137.4551,9.02,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.01,1.04,16.1,11.06,3.38,11.8,3.71,0.66,339.0,21.6,11.1,1.9,25.1,26.5
+SYNTH_00329,Synthetic_Japan,37.3957,135.6748,19.23,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.2,1.57,16.51,9.34,6.54,8.01,2.88,0.48,603.3,27.4,5.6,2.8,13.3,28.9
+SYNTH_00330,Synthetic_Japan,33.1896,136.7588,0.95,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.42,0.85,19.68,5.52,3.15,6.96,3.6,0.77,416.8,19.9,16.3,1.8,30.8,34.1
+SYNTH_00331,Synthetic_Japan,34.5612,139.4598,6.37,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.98,0.98,17.63,6.42,1.22,7.36,3.83,2.11,243.9,15.9,2.2,1.0,4.4,22.6
+SYNTH_00332,Synthetic_Japan,34.2644,140.8993,1.87,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,57.38,0.05,16.82,5.27,3.24,4.98,4.71,2.14,217.3,10.3,11.1,1.1,26.3,34.6
+SYNTH_00333,Synthetic_Japan,36.719,141.1697,13.98,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.89,1.47,15.62,9.48,8.5,13.31,3.46,0.56,489.3,21.5,10.7,2.1,19.4,34.8
+SYNTH_00334,Synthetic_Japan,38.9749,137.1164,12.35,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,64.12,0.5,17.62,4.97,4.13,6.03,3.7,3.16,262.6,14.7,7.1,1.8,16.9,27.1
+SYNTH_00335,Synthetic_Japan,38.5419,139.1603,3.25,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,49.7,1.63,15.97,11.84,5.49,7.98,3.24,1.11,433.5,25.7,11.9,2.2,22.0,28.5
+SYNTH_00336,Synthetic_Japan,38.3444,137.162,0.32,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,54.33,0.64,16.11,8.53,3.51,7.16,2.95,1.93,325.0,16.4,10.0,2.2,24.7,29.2
+SYNTH_00337,Synthetic_Japan,34.7682,140.2899,7.59,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.97,1.23,17.46,6.38,3.48,7.73,3.78,1.78,239.7,11.3,10.8,1.8,26.7,27.7
+SYNTH_00338,Synthetic_Japan,40.2636,139.0037,8.28,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.63,1.16,15.98,7.44,8.66,11.31,1.98,0.69,853.1,28.3,20.0,2.5,45.8,34.5
+SYNTH_00339,Synthetic_Japan,33.0811,139.3827,2.65,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,48.71,1.38,15.14,10.7,8.81,11.24,2.77,1.11,603.9,19.4,21.3,2.7,41.0,34.4
+SYNTH_00340,Synthetic_Japan,35.949,138.1919,2.74,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,63.56,0.93,18.17,6.19,3.03,5.74,3.73,1.83,259.1,14.7,5.3,1.0,10.5,29.0
+SYNTH_00341,Synthetic_Japan,37.0171,138.0229,11.99,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.41,1.42,15.81,9.79,7.53,9.27,2.87,0.98,510.6,22.0,19.5,2.6,41.8,35.5
+SYNTH_00342,Synthetic_Japan,34.8096,137.0216,3.0,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,61.77,0.79,16.26,4.67,3.17,6.63,2.71,1.1,185.3,10.4,13.3,1.6,24.7,33.6
+SYNTH_00343,Synthetic_Japan,33.7661,140.6026,10.82,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.69,1.68,13.23,13.81,4.9,11.07,1.9,0.97,570.5,24.6,13.0,1.7,31.2,34.9
+SYNTH_00344,Synthetic_Japan,39.6813,138.0074,21.27,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,59.8,0.84,16.42,4.54,4.91,7.47,4.26,2.06,305.6,11.6,16.0,2.0,28.9,36.4
+SYNTH_00345,Synthetic_Japan,33.4475,137.5507,15.11,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,53.0,1.34,16.07,5.28,6.13,10.56,2.56,0.87,390.5,29.5,3.9,1.7,7.6,24.4
+SYNTH_00346,Synthetic_Japan,36.5603,136.3251,3.45,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,60.61,0.98,17.36,5.44,1.62,6.27,2.01,2.13,273.7,13.4,8.6,1.4,16.1,36.5
+SYNTH_00347,Synthetic_Japan,36.6102,135.302,0.09,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,63.08,0.29,16.4,5.3,1.49,7.28,3.43,2.17,179.2,14.7,7.4,1.5,15.6,26.5
+SYNTH_00348,Synthetic_Japan,40.925,139.9474,7.9,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.78,1.08,16.04,8.55,5.96,8.55,3.18,1.65,623.8,25.3,15.0,2.6,28.4,35.8
+SYNTH_00349,Synthetic_Japan,34.5587,138.4018,0.97,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,58.8,0.64,17.14,5.38,1.8,8.39,2.97,1.66,471.7,20.2,4.6,0.9,10.7,29.4
+SYNTH_00350,Synthetic_Japan,36.0559,139.1908,5.45,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,51.29,0.87,14.42,7.56,7.79,7.77,3.2,0.92,508.9,23.8,5.5,1.8,11.6,31.4
+SYNTH_00351,Synthetic_Japan,36.47,141.3555,10.78,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,47.85,1.13,17.31,10.07,4.03,10.67,2.91,0.28,392.9,20.0,8.5,1.5,20.8,31.4
+SYNTH_00352,Synthetic_Japan,40.7082,139.3138,8.33,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,57.87,0.72,16.67,5.87,2.44,8.09,4.72,2.58,185.4,11.7,4.8,1.0,11.1,28.7
+SYNTH_00353,Synthetic_Japan,36.6263,140.8686,1.64,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,58.69,0.71,16.24,6.63,5.0,7.2,2.77,2.27,331.4,19.2,6.8,1.2,14.2,25.5
+SYNTH_00354,Synthetic_Japan,33.6931,140.8704,12.34,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,56.82,0.91,18.17,7.24,0.92,5.84,4.48,1.77,415.4,17.7,6.5,1.3,16.1,29.9
+SYNTH_00355,Synthetic_Japan,34.6354,138.497,11.47,Island arc,NE Japan,Tohoku,NE Japan arc,intermediate,56.46,0.69,14.84,8.01,2.8,8.12,2.98,2.39,296.3,16.1,6.8,1.6,15.6,27.4
+SYNTH_00356,Synthetic_Japan,36.9099,139.2023,5.08,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,54.17,2.08,14.3,8.53,8.89,6.73,2.92,0.49,529.5,27.0,5.2,1.9,10.8,29.7
+SYNTH_00357,Synthetic_Japan,35.6956,136.0564,15.7,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.13,0.87,16.35,8.74,9.59,9.15,2.69,0.62,300.5,21.3,9.9,2.1,20.1,24.2
+SYNTH_00358,Synthetic_Japan,40.5421,138.5558,10.39,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,50.29,1.09,16.91,6.55,6.15,9.41,3.31,0.55,387.7,26.4,10.4,1.8,20.3,26.7
+SYNTH_00359,Synthetic_Japan,35.3687,141.1301,6.41,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,52.97,1.28,15.52,10.14,5.93,9.53,2.78,1.16,509.1,25.5,12.6,1.8,23.9,33.6
+SYNTH_00360,Synthetic_Japan,37.809,140.3129,17.45,Island arc,NE Japan,Tohoku,NE Japan arc,mafic,47.37,1.21,15.47,10.7,4.63,8.7,3.41,1.42,617.4,25.8,7.7,1.7,13.9,29.3
+SYNTH_00361,Synthetic_Aleutians,53.7928,-170.1879,4.73,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.78,0.63,15.52,4.16,1.84,6.01,3.74,1.61,135.7,11.4,5.5,1.4,11.6,23.3
+SYNTH_00362,Synthetic_Aleutians,50.6823,-170.5992,2.21,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,51.07,2.06,16.24,8.82,12.08,9.32,3.29,0.1,301.8,27.8,7.7,1.7,14.7,18.9
+SYNTH_00363,Synthetic_Aleutians,53.4505,-169.5644,3.42,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.91,0.65,14.35,8.16,9.18,9.66,2.17,0.84,496.5,26.9,9.1,2.4,18.2,25.2
+SYNTH_00364,Synthetic_Aleutians,52.7799,-162.6044,1.25,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,54.2,1.63,14.05,10.9,3.33,8.98,3.41,0.83,267.8,22.2,10.6,2.5,22.5,20.1
+SYNTH_00365,Synthetic_Aleutians,54.3425,-164.7713,4.87,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.49,1.1,16.06,5.35,3.28,9.08,3.62,2.66,235.7,15.7,5.3,1.4,11.8,24.2
+SYNTH_00366,Synthetic_Aleutians,54.5742,-172.1142,2.9,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.51,1.88,14.51,7.79,4.98,10.43,2.98,0.71,342.4,19.8,8.8,2.1,20.3,25.1
+SYNTH_00367,Synthetic_Aleutians,53.2562,-174.2091,1.52,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,52.29,1.41,15.24,11.77,4.99,11.11,2.54,0.66,435.3,18.6,7.9,2.0,15.2,27.4
+SYNTH_00368,Synthetic_Aleutians,50.6147,-167.4328,2.53,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,50.29,1.24,15.44,9.49,3.31,10.53,2.35,1.09,292.5,28.4,7.2,1.7,17.2,23.0
+SYNTH_00369,Synthetic_Aleutians,50.3927,-175.1213,1.9,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.97,0.49,15.23,6.9,4.91,5.7,3.86,2.45,161.4,17.4,6.9,2.1,15.7,20.8
+SYNTH_00370,Synthetic_Aleutians,52.6624,-166.3867,3.03,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,53.52,0.99,13.9,8.53,6.63,8.0,3.48,0.74,335.7,18.0,10.2,2.8,24.5,23.1
+SYNTH_00371,Synthetic_Aleutians,52.5685,-173.4253,3.46,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,52.48,2.02,15.3,9.3,6.03,8.14,2.97,0.88,598.2,28.4,10.5,1.7,19.6,27.9
+SYNTH_00372,Synthetic_Aleutians,50.0505,-165.1263,1.28,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,65.16,1.04,17.96,4.96,4.62,5.99,3.66,1.61,247.6,15.1,3.9,0.9,9.5,25.1
+SYNTH_00373,Synthetic_Aleutians,53.2091,-167.5057,1.01,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.27,1.58,16.65,6.31,3.08,4.52,4.23,2.23,371.8,19.8,6.1,1.2,12.3,27.9
+SYNTH_00374,Synthetic_Aleutians,53.1412,-176.2008,0.36,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.35,0.63,17.16,7.57,2.34,5.59,3.47,1.78,240.1,19.5,5.0,1.5,10.1,24.3
+SYNTH_00375,Synthetic_Aleutians,54.4177,-175.5559,4.25,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,61.35,1.03,19.3,7.24,5.23,7.5,3.58,2.38,204.8,15.2,8.8,2.1,16.1,24.9
+SYNTH_00376,Synthetic_Aleutians,52.2867,-166.1104,4.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,55.63,1.12,16.72,6.0,1.85,4.94,3.88,2.44,223.3,19.8,4.7,1.5,9.4,19.2
+SYNTH_00377,Synthetic_Aleutians,51.7146,-175.7831,3.61,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,64.71,0.73,15.36,4.09,1.55,7.69,3.34,0.86,330.5,20.3,5.9,1.3,13.3,24.1
+SYNTH_00378,Synthetic_Aleutians,53.1339,-162.8949,3.7,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,50.01,1.43,14.84,8.81,4.55,9.11,3.11,0.71,311.3,27.0,7.6,2.2,18.1,22.1
+SYNTH_00379,Synthetic_Aleutians,52.7134,-162.6265,3.98,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.89,0.46,17.99,7.0,1.76,5.15,3.27,1.75,356.4,17.3,5.3,1.6,11.3,28.5
+SYNTH_00380,Synthetic_Aleutians,53.4596,-177.6971,1.35,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.9,0.91,16.54,4.72,3.84,6.34,4.36,2.27,335.1,18.1,4.8,1.3,10.7,24.6
+SYNTH_00381,Synthetic_Aleutians,54.1603,-169.4351,4.1,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,50.45,1.65,15.44,8.78,7.8,7.48,2.49,0.1,255.6,22.6,9.0,2.3,16.5,24.1
+SYNTH_00382,Synthetic_Aleutians,53.2768,-168.9105,2.27,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.72,1.35,14.79,9.59,4.54,11.63,3.05,0.7,242.7,19.9,6.5,2.0,14.8,23.2
+SYNTH_00383,Synthetic_Aleutians,52.4654,-171.1674,4.42,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.24,0.49,15.93,5.21,3.7,6.66,3.2,1.81,148.8,12.3,4.3,1.1,10.7,24.0
+SYNTH_00384,Synthetic_Aleutians,53.2912,-161.1439,2.45,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,64.12,1.39,14.69,6.79,2.6,5.74,4.72,0.18,238.0,14.8,4.3,1.1,8.0,26.3
+SYNTH_00385,Synthetic_Aleutians,53.1809,-160.2992,4.48,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,55.06,0.96,16.1,5.34,4.99,5.23,4.39,2.15,172.6,14.9,3.6,1.1,7.4,26.5
+SYNTH_00386,Synthetic_Aleutians,51.1669,-172.0946,1.08,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.26,0.47,16.0,6.25,3.44,4.52,3.36,1.52,342.6,18.2,11.4,1.6,24.0,30.5
+SYNTH_00387,Synthetic_Aleutians,51.7507,-173.9242,2.5,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.4,0.57,16.68,5.01,4.5,7.43,3.0,1.11,219.9,17.3,7.0,1.7,15.6,23.5
+SYNTH_00388,Synthetic_Aleutians,51.6089,-176.8525,1.05,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,45.37,1.77,13.77,11.75,8.5,9.18,2.75,0.67,332.9,27.8,12.6,2.4,29.7,26.4
+SYNTH_00389,Synthetic_Aleutians,54.9367,-171.3341,3.74,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,64.44,0.8,17.16,5.13,3.53,6.4,3.32,2.22,224.6,12.0,5.7,1.2,13.9,29.4
+SYNTH_00390,Synthetic_Aleutians,51.5448,-160.4543,1.21,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.65,0.61,16.15,7.16,2.61,5.64,4.44,1.77,436.1,16.6,6.7,1.7,13.9,29.6
+SYNTH_00391,Synthetic_Aleutians,53.8695,-164.9764,3.57,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.3,1.26,15.35,5.46,4.56,7.39,3.32,1.14,121.8,14.3,3.6,1.1,8.0,22.7
+SYNTH_00392,Synthetic_Aleutians,51.98,-176.2738,2.82,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,65.76,0.66,18.02,3.62,2.65,6.46,4.03,1.73,336.4,19.4,8.8,1.8,21.9,25.2
+SYNTH_00393,Synthetic_Aleutians,54.8279,-173.0606,3.83,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.78,0.84,16.44,4.85,3.25,6.05,3.19,1.72,210.5,18.8,8.1,1.4,19.4,23.6
+SYNTH_00394,Synthetic_Aleutians,53.7102,-164.6233,4.51,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.29,0.8,16.9,4.13,3.21,7.1,3.67,1.49,274.0,18.6,4.0,1.2,9.8,20.9
+SYNTH_00395,Synthetic_Aleutians,51.9077,-177.5089,0.13,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,50.81,0.41,16.48,7.76,4.27,7.48,3.29,1.81,132.5,11.5,6.0,1.1,13.3,24.1
+SYNTH_00396,Synthetic_Aleutians,50.5135,-164.7064,4.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,61.44,0.77,17.59,3.77,2.41,6.18,4.08,1.68,178.1,12.7,4.2,1.4,8.8,24.1
+SYNTH_00397,Synthetic_Aleutians,50.6253,-171.1092,4.28,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.86,0.79,15.47,5.35,2.78,6.19,4.0,1.17,250.2,18.5,5.2,1.8,10.1,24.3
+SYNTH_00398,Synthetic_Aleutians,51.5179,-168.4631,3.98,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,55.62,0.55,16.97,4.62,1.93,7.63,3.88,1.18,237.9,18.9,4.5,1.3,8.6,21.9
+SYNTH_00399,Synthetic_Aleutians,51.6406,-169.3628,2.87,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.17,1.32,14.08,11.11,5.9,7.54,3.32,0.79,221.7,21.2,3.9,1.5,8.8,22.5
+SYNTH_00400,Synthetic_Aleutians,52.8409,-171.9254,0.74,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,64.32,0.77,16.31,4.84,2.56,5.13,3.08,0.59,141.1,10.1,10.1,2.1,24.2,25.6
+SYNTH_00401,Synthetic_Aleutians,51.4542,-160.0404,1.59,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.85,0.99,16.16,5.45,3.71,5.75,3.14,1.69,124.8,11.9,11.1,1.4,25.6,30.1
+SYNTH_00402,Synthetic_Aleutians,53.8273,-176.2921,4.26,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,63.26,1.23,16.21,4.1,3.21,7.71,2.57,2.14,487.2,20.3,19.3,2.1,37.3,32.2
+SYNTH_00403,Synthetic_Aleutians,50.8273,-167.4457,2.25,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,51.48,1.29,15.84,8.21,5.31,7.68,2.82,1.08,443.3,22.3,6.0,1.4,11.3,26.2
+SYNTH_00404,Synthetic_Aleutians,54.8653,-161.398,1.63,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.72,0.75,16.17,3.6,3.71,4.07,2.77,1.44,179.0,13.3,6.1,1.6,13.1,24.4
+SYNTH_00405,Synthetic_Aleutians,53.9799,-160.7923,0.65,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.8,1.48,16.79,11.24,7.88,9.56,2.67,1.0,363.1,24.2,14.5,2.5,32.7,25.4
+SYNTH_00406,Synthetic_Aleutians,53.0072,-163.3252,0.34,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.12,0.67,18.52,2.92,3.13,7.38,3.57,2.14,288.5,13.8,6.2,1.1,15.5,28.3
+SYNTH_00407,Synthetic_Aleutians,51.515,-174.0028,0.98,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.28,0.99,15.81,6.77,4.5,6.03,3.37,2.75,246.5,21.8,7.5,2.0,14.5,19.6
+SYNTH_00408,Synthetic_Aleutians,53.9338,-167.1829,2.67,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,63.54,0.9,15.59,5.1,0.72,6.71,4.11,2.42,247.8,16.6,4.7,0.9,10.2,25.1
+SYNTH_00409,Synthetic_Aleutians,50.2729,-172.2332,3.14,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.5,0.79,15.19,6.99,2.45,6.4,3.41,2.03,288.8,18.6,2.6,1.0,5.0,21.9
+SYNTH_00410,Synthetic_Aleutians,50.6636,-161.2154,4.57,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,51.12,0.8,15.69,10.75,4.73,10.99,2.74,0.88,245.8,19.0,11.6,2.7,26.2,26.7
+SYNTH_00411,Synthetic_Aleutians,52.2816,-166.1255,4.4,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.4,1.32,15.65,9.03,5.11,8.69,2.59,0.66,501.6,20.1,10.3,2.6,25.5,26.5
+SYNTH_00412,Synthetic_Aleutians,52.2929,-172.1136,0.24,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.37,0.93,17.47,6.18,2.56,7.93,3.28,2.17,315.2,14.3,9.0,1.8,18.6,27.7
+SYNTH_00413,Synthetic_Aleutians,54.5087,-166.4371,2.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.75,0.85,17.16,6.43,3.34,6.03,2.82,2.87,152.3,10.4,4.5,1.1,11.2,24.7
+SYNTH_00414,Synthetic_Aleutians,52.877,-169.1987,1.92,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,60.22,0.86,16.75,4.97,2.81,6.41,3.8,1.43,374.9,19.4,8.1,2.1,19.8,26.9
+SYNTH_00415,Synthetic_Aleutians,51.4911,-162.8739,2.68,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.62,1.62,16.24,10.27,4.68,10.75,2.84,0.59,428.7,27.5,14.4,2.2,27.2,28.8
+SYNTH_00416,Synthetic_Aleutians,50.1723,-173.9638,1.3,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.14,0.54,16.41,5.05,1.52,4.12,3.83,1.76,260.1,16.5,3.5,0.9,8.6,23.8
+SYNTH_00417,Synthetic_Aleutians,52.878,-167.3952,1.06,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,47.75,1.42,17.17,10.76,5.28,10.07,3.72,0.68,374.1,21.4,6.8,2.1,15.8,24.0
+SYNTH_00418,Synthetic_Aleutians,50.9336,-160.1323,0.81,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.5,0.83,16.4,4.34,2.03,5.43,3.35,2.8,318.1,21.0,13.0,2.0,30.8,27.7
+SYNTH_00419,Synthetic_Aleutians,53.5697,-175.2267,0.24,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,61.85,0.36,17.17,6.18,4.86,6.57,3.73,1.19,257.8,17.8,10.0,1.5,21.9,26.3
+SYNTH_00420,Synthetic_Aleutians,50.1921,-161.6881,4.76,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,55.32,1.12,15.89,7.35,3.54,5.52,4.39,1.29,232.8,15.8,5.8,1.3,12.1,25.1
+SYNTH_00421,Synthetic_Aleutians,54.5417,-168.9479,4.58,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.8,1.53,15.06,8.93,5.5,9.32,1.89,0.51,282.0,22.0,6.6,2.1,15.0,23.2
+SYNTH_00422,Synthetic_Aleutians,50.1203,-168.9723,3.66,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.19,1.05,17.96,4.15,2.72,2.93,4.16,2.63,308.5,18.4,6.8,1.8,14.8,24.5
+SYNTH_00423,Synthetic_Aleutians,54.3519,-165.8961,1.81,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,65.09,1.0,15.27,4.26,1.98,5.42,3.4,1.83,182.0,11.0,3.6,1.4,6.7,24.5
+SYNTH_00424,Synthetic_Aleutians,51.6682,-160.6924,2.54,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,50.11,0.86,15.14,9.22,6.86,7.95,3.14,0.57,169.2,19.3,3.7,1.4,9.0,18.6
+SYNTH_00425,Synthetic_Aleutians,53.3564,-172.6301,1.11,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,61.82,0.48,15.77,5.25,1.62,4.95,2.56,0.99,168.4,10.4,8.1,1.7,19.6,26.9
+SYNTH_00426,Synthetic_Aleutians,54.8834,-166.2976,4.75,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,55.79,0.91,15.75,5.37,2.91,4.52,2.83,1.81,293.2,16.7,7.2,1.4,13.7,25.6
+SYNTH_00427,Synthetic_Aleutians,54.9885,-166.8762,2.2,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,54.33,0.53,17.31,5.79,2.42,2.68,3.26,2.35,239.6,16.2,8.4,1.6,20.4,33.4
+SYNTH_00428,Synthetic_Aleutians,54.9282,-163.9851,0.33,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,60.6,0.75,16.17,6.09,3.21,4.26,4.02,1.37,428.0,20.1,7.9,1.3,18.3,26.6
+SYNTH_00429,Synthetic_Aleutians,50.5324,-175.5149,2.09,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.15,1.48,16.59,8.84,7.44,7.83,3.42,1.25,542.2,29.4,6.1,2.2,12.6,28.5
+SYNTH_00430,Synthetic_Aleutians,50.1546,-161.5304,1.64,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.07,0.56,17.55,5.31,2.95,6.42,3.56,2.07,241.2,19.1,8.6,1.9,20.2,23.3
+SYNTH_00431,Synthetic_Aleutians,50.7119,-168.0814,2.11,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.93,0.76,17.46,4.81,3.18,3.15,3.56,0.1,253.4,14.8,8.5,1.5,18.4,28.7
+SYNTH_00432,Synthetic_Aleutians,51.3268,-160.6542,4.56,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,54.46,0.65,16.72,5.18,1.91,7.81,2.6,2.36,69.5,10.4,4.4,1.5,9.1,21.2
+SYNTH_00433,Synthetic_Aleutians,51.124,-173.5482,2.92,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.91,0.76,17.46,5.69,1.79,6.36,3.9,1.7,208.1,14.5,4.6,1.8,9.6,22.8
+SYNTH_00434,Synthetic_Aleutians,53.8967,-170.3321,1.18,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,61.26,0.35,15.85,5.12,3.59,8.06,4.28,2.05,224.9,14.7,6.7,1.1,13.3,23.6
+SYNTH_00435,Synthetic_Aleutians,53.0001,-175.2634,3.27,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,53.19,1.51,15.97,10.14,7.04,9.16,3.14,0.85,448.3,28.9,11.0,2.5,24.3,23.2
+SYNTH_00436,Synthetic_Aleutians,52.7072,-166.3969,1.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.38,1.51,14.85,6.81,5.86,8.76,3.43,1.02,145.1,22.2,11.7,2.7,23.1,23.2
+SYNTH_00437,Synthetic_Aleutians,51.4061,-166.5731,0.02,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,52.17,1.22,16.62,6.32,8.19,10.5,3.16,0.41,294.1,20.4,17.9,2.4,41.8,29.0
+SYNTH_00438,Synthetic_Aleutians,51.4733,-168.9115,1.11,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,47.83,1.74,14.02,9.38,5.79,10.89,2.8,0.58,469.0,26.8,7.1,1.7,17.1,25.0
+SYNTH_00439,Synthetic_Aleutians,51.8978,-173.1195,0.98,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.96,1.02,17.87,5.19,4.33,7.0,3.37,1.7,191.8,13.0,5.2,1.6,10.5,23.4
+SYNTH_00440,Synthetic_Aleutians,52.7704,-166.1321,4.86,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.24,1.66,17.3,8.93,5.63,10.94,2.59,0.9,282.5,29.6,8.5,2.4,15.8,19.5
+SYNTH_00441,Synthetic_Aleutians,53.4659,-167.1348,1.69,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,44.0,1.18,16.13,8.9,3.75,9.47,2.25,0.63,308.1,20.6,10.3,2.4,22.5,24.6
+SYNTH_00442,Synthetic_Aleutians,54.1988,-167.5377,2.42,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.92,1.11,17.73,5.75,3.93,8.57,3.2,1.82,135.2,12.2,6.6,1.7,15.1,24.6
+SYNTH_00443,Synthetic_Aleutians,50.1671,-177.22,1.31,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,46.96,1.5,14.71,9.38,6.94,10.25,2.56,0.34,261.8,22.3,6.4,1.8,12.6,19.4
+SYNTH_00444,Synthetic_Aleutians,53.5307,-166.1363,2.68,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,52.74,0.45,18.26,5.01,2.7,6.11,3.22,1.26,277.3,21.3,8.6,1.8,21.3,24.3
+SYNTH_00445,Synthetic_Aleutians,50.938,-166.8614,4.14,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,47.39,2.05,15.18,5.9,6.81,10.32,2.69,1.4,436.5,25.8,6.4,2.0,15.0,24.7
+SYNTH_00446,Synthetic_Aleutians,52.8796,-162.7802,0.97,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.13,0.58,16.07,8.1,6.45,10.34,3.02,0.1,359.7,20.7,10.2,1.7,22.8,28.2
+SYNTH_00447,Synthetic_Aleutians,50.8385,-171.4713,3.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.96,0.64,16.72,6.13,3.31,5.66,2.53,1.88,231.2,18.1,5.3,1.4,10.5,25.6
+SYNTH_00448,Synthetic_Aleutians,50.524,-161.0607,0.71,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,63.69,0.47,16.41,6.77,2.46,5.71,4.78,1.15,242.7,16.3,4.1,0.9,9.6,24.8
+SYNTH_00449,Synthetic_Aleutians,54.4977,-162.9001,4.79,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.33,1.24,15.34,6.68,5.86,8.82,3.39,0.32,248.0,19.1,8.7,2.6,16.0,24.3
+SYNTH_00450,Synthetic_Aleutians,51.6955,-175.5641,2.4,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,51.72,1.59,15.88,9.17,4.23,10.09,2.33,0.41,331.2,25.1,8.0,2.8,18.4,20.9
+SYNTH_00451,Synthetic_Aleutians,53.3844,-171.4944,0.01,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,64.76,1.15,16.31,6.31,1.94,5.99,3.28,3.04,479.2,18.8,11.5,2.2,25.4,28.0
+SYNTH_00452,Synthetic_Aleutians,52.9557,-171.433,2.82,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,60.03,1.1,17.42,4.6,0.61,5.77,3.79,2.04,217.1,21.2,5.3,1.2,12.3,24.3
+SYNTH_00453,Synthetic_Aleutians,54.89,-168.107,3.46,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.53,1.26,14.48,7.44,8.35,7.85,2.19,0.78,372.7,24.5,9.0,2.5,22.2,25.5
+SYNTH_00454,Synthetic_Aleutians,50.783,-175.7051,2.06,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,62.14,0.63,17.26,4.52,2.59,6.62,3.93,1.84,434.4,21.9,3.8,1.2,8.5,25.0
+SYNTH_00455,Synthetic_Aleutians,50.3845,-167.6061,0.63,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.21,0.74,17.3,3.91,4.65,5.12,4.52,1.48,266.7,16.3,7.0,1.5,17.3,23.6
+SYNTH_00456,Synthetic_Aleutians,50.9952,-174.7657,3.74,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,61.79,0.66,15.4,3.47,2.74,5.81,3.16,1.87,108.1,11.5,8.3,2.1,18.4,17.4
+SYNTH_00457,Synthetic_Aleutians,51.6668,-170.8515,3.63,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,54.14,0.58,17.4,3.53,4.74,5.35,4.05,1.36,267.3,19.6,8.9,2.0,17.7,25.0
+SYNTH_00458,Synthetic_Aleutians,52.097,-168.0313,0.22,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,55.66,0.37,17.78,5.0,3.6,6.05,4.32,1.79,175.7,11.1,6.0,1.6,12.9,24.6
+SYNTH_00459,Synthetic_Aleutians,52.8707,-162.0583,3.12,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,47.81,1.07,16.13,8.73,9.07,8.1,3.6,0.83,359.8,29.7,5.1,1.7,10.7,20.4
+SYNTH_00460,Synthetic_Aleutians,54.8234,-165.5798,2.96,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.79,0.84,16.86,4.48,3.21,6.01,3.46,1.76,240.7,14.8,9.0,2.1,18.6,26.5
+SYNTH_00461,Synthetic_Aleutians,52.0662,-166.7687,4.01,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.04,1.16,17.74,5.9,3.43,6.3,3.27,1.92,149.1,17.1,5.1,1.3,10.5,23.5
+SYNTH_00462,Synthetic_Aleutians,51.9888,-171.9692,3.19,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.45,0.57,18.06,6.88,4.15,6.71,4.25,0.92,188.3,13.7,5.9,1.9,12.0,21.3
+SYNTH_00463,Synthetic_Aleutians,54.6044,-173.1766,0.69,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,51.08,0.85,15.37,6.56,6.87,10.76,2.94,1.46,392.7,26.0,9.2,1.9,16.9,26.6
+SYNTH_00464,Synthetic_Aleutians,54.7899,-160.0972,1.82,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,52.01,1.27,16.06,9.32,7.17,10.82,2.86,0.55,465.8,20.4,16.6,2.5,32.7,28.3
+SYNTH_00465,Synthetic_Aleutians,53.7974,-167.7868,1.83,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.1,1.29,17.88,6.26,3.43,4.7,3.85,0.97,325.2,18.7,8.3,1.2,17.1,26.6
+SYNTH_00466,Synthetic_Aleutians,52.1124,-164.5444,4.63,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,63.67,0.98,17.54,5.42,1.8,5.76,3.73,1.56,242.5,15.5,5.8,0.9,13.3,22.0
+SYNTH_00467,Synthetic_Aleutians,52.0753,-165.8744,1.39,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,52.49,0.71,15.45,11.01,6.21,7.69,3.16,1.21,225.0,28.7,6.5,1.8,11.8,25.0
+SYNTH_00468,Synthetic_Aleutians,51.5415,-174.315,2.74,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,47.78,1.19,16.42,9.38,4.07,10.63,2.4,1.34,288.4,24.8,14.7,2.5,31.3,26.6
+SYNTH_00469,Synthetic_Aleutians,50.9589,-166.4828,0.4,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,51.3,1.63,17.01,9.68,4.61,10.51,3.33,0.99,365.1,24.1,6.0,2.3,11.5,22.1
+SYNTH_00470,Synthetic_Aleutians,50.1158,-177.0865,4.52,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.53,0.7,15.31,7.47,8.47,10.02,2.82,0.72,293.9,22.5,11.8,2.2,29.2,24.5
+SYNTH_00471,Synthetic_Aleutians,50.5982,-164.3749,1.67,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,48.63,0.9,15.99,8.85,5.2,9.01,2.46,0.74,275.7,24.8,7.1,1.6,14.3,20.9
+SYNTH_00472,Synthetic_Aleutians,50.8595,-171.0547,4.87,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,47.86,1.62,17.21,9.9,7.69,9.8,2.52,1.24,520.5,29.8,15.0,2.5,32.3,30.3
+SYNTH_00473,Synthetic_Aleutians,50.8473,-167.4113,4.17,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,58.94,0.8,17.77,4.4,1.88,6.09,3.42,2.16,222.1,21.3,5.5,2.0,11.1,22.5
+SYNTH_00474,Synthetic_Aleutians,50.4677,-172.9575,4.21,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.29,0.39,17.08,4.99,4.78,7.09,3.16,1.86,262.7,17.7,7.0,1.9,16.5,23.1
+SYNTH_00475,Synthetic_Aleutians,52.1023,-163.625,4.69,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.46,0.68,16.65,7.27,2.0,6.48,3.61,1.12,447.7,21.7,5.5,1.2,10.1,26.2
+SYNTH_00476,Synthetic_Aleutians,54.761,-161.9328,3.28,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,57.78,0.79,16.75,3.64,3.19,6.33,3.56,1.82,271.7,15.4,11.5,1.9,24.1,26.7
+SYNTH_00477,Synthetic_Aleutians,50.1278,-172.9057,1.16,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.39,1.56,15.91,10.07,4.71,9.03,2.69,0.65,449.7,27.6,12.9,2.4,25.1,26.8
+SYNTH_00478,Synthetic_Aleutians,54.6585,-170.7244,4.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,mafic,49.16,1.29,15.43,7.69,6.82,10.41,2.54,0.62,508.4,21.4,10.8,2.2,21.2,29.7
+SYNTH_00479,Synthetic_Aleutians,54.7316,-162.5169,1.44,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,56.12,0.94,15.89,4.53,3.12,7.11,3.74,0.34,291.8,15.0,4.6,1.1,11.0,23.5
+SYNTH_00480,Synthetic_Aleutians,54.1043,-165.4925,3.74,Island arc,Aleutians,Central Aleutians,Aleutian arc,intermediate,59.34,1.47,15.31,6.54,3.24,5.07,4.62,2.78,223.6,12.2,3.6,0.9,7.3,24.3
+SYNTH_00481,Synthetic_Tibet,31.8967,88.419,32.69,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,54.54,0.37,15.66,5.84,3.95,4.08,3.62,1.6,726.3,13.6,47.2,2.0,95.0,58.9
+SYNTH_00482,Synthetic_Tibet,28.9753,93.671,21.12,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.53,0.8,16.74,4.88,2.7,7.05,3.22,1.48,891.3,16.3,34.2,0.9,67.8,65.5
+SYNTH_00483,Synthetic_Tibet,30.4869,86.5681,36.28,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.07,0.23,16.46,1.92,1.76,0.93,3.71,3.73,489.6,10.9,17.0,0.5,39.8,56.0
+SYNTH_00484,Synthetic_Tibet,30.6406,91.4944,29.21,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.84,0.66,17.27,4.13,2.33,6.6,4.08,1.56,1128.4,18.8,92.3,1.7,170.6,67.4
+SYNTH_00485,Synthetic_Tibet,28.4602,91.3385,35.7,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.26,1.11,16.32,6.62,3.66,5.64,3.71,1.97,1024.7,20.4,89.1,1.6,192.6,68.5
+SYNTH_00486,Synthetic_Tibet,28.0209,91.371,14.85,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.2,0.48,15.31,1.86,0.91,1.94,4.1,2.72,941.6,13.9,43.4,0.7,92.1,71.0
+SYNTH_00487,Synthetic_Tibet,30.5795,88.2232,52.69,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,66.68,0.43,13.97,1.59,1.8,3.35,3.69,3.73,395.6,6.0,70.7,1.2,149.8,72.0
+SYNTH_00488,Synthetic_Tibet,30.7553,90.9696,50.02,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.51,0.41,15.56,2.01,0.41,1.57,3.6,3.71,914.2,12.9,76.2,1.3,183.3,68.6
+SYNTH_00489,Synthetic_Tibet,28.9849,86.2743,45.15,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.85,0.25,14.65,1.91,0.84,3.52,3.07,3.69,471.6,6.5,36.6,0.7,79.9,65.5
+SYNTH_00490,Synthetic_Tibet,28.84,88.4367,31.51,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.09,0.36,13.87,0.84,0.9,1.9,3.68,2.47,410.4,7.5,24.7,0.5,53.6,69.0
+SYNTH_00491,Synthetic_Tibet,28.1585,93.0265,32.18,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.24,0.28,14.99,1.27,1.0,2.07,4.42,3.27,624.7,14.9,27.0,0.7,58.9,55.1
+SYNTH_00492,Synthetic_Tibet,29.3406,92.8496,38.78,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.27,1.06,16.8,6.95,3.33,8.43,3.07,1.64,920.5,15.0,114.6,1.9,272.7,65.5
+SYNTH_00493,Synthetic_Tibet,28.5492,87.3803,22.15,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.36,0.33,15.92,1.72,1.48,1.67,3.6,4.21,385.3,6.0,22.8,0.5,56.5,66.2
+SYNTH_00494,Synthetic_Tibet,30.7169,92.5247,40.41,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.34,0.41,13.14,1.19,1.03,0.93,3.08,3.52,829.7,13.0,57.3,1.2,116.4,61.4
+SYNTH_00495,Synthetic_Tibet,31.2753,93.8537,48.48,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,62.12,0.74,16.58,4.51,0.76,5.1,3.43,1.7,1050.4,19.4,95.0,1.6,172.6,68.0
+SYNTH_00496,Synthetic_Tibet,31.1541,94.0947,49.62,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,56.69,1.46,15.55,5.09,4.8,4.39,3.25,1.5,773.9,14.8,110.6,1.7,256.2,70.8
+SYNTH_00497,Synthetic_Tibet,31.5189,93.7585,42.46,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,62.45,0.74,15.32,4.81,1.9,6.92,4.2,1.91,1361.1,18.3,63.0,1.1,119.5,71.5
+SYNTH_00498,Synthetic_Tibet,28.5895,90.9908,45.05,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.2,0.3,15.5,0.53,1.67,2.03,3.75,3.89,717.1,16.5,52.5,1.5,103.7,61.3
+SYNTH_00499,Synthetic_Tibet,28.8275,87.1392,27.43,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.59,0.44,15.19,2.23,1.14,2.21,4.04,1.68,393.6,9.0,51.3,1.5,117.1,59.4
+SYNTH_00500,Synthetic_Tibet,28.688,89.9078,42.49,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.64,0.87,15.15,5.11,2.8,2.58,3.58,2.22,932.1,12.9,87.1,1.4,164.0,70.6
+SYNTH_00501,Synthetic_Tibet,28.9556,88.0279,24.37,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.6,0.3,16.17,2.51,0.58,3.15,4.28,2.55,390.6,11.5,29.2,1.1,60.9,60.3
+SYNTH_00502,Synthetic_Tibet,29.7252,87.6394,34.09,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,68.67,0.24,15.09,2.94,0.13,2.04,4.29,3.09,626.7,9.9,40.7,0.8,90.6,62.6
+SYNTH_00503,Synthetic_Tibet,29.125,86.4135,53.27,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,68.34,0.39,14.98,2.53,0.96,1.55,3.74,3.32,647.6,14.4,59.5,0.9,113.6,68.5
+SYNTH_00504,Synthetic_Tibet,29.1805,90.0115,24.83,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.66,0.14,16.47,5.94,0.86,7.69,2.59,1.8,912.8,14.4,29.2,1.1,62.9,58.5
+SYNTH_00505,Synthetic_Tibet,29.2775,94.1293,34.05,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.27,0.84,16.93,5.83,2.31,7.69,3.25,1.8,927.9,17.7,159.0,2.0,352.6,72.1
+SYNTH_00506,Synthetic_Tibet,30.9943,87.8098,53.95,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.34,0.3,12.29,2.13,0.77,2.85,3.97,4.65,939.0,13.3,51.2,1.4,101.0,66.5
+SYNTH_00507,Synthetic_Tibet,29.9559,85.2972,10.4,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.47,0.74,17.32,6.42,3.46,5.58,3.32,2.48,1126.1,14.7,103.6,1.8,245.7,71.9
+SYNTH_00508,Synthetic_Tibet,29.2132,94.9283,50.89,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,74.4,0.13,14.83,1.0,0.58,2.43,4.1,3.79,557.9,11.0,38.1,0.7,92.5,67.7
+SYNTH_00509,Synthetic_Tibet,30.2427,88.6048,12.0,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.09,0.29,15.13,0.68,1.52,1.57,3.2,3.87,446.0,17.0,29.0,1.3,69.1,56.6
+SYNTH_00510,Synthetic_Tibet,31.7129,91.3654,54.77,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,73.68,0.64,14.47,1.05,1.42,2.87,3.23,2.7,599.3,9.5,30.1,0.7,60.9,67.0
+SYNTH_00511,Synthetic_Tibet,30.6558,91.7687,43.36,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.23,0.07,16.46,3.16,0.54,2.09,4.02,3.42,635.3,15.7,48.0,1.0,100.7,64.9
+SYNTH_00512,Synthetic_Tibet,30.6487,90.4151,15.92,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,64.72,1.33,15.95,5.31,3.49,8.15,3.21,1.69,1002.0,18.8,45.9,1.8,89.1,59.9
+SYNTH_00513,Synthetic_Tibet,29.7964,93.1117,27.17,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,66.18,0.5,15.19,3.3,0.1,2.95,3.0,3.15,483.9,16.3,32.7,0.8,78.5,60.7
+SYNTH_00514,Synthetic_Tibet,31.8339,87.572,37.46,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.46,0.4,15.89,2.49,0.25,2.95,3.33,3.98,370.0,6.9,43.5,0.9,106.9,67.7
+SYNTH_00515,Synthetic_Tibet,28.9112,91.7584,12.24,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,65.9,0.34,12.48,1.06,1.48,3.58,4.25,4.61,309.2,6.4,65.3,0.7,136.2,73.1
+SYNTH_00516,Synthetic_Tibet,29.3015,93.6583,40.54,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.16,0.32,16.04,0.5,1.05,1.16,3.29,3.35,870.8,18.0,29.0,1.0,62.2,58.2
+SYNTH_00517,Synthetic_Tibet,31.0936,85.3619,29.22,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,56.01,0.82,18.15,4.16,2.93,4.6,3.6,0.59,532.7,13.1,53.5,1.5,101.7,59.4
+SYNTH_00518,Synthetic_Tibet,30.2616,87.4528,23.21,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.51,0.56,14.55,0.5,0.25,3.09,3.8,4.13,478.0,17.3,13.4,0.9,25.4,53.8
+SYNTH_00519,Synthetic_Tibet,28.4368,85.0636,43.48,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,61.45,0.49,18.05,3.48,2.37,2.96,3.31,2.19,1421.9,19.4,85.3,1.4,157.4,70.9
+SYNTH_00520,Synthetic_Tibet,31.1707,90.9716,50.92,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,61.32,0.92,15.78,6.13,4.15,4.71,3.84,1.83,1410.6,15.7,147.2,1.4,329.2,75.7
+SYNTH_00521,Synthetic_Tibet,31.3145,87.4168,25.43,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.7,1.06,16.31,5.62,1.85,5.38,5.22,2.05,490.7,11.8,51.1,1.8,108.7,62.2
+SYNTH_00522,Synthetic_Tibet,31.4116,94.0745,49.26,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.64,1.12,16.93,7.03,3.64,7.07,3.17,2.35,1240.0,21.9,71.0,1.5,136.5,61.3
+SYNTH_00523,Synthetic_Tibet,29.9518,86.0231,49.26,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,56.78,0.72,15.76,4.68,2.48,5.41,3.36,2.92,499.2,11.1,77.3,1.9,159.0,62.1
+SYNTH_00524,Synthetic_Tibet,28.9795,90.6998,10.6,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,65.53,0.28,16.08,1.79,0.53,1.41,3.78,4.52,1012.1,16.5,41.7,0.8,97.6,70.4
+SYNTH_00525,Synthetic_Tibet,28.382,92.4036,22.71,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.08,0.15,14.13,2.75,1.04,2.26,2.52,3.45,668.3,15.8,42.0,0.9,91.7,64.4
+SYNTH_00526,Synthetic_Tibet,30.3142,88.1205,12.42,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,61.79,0.99,16.04,4.52,3.95,6.11,2.99,1.69,668.0,14.2,79.7,1.8,181.6,64.8
+SYNTH_00527,Synthetic_Tibet,29.2424,94.8304,39.19,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.75,0.75,16.6,5.8,2.06,6.1,2.96,2.05,1268.9,20.7,64.3,1.0,147.1,70.4
+SYNTH_00528,Synthetic_Tibet,31.8747,90.7365,19.78,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.27,0.52,14.63,1.3,1.63,2.88,4.17,2.76,863.1,15.6,45.8,0.7,82.8,71.2
+SYNTH_00529,Synthetic_Tibet,30.518,93.4485,34.88,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,68.87,0.44,14.11,1.38,1.32,3.76,3.55,3.31,848.1,12.9,52.7,1.0,99.6,70.0
+SYNTH_00530,Synthetic_Tibet,30.8077,91.46,25.4,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,66.5,1.34,16.19,4.35,1.94,6.31,3.27,1.63,820.8,17.3,169.8,1.9,322.1,73.2
+SYNTH_00531,Synthetic_Tibet,29.7624,91.8867,47.52,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,55.73,0.79,16.09,4.9,4.29,6.18,3.6,1.25,790.3,18.5,32.0,1.3,73.6,57.9
+SYNTH_00532,Synthetic_Tibet,29.1304,90.4269,33.7,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,64.47,0.33,15.72,2.65,1.03,2.51,3.87,2.98,1191.9,17.7,72.1,1.5,131.1,74.9
+SYNTH_00533,Synthetic_Tibet,29.0949,86.5726,53.91,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.3,0.78,15.24,4.39,3.63,6.81,3.9,0.83,1056.0,19.1,158.0,1.3,364.0,80.0
+SYNTH_00534,Synthetic_Tibet,31.8647,88.5776,54.96,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.16,0.41,14.16,1.84,0.78,2.44,3.67,4.27,298.2,6.1,20.9,0.6,38.8,64.7
+SYNTH_00535,Synthetic_Tibet,28.432,94.7695,19.55,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.87,0.86,15.81,5.5,1.97,6.92,2.66,0.82,581.2,13.0,140.7,1.9,270.5,72.1
+SYNTH_00536,Synthetic_Tibet,31.7319,93.8457,26.23,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.8,0.68,16.35,5.34,2.37,6.05,2.85,1.84,584.8,13.1,63.6,1.6,143.0,66.9
+SYNTH_00537,Synthetic_Tibet,31.8492,89.9381,51.28,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,65.31,0.46,16.68,3.74,0.1,2.09,3.94,2.2,587.7,14.1,20.2,1.0,38.4,53.0
+SYNTH_00538,Synthetic_Tibet,31.6767,86.1505,38.31,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.77,0.6,16.29,5.7,3.3,4.66,3.26,1.71,714.1,17.8,55.9,1.6,110.2,60.6
+SYNTH_00539,Synthetic_Tibet,31.2431,85.7569,38.45,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.2,0.26,14.64,1.6,0.18,2.81,4.98,3.04,216.5,7.9,31.1,1.4,73.6,59.9
+SYNTH_00540,Synthetic_Tibet,31.4165,88.261,33.76,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,60.54,1.39,16.33,4.69,3.88,6.48,3.63,2.32,907.3,16.4,50.2,1.2,114.6,63.7
+SYNTH_00541,Synthetic_Tibet,29.5681,86.8275,52.47,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,76.7,0.74,15.13,1.31,0.1,3.27,3.42,2.99,732.0,14.4,21.8,0.6,50.4,64.7
+SYNTH_00542,Synthetic_Tibet,31.7989,92.4318,45.31,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,64.55,0.34,15.91,6.0,1.47,4.75,4.52,1.2,715.6,16.9,52.5,2.0,116.9,57.2
+SYNTH_00543,Synthetic_Tibet,29.1816,92.241,16.57,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,56.5,0.41,15.34,5.49,5.02,5.09,3.06,1.22,696.0,15.1,32.2,1.0,79.0,63.9
+SYNTH_00544,Synthetic_Tibet,29.5835,88.6098,44.18,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,66.42,0.22,15.53,3.05,0.23,1.48,3.57,2.92,427.5,10.2,25.1,0.5,55.5,64.5
+SYNTH_00545,Synthetic_Tibet,30.8022,89.04,28.27,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,74.08,0.13,16.74,2.1,1.0,2.71,4.54,3.37,564.7,14.6,21.2,0.5,46.3,68.0
+SYNTH_00546,Synthetic_Tibet,29.5312,89.6495,29.11,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,66.74,0.26,14.74,2.62,0.61,4.56,3.78,3.59,594.4,13.0,62.6,1.4,130.4,63.7
+SYNTH_00547,Synthetic_Tibet,31.438,92.9852,10.08,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,65.79,0.19,16.07,3.48,1.15,2.3,2.99,2.97,268.6,8.3,40.1,1.1,98.5,55.9
+SYNTH_00548,Synthetic_Tibet,29.1938,88.7675,54.7,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.36,0.45,12.17,1.64,1.61,2.27,3.84,3.57,747.7,15.4,58.3,1.4,132.2,66.6
+SYNTH_00549,Synthetic_Tibet,31.5769,93.3803,16.0,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,55.92,0.75,14.48,4.27,3.23,4.15,4.3,1.73,746.5,13.5,84.0,1.5,182.4,62.5
+SYNTH_00550,Synthetic_Tibet,29.0003,91.5196,41.2,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.08,1.14,17.1,4.94,1.35,5.02,4.85,1.52,621.4,12.2,104.5,1.6,236.4,69.9
+SYNTH_00551,Synthetic_Tibet,28.8948,90.1693,38.73,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,56.24,0.73,17.14,4.05,2.74,3.49,3.96,0.62,579.9,10.7,83.4,1.4,153.0,71.4
+SYNTH_00552,Synthetic_Tibet,30.4302,91.8842,42.91,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.3,0.51,15.1,2.46,1.18,1.3,3.78,3.54,372.8,7.3,12.3,0.4,22.1,59.8
+SYNTH_00553,Synthetic_Tibet,29.5982,93.8425,46.89,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,54.88,1.09,16.61,6.5,2.96,6.79,3.87,2.47,595.7,10.1,57.6,1.1,122.6,62.8
+SYNTH_00554,Synthetic_Tibet,31.4022,94.6512,36.77,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,61.86,0.86,15.95,5.87,3.23,4.34,3.53,2.08,842.8,14.3,103.5,1.1,194.0,74.7
+SYNTH_00555,Synthetic_Tibet,28.3802,91.5913,37.57,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.32,0.43,13.89,1.59,0.8,1.87,3.8,3.25,624.2,13.5,36.0,0.7,70.0,65.8
+SYNTH_00556,Synthetic_Tibet,29.4307,93.284,48.79,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,64.85,0.1,18.75,6.35,4.62,6.89,3.27,2.31,803.7,16.0,59.6,0.9,144.8,67.7
+SYNTH_00557,Synthetic_Tibet,30.1756,93.2515,39.5,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.63,0.78,15.0,0.64,1.35,1.6,4.31,3.11,837.8,16.2,21.5,0.5,48.2,61.1
+SYNTH_00558,Synthetic_Tibet,31.5605,87.5269,24.71,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,54.88,0.97,17.69,5.14,3.32,3.55,4.02,2.17,1274.7,18.0,29.7,0.9,69.9,61.2
+SYNTH_00559,Synthetic_Tibet,30.0342,85.752,40.63,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.92,0.24,14.79,2.28,1.07,2.71,3.67,2.32,606.4,9.0,22.4,0.4,53.3,72.0
+SYNTH_00560,Synthetic_Tibet,28.9643,91.3174,34.7,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,73.36,0.09,14.46,2.65,0.39,0.86,3.74,4.36,417.7,10.9,37.9,0.6,94.2,65.3
+SYNTH_00561,Synthetic_Tibet,28.062,85.1007,26.8,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.52,0.86,15.3,6.85,3.97,8.18,2.56,2.34,495.5,11.5,108.5,1.3,196.3,79.1
+SYNTH_00562,Synthetic_Tibet,31.9442,90.9838,37.34,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,74.25,0.5,15.51,3.62,0.4,3.89,2.57,3.36,503.4,9.0,22.0,0.6,45.3,58.9
+SYNTH_00563,Synthetic_Tibet,29.9236,92.2073,42.01,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.3,0.1,15.62,1.08,0.69,2.69,3.07,3.41,929.7,17.2,34.8,0.5,78.1,70.9
+SYNTH_00564,Synthetic_Tibet,31.1693,87.6544,42.63,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.11,0.32,14.92,0.57,1.17,1.04,4.03,3.51,887.6,14.8,50.3,1.3,94.5,67.9
+SYNTH_00565,Synthetic_Tibet,31.9979,94.4189,50.35,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,62.68,0.29,15.0,4.69,3.23,4.03,3.56,2.14,486.5,10.0,30.1,0.9,68.8,57.7
+SYNTH_00566,Synthetic_Tibet,29.6506,93.3947,17.79,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.65,0.68,15.08,5.35,6.06,4.39,3.33,2.31,1011.6,21.5,52.2,1.2,97.7,65.4
+SYNTH_00567,Synthetic_Tibet,30.099,94.0725,24.01,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,54.84,0.74,17.82,6.4,3.54,5.16,2.99,1.79,1058.4,19.7,70.3,1.8,167.4,63.8
+SYNTH_00568,Synthetic_Tibet,28.65,89.9695,40.02,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.54,0.45,15.51,2.06,0.88,0.99,3.85,2.12,1030.6,17.2,52.6,1.4,118.6,61.2
+SYNTH_00569,Synthetic_Tibet,29.1382,88.2688,52.63,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,64.84,0.25,15.23,3.65,0.35,3.71,3.71,3.83,176.9,6.0,15.6,0.7,29.0,56.0
+SYNTH_00570,Synthetic_Tibet,28.5068,86.6352,23.59,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,71.52,0.27,16.53,1.97,1.78,2.4,3.27,3.68,868.9,13.9,40.7,0.8,74.7,65.4
+SYNTH_00571,Synthetic_Tibet,28.0315,93.2539,24.47,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.91,0.31,15.52,6.02,3.25,6.53,3.63,1.5,965.8,14.1,87.5,1.5,205.9,63.8
+SYNTH_00572,Synthetic_Tibet,29.2715,92.4448,16.59,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,60.0,0.94,16.24,6.27,3.13,4.15,3.62,1.91,1166.3,20.6,86.0,1.1,168.1,71.4
+SYNTH_00573,Synthetic_Tibet,30.7469,85.889,42.96,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,53.6,1.11,16.33,4.96,2.62,7.4,3.9,2.41,500.3,21.4,68.7,1.1,138.3,66.4
+SYNTH_00574,Synthetic_Tibet,29.8859,85.0045,51.44,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.22,0.7,16.24,6.13,2.91,5.71,4.02,2.56,822.1,12.5,64.4,1.2,132.1,68.3
+SYNTH_00575,Synthetic_Tibet,28.0371,89.1736,10.12,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,73.06,0.47,15.91,2.76,0.32,2.5,3.92,4.01,855.8,14.4,45.7,1.3,84.7,59.8
+SYNTH_00576,Synthetic_Tibet,28.2531,88.6112,33.74,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.37,0.71,15.03,6.58,2.82,6.21,3.91,1.84,919.2,13.8,60.1,1.9,110.1,65.4
+SYNTH_00577,Synthetic_Tibet,29.5558,85.3752,51.88,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,70.47,0.41,14.76,1.84,1.25,1.57,3.8,3.12,348.8,5.9,21.6,0.7,43.5,60.9
+SYNTH_00578,Synthetic_Tibet,29.6974,89.7313,23.12,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,66.26,0.51,15.8,4.24,2.25,4.06,3.55,2.55,1532.4,21.8,102.2,1.8,244.2,67.8
+SYNTH_00579,Synthetic_Tibet,29.7528,94.5544,18.98,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.52,0.23,15.02,2.8,0.21,2.49,3.3,2.93,727.1,12.6,87.9,1.6,173.2,67.6
+SYNTH_00580,Synthetic_Tibet,30.2919,91.1096,34.71,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.04,0.91,16.64,6.4,3.15,8.83,2.62,1.13,480.7,20.2,64.8,1.4,139.7,61.2
+SYNTH_00581,Synthetic_Tibet,31.8971,89.1739,46.33,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,54.73,0.42,15.58,3.39,4.38,5.92,3.43,1.92,470.5,10.1,61.2,1.1,150.1,65.7
+SYNTH_00582,Synthetic_Tibet,30.4167,94.2955,23.96,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.47,0.15,15.16,0.5,0.1,2.74,3.65,3.92,574.4,8.4,25.6,1.0,56.1,59.9
+SYNTH_00583,Synthetic_Tibet,30.9701,89.7164,40.61,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,67.47,0.15,13.36,2.64,0.62,1.86,3.56,3.98,616.4,8.1,46.6,0.4,87.5,76.2
+SYNTH_00584,Synthetic_Tibet,28.978,92.2592,44.91,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.8,0.86,17.33,6.63,3.12,6.3,3.28,1.86,708.6,17.2,34.6,1.1,66.9,60.0
+SYNTH_00585,Synthetic_Tibet,30.7328,94.3355,35.93,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.1,0.53,17.39,5.36,4.27,6.34,3.14,1.77,442.5,12.4,124.6,1.9,282.9,68.8
+SYNTH_00586,Synthetic_Tibet,30.5888,87.6699,32.8,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.8,0.17,17.58,4.57,2.94,5.46,3.4,1.52,812.6,15.1,35.5,1.2,79.2,63.3
+SYNTH_00587,Synthetic_Tibet,29.9428,86.1145,45.31,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.76,0.93,16.09,8.73,2.99,5.54,3.12,2.12,945.1,14.6,111.4,2.2,248.9,69.4
+SYNTH_00588,Synthetic_Tibet,30.1791,85.3592,48.15,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.59,0.43,16.34,5.33,2.75,7.97,2.68,1.7,936.6,14.8,136.1,1.7,337.6,73.8
+SYNTH_00589,Synthetic_Tibet,30.6472,85.162,41.73,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.85,0.31,15.24,5.53,2.67,6.52,3.63,2.63,823.5,15.8,75.9,1.5,147.1,65.0
+SYNTH_00590,Synthetic_Tibet,31.5846,94.7415,12.33,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,58.61,0.1,17.67,5.44,2.8,5.86,3.52,1.75,605.0,15.3,130.3,2.1,313.8,68.7
+SYNTH_00591,Synthetic_Tibet,29.3766,91.9601,39.72,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.01,0.14,14.94,2.45,0.43,1.38,3.97,3.31,847.8,15.2,27.5,0.6,57.3,64.2
+SYNTH_00592,Synthetic_Tibet,31.6767,86.716,12.77,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,73.43,0.3,16.04,0.5,1.69,1.91,3.45,3.09,532.7,11.6,63.7,1.2,117.7,63.6
+SYNTH_00593,Synthetic_Tibet,29.3786,92.1708,17.07,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,69.35,0.23,13.87,1.69,0.89,2.97,3.7,3.96,696.2,10.1,44.1,1.1,95.8,69.1
+SYNTH_00594,Synthetic_Tibet,31.6989,87.1436,51.77,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,59.52,0.55,15.5,6.85,2.35,5.69,4.13,1.85,1063.1,17.5,80.9,1.5,155.6,67.4
+SYNTH_00595,Synthetic_Tibet,31.3258,88.2468,52.05,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.73,1.05,16.24,6.15,2.83,7.0,3.57,1.46,790.0,16.1,106.8,1.5,224.4,71.5
+SYNTH_00596,Synthetic_Tibet,30.7356,91.0873,53.74,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,57.9,0.56,16.64,7.62,2.02,5.42,2.59,0.77,935.4,20.8,68.2,1.9,159.1,64.1
+SYNTH_00597,Synthetic_Tibet,31.498,92.9157,29.43,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,68.0,0.36,16.68,1.02,0.37,2.62,3.75,4.61,805.8,13.8,120.2,1.6,281.8,73.1
+SYNTH_00598,Synthetic_Tibet,29.9447,89.4071,50.84,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,felsic,72.28,0.63,16.95,1.55,0.12,1.25,3.62,3.03,417.8,13.3,16.5,0.5,40.9,60.1
+SYNTH_00599,Synthetic_Tibet,31.5711,90.4778,23.92,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,61.38,0.48,14.93,6.45,3.38,6.08,3.36,0.93,976.1,19.8,52.4,1.1,106.7,67.7
+SYNTH_00600,Synthetic_Tibet,29.0724,91.9787,44.17,Continental collision,Lhasa Terrane,Gangdese,Tibetan plateau,intermediate,63.58,0.1,16.17,3.44,2.87,4.02,4.4,2.16,534.6,11.2,49.6,1.2,116.8,68.6
+SYNTH_00601,Synthetic_Slave,61.4642,-107.4296,2879.55,Craton,,,Slave craton,felsic,70.0,0.23,14.33,0.54,1.31,1.96,3.55,2.83,501.3,16.4,15.6,1.0,38.8,45.6
+SYNTH_00602,Synthetic_Slave,64.3741,-109.8953,2527.72,Craton,,,Slave craton,felsic,69.49,0.23,14.98,2.77,0.44,3.07,3.91,3.34,228.4,7.4,12.7,1.1,31.6,44.3
+SYNTH_00603,Synthetic_Slave,62.7515,-108.5444,2771.03,Craton,,,Slave craton,intermediate,67.81,0.72,16.4,5.85,3.31,6.84,3.65,2.11,427.7,10.4,16.4,1.1,41.0,45.1
+SYNTH_00604,Synthetic_Slave,64.9926,-107.8015,2744.74,Craton,,,Slave craton,felsic,70.76,0.37,16.73,1.23,0.74,1.87,4.25,4.47,284.9,9.9,20.0,1.5,47.2,42.8
+SYNTH_00605,Synthetic_Slave,60.1382,-106.8145,2809.14,Craton,,,Slave craton,felsic,65.41,0.45,14.72,1.49,1.05,2.3,4.09,3.63,414.4,11.3,21.2,1.5,51.5,41.5
+SYNTH_00606,Synthetic_Slave,60.9264,-108.1383,2585.85,Craton,,,Slave craton,felsic,70.17,0.55,15.15,2.84,0.95,1.55,3.95,2.75,190.2,6.9,7.3,0.8,17.7,35.9
+SYNTH_00607,Synthetic_Slave,62.3827,-107.5586,2693.91,Craton,,,Slave craton,intermediate,60.4,0.59,16.1,5.31,4.43,4.93,3.62,1.02,404.8,11.8,28.0,1.6,54.0,47.2
+SYNTH_00608,Synthetic_Slave,61.5321,-105.5986,2847.31,Craton,,,Slave craton,intermediate,61.64,1.08,15.58,5.11,3.28,6.95,3.22,1.91,355.9,18.4,8.9,1.0,16.5,39.1
+SYNTH_00609,Synthetic_Slave,63.7214,-107.7333,2606.0,Craton,,,Slave craton,intermediate,62.01,0.36,16.64,5.05,4.06,5.13,3.27,2.57,409.1,10.5,19.8,1.3,45.1,47.2
+SYNTH_00610,Synthetic_Slave,61.6482,-114.2146,2638.01,Craton,,,Slave craton,intermediate,57.47,0.95,14.73,5.57,1.98,5.61,4.14,2.15,548.6,19.6,17.0,1.6,36.0,44.0
+SYNTH_00611,Synthetic_Slave,62.1026,-108.9337,2789.83,Craton,,,Slave craton,felsic,69.75,0.33,15.43,3.12,1.23,3.28,3.7,2.29,214.5,5.4,5.2,0.5,11.8,42.7
+SYNTH_00612,Synthetic_Slave,64.8657,-110.4531,2558.82,Craton,,,Slave craton,felsic,69.68,0.49,16.63,0.83,1.34,3.25,3.74,2.67,280.3,8.0,11.7,1.0,27.9,40.3
+SYNTH_00613,Synthetic_Slave,61.8869,-114.3959,2616.65,Craton,,,Slave craton,intermediate,64.22,0.89,16.66,4.48,3.25,7.5,4.19,1.99,486.1,15.7,19.4,1.2,35.9,47.3
+SYNTH_00614,Synthetic_Slave,63.3876,-114.7634,2823.79,Craton,,,Slave craton,intermediate,61.6,0.41,16.74,5.86,4.93,6.6,3.98,0.33,494.6,16.3,25.9,1.7,59.5,46.2
+SYNTH_00615,Synthetic_Slave,61.8439,-112.0436,2572.86,Craton,,,Slave craton,intermediate,59.25,0.78,17.46,6.03,1.03,6.12,3.31,2.99,486.2,17.9,22.1,2.1,47.2,38.2
+SYNTH_00616,Synthetic_Slave,62.2731,-105.6276,2883.92,Craton,,,Slave craton,intermediate,58.16,0.96,17.49,5.47,3.72,7.82,3.56,2.25,773.2,16.7,19.3,1.5,48.0,45.8
+SYNTH_00617,Synthetic_Slave,61.0909,-113.1247,2885.27,Craton,,,Slave craton,intermediate,59.8,0.98,16.84,6.72,3.18,5.37,3.58,2.11,418.7,13.4,12.4,1.5,24.2,40.0
+SYNTH_00618,Synthetic_Slave,62.6574,-109.2176,2635.13,Craton,,,Slave craton,intermediate,60.57,0.05,14.4,4.14,2.88,4.65,3.43,3.19,486.0,12.2,17.2,2.0,40.8,40.7
+SYNTH_00619,Synthetic_Slave,61.7484,-107.3615,2717.22,Craton,,,Slave craton,felsic,69.16,0.45,13.5,0.92,0.82,1.62,3.66,2.19,496.1,16.1,10.9,1.2,21.8,42.8
+SYNTH_00620,Synthetic_Slave,64.8751,-109.2899,2706.7,Craton,,,Slave craton,intermediate,60.35,0.9,16.01,6.16,3.36,4.4,3.96,2.2,545.8,15.9,30.3,2.1,62.6,43.7
+SYNTH_00621,Synthetic_Slave,61.3159,-105.0494,2712.27,Craton,,,Slave craton,felsic,69.48,0.5,13.37,3.14,0.2,2.9,2.79,3.22,609.1,16.5,8.0,0.9,16.4,38.0
+SYNTH_00622,Synthetic_Slave,61.2673,-113.6658,2645.97,Craton,,,Slave craton,intermediate,58.86,0.63,16.53,6.85,2.07,4.76,3.24,1.46,329.4,13.4,8.2,1.2,16.8,38.3
+SYNTH_00623,Synthetic_Slave,64.4925,-110.6841,2667.13,Craton,,,Slave craton,intermediate,66.36,0.68,17.56,4.23,1.95,4.9,3.62,3.0,548.9,18.2,14.7,1.2,33.8,41.6
+SYNTH_00624,Synthetic_Slave,61.5567,-105.0133,2792.71,Craton,,,Slave craton,intermediate,56.73,0.65,16.27,2.58,2.08,5.49,3.9,2.05,381.6,15.2,19.4,2.0,36.2,40.6
+SYNTH_00625,Synthetic_Slave,63.3358,-108.8738,2847.01,Craton,,,Slave craton,felsic,73.21,0.15,14.74,1.94,1.32,4.42,4.08,3.58,381.6,10.8,11.3,1.2,27.4,42.9
+SYNTH_00626,Synthetic_Slave,62.7519,-108.2363,2530.88,Craton,,,Slave craton,intermediate,62.16,0.41,15.98,3.26,0.12,6.8,3.39,2.3,366.4,21.2,17.7,2.0,43.2,38.7
+SYNTH_00627,Synthetic_Slave,62.3952,-113.2946,2630.75,Craton,,,Slave craton,felsic,69.33,0.56,14.32,0.63,0.68,2.07,3.65,3.43,492.9,14.8,12.1,0.6,22.0,44.1
+SYNTH_00628,Synthetic_Slave,64.5293,-106.2368,2573.93,Craton,,,Slave craton,intermediate,62.66,1.13,15.68,6.35,2.2,6.0,3.54,1.7,195.0,10.9,18.7,1.8,44.2,41.4
+SYNTH_00629,Synthetic_Slave,64.7832,-109.1953,2703.22,Craton,,,Slave craton,intermediate,62.9,1.33,15.51,5.11,3.73,6.33,3.82,2.0,392.7,12.6,19.6,1.4,40.8,45.7
+SYNTH_00630,Synthetic_Slave,60.5864,-108.3921,2736.87,Craton,,,Slave craton,intermediate,54.76,0.22,18.48,6.09,2.68,5.39,4.64,1.66,393.4,12.0,13.1,1.6,29.4,42.3
+SYNTH_00631,Synthetic_Slave,64.0596,-113.7144,2746.47,Craton,,,Slave craton,intermediate,63.4,0.83,16.55,5.55,2.36,7.91,3.53,0.22,454.2,15.8,8.2,1.0,16.2,41.3
+SYNTH_00632,Synthetic_Slave,61.4667,-107.8242,2769.64,Craton,,,Slave craton,felsic,68.27,0.51,16.66,3.2,0.1,3.32,4.28,3.54,320.3,15.3,8.1,0.5,17.3,47.8
+SYNTH_00633,Synthetic_Slave,63.2254,-106.7831,2685.24,Craton,,,Slave craton,intermediate,59.99,0.34,18.26,6.27,3.28,4.82,3.73,2.12,622.3,15.9,26.4,1.3,58.0,47.5
+SYNTH_00634,Synthetic_Slave,64.3921,-109.5627,2614.74,Craton,,,Slave craton,felsic,70.54,0.4,14.16,1.64,0.36,2.13,3.97,4.19,257.1,9.6,6.4,0.6,12.1,44.0
+SYNTH_00635,Synthetic_Slave,62.0373,-111.9361,2536.69,Craton,,,Slave craton,felsic,67.82,0.27,16.42,1.63,1.76,3.19,4.36,4.53,333.1,12.2,15.4,1.0,37.0,45.3
+SYNTH_00636,Synthetic_Slave,63.6464,-106.2386,2793.88,Craton,,,Slave craton,intermediate,60.01,0.64,16.74,6.65,1.94,6.37,3.43,1.8,468.2,14.8,22.9,1.7,50.2,41.6
+SYNTH_00637,Synthetic_Slave,60.8791,-113.952,2588.93,Craton,,,Slave craton,felsic,71.91,0.8,14.94,1.14,0.1,2.84,3.92,2.9,603.5,15.8,21.9,1.6,48.8,47.3
+SYNTH_00638,Synthetic_Slave,64.7825,-110.8694,2666.01,Craton,,,Slave craton,felsic,70.77,0.51,15.34,2.15,0.1,4.44,3.99,4.02,372.2,11.7,14.6,1.3,26.9,46.6
+SYNTH_00639,Synthetic_Slave,62.1268,-105.3304,2521.45,Craton,,,Slave craton,intermediate,59.81,1.15,16.72,5.78,1.43,5.35,4.42,2.71,476.2,13.7,17.8,1.7,43.6,40.8
+SYNTH_00640,Synthetic_Slave,60.8585,-106.9927,2752.61,Craton,,,Slave craton,felsic,73.15,0.25,14.14,1.33,1.24,2.47,3.9,3.86,314.8,13.4,7.5,0.6,15.9,44.4
+SYNTH_00641,Synthetic_Slave,62.6675,-111.6636,2600.68,Craton,,,Slave craton,intermediate,59.27,0.67,14.96,3.51,3.47,5.09,2.84,1.59,496.5,11.8,19.4,2.2,45.6,43.2
+SYNTH_00642,Synthetic_Slave,62.8636,-113.3477,2569.07,Craton,,,Slave craton,intermediate,58.41,0.66,15.09,5.62,2.24,4.35,3.05,2.44,599.4,19.0,31.8,1.9,68.6,47.1
+SYNTH_00643,Synthetic_Slave,64.0773,-105.5794,2788.7,Craton,,,Slave craton,intermediate,69.6,0.4,16.26,3.66,2.08,7.4,3.63,1.83,626.0,20.2,25.9,1.6,56.5,44.8
+SYNTH_00644,Synthetic_Slave,61.6843,-112.6154,2802.09,Craton,,,Slave craton,intermediate,64.26,0.71,16.83,4.45,2.78,5.62,3.36,1.74,718.0,20.0,24.5,2.1,50.4,43.9
+SYNTH_00645,Synthetic_Slave,60.4417,-107.5035,2508.52,Craton,,,Slave craton,intermediate,58.32,0.67,16.6,5.02,2.95,5.29,3.29,1.19,384.5,14.8,19.4,1.3,35.4,45.6
+SYNTH_00646,Synthetic_Slave,60.4085,-114.4608,2509.77,Craton,,,Slave craton,felsic,75.46,0.62,16.76,0.77,0.65,1.66,3.43,2.99,492.5,16.3,10.9,0.7,25.2,43.9
+SYNTH_00647,Synthetic_Slave,60.5205,-114.7326,2511.27,Craton,,,Slave craton,felsic,67.9,0.3,14.64,1.76,0.85,0.68,3.58,2.8,180.4,8.9,12.7,1.0,22.8,43.4
+SYNTH_00648,Synthetic_Slave,64.2991,-111.941,2608.52,Craton,,,Slave craton,intermediate,62.05,1.15,16.11,4.53,1.77,6.08,3.77,2.48,535.9,20.3,7.8,0.9,19.0,35.5
+SYNTH_00649,Synthetic_Slave,63.9593,-114.2418,2789.44,Craton,,,Slave craton,intermediate,59.6,1.04,14.22,3.56,3.83,3.95,3.84,2.34,407.7,15.1,21.3,2.0,43.7,42.7
+SYNTH_00650,Synthetic_Slave,63.4791,-109.1075,2638.88,Craton,,,Slave craton,intermediate,58.83,1.11,15.38,5.29,2.87,4.83,3.77,2.66,344.5,17.1,30.4,2.0,66.3,41.2
+SYNTH_00651,Synthetic_Slave,62.2074,-113.1055,2561.36,Craton,,,Slave craton,intermediate,63.4,0.43,13.86,5.98,3.8,7.62,3.73,1.58,318.7,12.6,13.8,1.8,30.1,39.6
+SYNTH_00652,Synthetic_Slave,62.4743,-107.3644,2633.32,Craton,,,Slave craton,felsic,63.68,0.16,13.2,3.9,0.1,2.24,3.89,4.74,327.3,10.4,9.3,0.7,19.3,41.6
+SYNTH_00653,Synthetic_Slave,62.3803,-107.8618,2535.74,Craton,,,Slave craton,intermediate,59.36,0.88,16.29,6.94,1.36,4.82,3.06,1.78,305.3,12.8,26.2,1.9,63.0,44.7
+SYNTH_00654,Synthetic_Slave,60.7242,-111.6298,2558.63,Craton,,,Slave craton,felsic,74.76,0.46,15.65,1.08,0.32,3.36,3.6,2.65,247.6,13.7,11.6,1.2,25.1,41.1
+SYNTH_00655,Synthetic_Slave,61.1422,-113.5854,2694.81,Craton,,,Slave craton,felsic,67.02,0.3,16.08,0.95,0.47,1.75,2.92,3.06,342.6,9.5,7.8,0.8,18.5,41.8
+SYNTH_00656,Synthetic_Slave,62.1097,-109.726,2725.15,Craton,,,Slave craton,intermediate,63.51,0.38,16.64,4.98,2.2,7.17,3.2,1.27,546.0,18.7,17.4,1.8,39.8,39.2
+SYNTH_00657,Synthetic_Slave,64.445,-110.437,2767.81,Craton,,,Slave craton,felsic,71.16,0.36,16.06,1.15,0.76,1.17,3.13,3.75,470.3,17.5,13.1,1.4,31.4,41.7
+SYNTH_00658,Synthetic_Slave,60.9951,-112.3132,2738.42,Craton,,,Slave craton,felsic,67.88,0.22,15.49,2.21,1.56,1.42,4.08,3.14,367.5,10.1,10.7,1.3,20.9,43.7
+SYNTH_00659,Synthetic_Slave,62.5161,-113.8176,2670.72,Craton,,,Slave craton,intermediate,62.38,0.42,17.88,4.32,3.47,3.25,3.94,2.22,437.1,16.9,14.7,2.2,27.5,41.6
+SYNTH_00660,Synthetic_Slave,62.7394,-109.0746,2623.07,Craton,,,Slave craton,felsic,68.44,0.52,13.78,1.26,1.51,2.96,3.81,2.42,298.4,15.5,7.1,0.8,16.4,41.3
+SYNTH_00661,Synthetic_Slave,62.8967,-110.7552,2897.24,Craton,,,Slave craton,intermediate,61.53,1.63,16.62,5.84,2.76,6.48,3.96,1.15,578.4,18.1,19.8,2.1,40.5,41.2
+SYNTH_00662,Synthetic_Slave,61.4988,-109.1877,2671.77,Craton,,,Slave craton,felsic,70.93,0.34,16.02,2.65,0.89,2.1,3.75,4.61,308.9,9.4,16.0,1.2,31.4,44.6
+SYNTH_00663,Synthetic_Slave,60.1274,-114.9843,2638.2,Craton,,,Slave craton,felsic,71.82,0.34,15.19,1.58,0.95,3.55,3.82,2.88,521.5,14.3,16.5,1.2,37.2,44.4
+SYNTH_00664,Synthetic_Slave,60.8797,-108.3083,2794.79,Craton,,,Slave craton,intermediate,63.77,0.63,16.88,5.63,3.38,5.42,4.17,2.15,446.1,16.2,22.2,1.2,53.0,45.2
+SYNTH_00665,Synthetic_Slave,64.8213,-110.3352,2873.3,Craton,,,Slave craton,felsic,71.39,0.46,14.26,2.59,0.96,2.93,4.38,3.36,278.7,8.7,15.3,1.0,29.6,46.0
+SYNTH_00666,Synthetic_Slave,61.2329,-114.1015,2550.71,Craton,,,Slave craton,felsic,73.19,0.44,14.65,1.06,1.23,2.31,3.88,3.58,399.4,13.3,12.4,1.0,26.2,40.2
+SYNTH_00667,Synthetic_Slave,62.4109,-107.3078,2705.26,Craton,,,Slave craton,felsic,70.02,0.61,13.35,2.35,0.8,1.77,4.12,3.95,363.8,17.4,17.1,1.6,40.7,43.7
+SYNTH_00668,Synthetic_Slave,64.0265,-111.3395,2731.91,Craton,,,Slave craton,felsic,67.88,0.5,13.73,1.03,1.3,1.62,3.78,3.57,175.5,5.5,4.5,0.5,10.0,43.6
+SYNTH_00669,Synthetic_Slave,62.9582,-106.6891,2736.91,Craton,,,Slave craton,intermediate,59.11,1.13,16.61,6.01,4.86,4.82,3.65,1.54,478.3,14.6,28.1,2.1,52.5,44.0
+SYNTH_00670,Synthetic_Slave,62.1164,-110.4291,2612.14,Craton,,,Slave craton,felsic,67.11,0.38,13.56,1.71,0.1,1.96,4.27,4.09,455.6,15.6,9.5,1.4,21.4,41.3
+SYNTH_00671,Synthetic_Slave,64.9163,-110.5844,2796.62,Craton,,,Slave craton,intermediate,60.08,0.96,15.25,5.07,1.78,4.3,3.29,1.42,414.3,17.6,20.6,2.1,46.5,38.8
+SYNTH_00672,Synthetic_Slave,64.4781,-105.0095,2643.68,Craton,,,Slave craton,intermediate,57.81,0.83,16.08,3.88,2.61,8.48,3.35,2.44,527.7,20.3,13.5,1.5,25.1,38.9
+SYNTH_00673,Synthetic_Slave,64.961,-106.5502,2764.02,Craton,,,Slave craton,felsic,70.37,0.16,14.96,2.17,0.38,3.25,3.82,2.17,315.5,11.7,8.1,0.8,18.9,41.9
+SYNTH_00674,Synthetic_Slave,61.1324,-105.5917,2628.54,Craton,,,Slave craton,felsic,68.17,0.31,15.22,2.0,0.4,3.04,3.56,4.63,247.1,8.9,9.6,0.5,18.6,47.6
+SYNTH_00675,Synthetic_Slave,64.6902,-108.332,2868.44,Craton,,,Slave craton,intermediate,66.98,1.37,15.85,4.85,3.07,6.6,2.54,1.97,502.9,21.9,11.7,1.1,23.2,41.7
+SYNTH_00676,Synthetic_Slave,61.1796,-105.9206,2805.48,Craton,,,Slave craton,intermediate,64.54,1.19,16.42,4.79,2.41,5.72,4.74,2.25,436.0,13.3,18.1,1.5,36.6,37.9
+SYNTH_00677,Synthetic_Slave,60.1066,-108.4374,2745.37,Craton,,,Slave craton,felsic,65.94,0.38,15.14,1.99,0.9,1.61,3.44,4.13,443.0,14.4,14.4,1.1,26.7,42.9
+SYNTH_00678,Synthetic_Slave,64.0198,-105.7716,2521.31,Craton,,,Slave craton,felsic,68.36,0.34,14.21,2.51,0.1,2.39,3.71,4.24,299.8,12.3,7.1,0.8,17.3,39.0
+SYNTH_00679,Synthetic_Slave,61.9432,-109.9085,2546.6,Craton,,,Slave craton,felsic,71.62,0.57,13.27,2.26,0.91,2.13,4.01,2.89,167.6,5.6,10.2,1.1,25.6,46.0
+SYNTH_00680,Synthetic_Slave,62.1494,-105.0999,2550.49,Craton,,,Slave craton,intermediate,61.3,0.87,16.2,4.72,2.98,4.7,3.5,1.93,330.6,16.0,14.9,1.2,30.0,41.1
+SYNTH_00681,Synthetic_Slave,61.9604,-110.0448,2656.1,Craton,,,Slave craton,intermediate,64.58,0.37,16.31,4.93,1.84,6.51,4.17,1.63,314.0,13.7,13.1,0.9,27.8,41.8
+SYNTH_00682,Synthetic_Slave,62.1472,-107.6567,2566.85,Craton,,,Slave craton,felsic,69.18,0.31,13.64,2.15,0.75,1.21,3.86,4.25,225.2,8.9,17.5,1.2,32.4,41.7
+SYNTH_00683,Synthetic_Slave,64.3564,-109.8401,2570.58,Craton,,,Slave craton,felsic,67.75,0.37,15.99,2.01,0.92,1.95,3.85,3.64,224.5,10.0,7.2,0.5,15.0,45.6
+SYNTH_00684,Synthetic_Slave,63.8614,-113.0297,2716.75,Craton,,,Slave craton,intermediate,59.07,1.06,18.52,7.48,3.46,5.55,4.27,0.88,391.9,17.5,12.6,1.1,29.1,42.7
+SYNTH_00685,Synthetic_Slave,60.352,-114.189,2686.52,Craton,,,Slave craton,intermediate,57.47,1.13,16.05,5.08,3.07,8.53,4.09,1.29,462.2,14.6,16.2,1.3,38.4,45.3
+SYNTH_00686,Synthetic_Slave,64.6519,-108.689,2749.45,Craton,,,Slave craton,felsic,69.76,0.31,14.76,0.56,1.09,2.23,3.16,3.45,127.1,6.9,8.0,0.7,17.4,43.0
+SYNTH_00687,Synthetic_Slave,63.7905,-106.4722,2800.57,Craton,,,Slave craton,felsic,70.67,0.31,14.86,3.94,0.93,2.37,3.63,2.82,206.5,5.9,9.2,0.9,18.7,42.2
+SYNTH_00688,Synthetic_Slave,64.9277,-108.0873,2788.54,Craton,,,Slave craton,intermediate,64.68,0.82,16.4,7.76,3.75,6.63,3.49,2.73,375.2,12.1,10.3,1.0,25.2,42.6
+SYNTH_00689,Synthetic_Slave,64.5139,-108.1703,2598.39,Craton,,,Slave craton,felsic,68.84,0.55,13.62,1.52,2.23,2.62,3.66,2.95,173.0,6.1,5.5,0.6,12.9,37.5
+SYNTH_00690,Synthetic_Slave,60.1233,-114.4769,2861.86,Craton,,,Slave craton,intermediate,60.17,0.27,14.71,6.4,2.18,5.83,3.96,2.71,301.3,12.0,13.7,1.0,26.0,45.3
+SYNTH_00691,Synthetic_Slave,64.3467,-113.2385,2611.35,Craton,,,Slave craton,felsic,71.97,0.48,14.87,2.23,0.59,2.16,3.43,2.52,215.7,7.6,12.0,1.1,28.1,41.6
+SYNTH_00692,Synthetic_Slave,64.6991,-111.6078,2777.4,Craton,,,Slave craton,intermediate,63.45,0.46,13.84,5.25,3.03,6.35,3.44,2.02,284.9,15.4,18.0,1.8,37.2,40.1
+SYNTH_00693,Synthetic_Slave,61.5983,-106.6576,2762.22,Craton,,,Slave craton,felsic,77.06,0.42,15.75,2.72,0.19,2.08,4.07,2.04,275.0,6.3,10.7,0.8,22.3,44.6
+SYNTH_00694,Synthetic_Slave,60.9031,-109.1218,2557.54,Craton,,,Slave craton,intermediate,56.82,0.85,17.49,6.09,2.94,5.78,2.86,1.86,738.3,15.4,34.7,2.1,65.0,43.1
+SYNTH_00695,Synthetic_Slave,64.4,-106.9987,2667.9,Craton,,,Slave craton,felsic,71.38,0.52,14.06,1.96,0.23,3.45,3.18,3.11,440.8,17.0,24.1,1.6,44.3,40.6
+SYNTH_00696,Synthetic_Slave,62.6569,-113.2818,2748.69,Craton,,,Slave craton,felsic,70.47,0.29,14.34,1.71,0.35,3.8,3.3,3.17,244.5,7.5,8.3,0.5,20.1,46.2
+SYNTH_00697,Synthetic_Slave,63.9,-112.4552,2813.3,Craton,,,Slave craton,felsic,73.48,0.35,14.22,2.77,0.41,2.57,3.78,2.58,172.8,5.7,5.2,0.5,10.7,40.6
+SYNTH_00698,Synthetic_Slave,61.1174,-111.2535,2537.5,Craton,,,Slave craton,intermediate,56.47,0.29,15.73,5.84,3.45,5.42,3.33,2.23,654.6,18.2,29.9,1.9,72.9,45.8
+SYNTH_00699,Synthetic_Slave,64.7453,-108.6981,2886.38,Craton,,,Slave craton,intermediate,60.31,0.76,15.99,5.75,2.78,5.48,3.1,1.86,759.1,22.0,16.8,1.5,33.2,42.4
+SYNTH_00700,Synthetic_Slave,64.2655,-113.8684,2889.7,Craton,,,Slave craton,felsic,69.86,0.24,14.44,1.68,0.1,2.64,3.75,3.16,149.4,7.1,20.8,1.2,46.3,45.1
+SYNTH_00701,Synthetic_Slave,64.0504,-110.5047,2611.46,Craton,,,Slave craton,intermediate,56.69,0.77,15.71,5.78,2.38,6.01,3.94,0.8,582.1,20.1,16.1,1.9,32.2,40.2
+SYNTH_00702,Synthetic_Slave,60.5818,-112.5277,2585.2,Craton,,,Slave craton,intermediate,55.58,0.89,17.12,7.3,3.59,5.66,2.99,2.09,335.0,17.8,10.4,1.0,24.7,36.2
+SYNTH_00703,Synthetic_Slave,62.9219,-108.4647,2572.09,Craton,,,Slave craton,intermediate,55.48,0.72,14.7,7.66,3.0,6.05,4.14,1.65,358.0,12.6,16.5,1.9,30.6,40.7
+SYNTH_00704,Synthetic_Slave,61.2136,-106.141,2730.77,Craton,,,Slave craton,intermediate,58.64,1.12,16.59,4.23,2.95,5.37,3.56,1.43,461.0,16.2,8.3,1.3,15.5,40.6
+SYNTH_00705,Synthetic_Slave,61.0131,-110.9922,2720.58,Craton,,,Slave craton,intermediate,58.45,0.96,16.59,5.67,2.51,6.97,3.2,2.62,459.0,13.7,24.7,2.1,49.6,45.3
+SYNTH_00706,Synthetic_Slave,62.7102,-106.4564,2765.67,Craton,,,Slave craton,felsic,67.82,0.27,14.93,1.3,1.21,2.78,3.94,4.82,296.3,9.9,16.5,1.2,35.6,44.0
+SYNTH_00707,Synthetic_Slave,64.6831,-110.9061,2533.0,Craton,,,Slave craton,intermediate,60.3,0.54,17.77,3.3,2.77,7.61,3.61,1.45,356.8,15.6,22.1,1.8,53.9,39.3
+SYNTH_00708,Synthetic_Slave,63.1453,-112.5062,2742.96,Craton,,,Slave craton,intermediate,57.82,1.04,15.84,7.72,0.64,5.57,4.1,1.79,346.4,10.7,12.2,1.5,26.3,43.1
+SYNTH_00709,Synthetic_Slave,63.8533,-108.5971,2848.5,Craton,,,Slave craton,intermediate,60.4,0.84,16.11,5.72,4.69,4.53,4.11,2.03,455.1,12.4,17.4,1.9,38.9,40.7
+SYNTH_00710,Synthetic_Slave,64.5255,-111.862,2839.21,Craton,,,Slave craton,felsic,73.57,0.41,14.18,2.45,0.81,3.02,4.57,3.68,527.5,15.1,16.3,1.3,35.9,40.9
+SYNTH_00711,Synthetic_Slave,64.6985,-109.1618,2708.02,Craton,,,Slave craton,intermediate,63.89,0.22,15.08,6.45,2.27,4.33,3.95,1.9,522.3,15.9,16.7,1.6,36.0,41.4
+SYNTH_00712,Synthetic_Slave,61.6189,-112.1849,2666.12,Craton,,,Slave craton,felsic,70.39,0.39,15.18,1.72,0.99,2.9,2.83,3.95,243.0,7.6,16.9,1.3,41.6,42.6
+SYNTH_00713,Synthetic_Slave,61.1087,-105.4685,2630.11,Craton,,,Slave craton,felsic,67.68,0.32,15.85,2.58,1.25,3.26,3.72,3.05,297.6,9.0,7.0,0.6,13.0,43.6
+SYNTH_00714,Synthetic_Slave,63.2782,-112.6683,2729.13,Craton,,,Slave craton,intermediate,62.14,0.35,15.6,3.38,2.23,5.67,3.28,1.56,440.3,16.9,21.9,2.1,44.0,36.5
+SYNTH_00715,Synthetic_Slave,62.5625,-106.9319,2776.69,Craton,,,Slave craton,intermediate,57.92,0.78,15.47,4.66,2.82,7.42,2.93,0.77,370.4,13.0,26.0,1.8,51.1,41.9
+SYNTH_00716,Synthetic_Slave,63.2824,-109.8678,2560.98,Craton,,,Slave craton,intermediate,60.51,0.54,16.27,6.94,1.94,6.4,3.41,2.31,356.8,15.2,23.1,1.7,56.7,42.5
+SYNTH_00717,Synthetic_Slave,60.4969,-112.5629,2844.12,Craton,,,Slave craton,intermediate,62.06,0.87,16.66,4.6,1.67,4.46,2.86,1.28,539.4,20.2,16.3,1.3,33.9,43.5
+SYNTH_00718,Synthetic_Slave,61.6993,-105.8852,2552.32,Craton,,,Slave craton,intermediate,58.91,0.77,17.05,8.72,2.21,6.36,3.17,0.99,601.1,18.6,16.7,1.5,31.5,39.3
+SYNTH_00719,Synthetic_Slave,60.5374,-111.7404,2741.15,Craton,,,Slave craton,intermediate,59.56,1.03,15.42,6.03,3.84,5.39,3.66,1.08,541.6,18.8,22.0,1.7,47.4,41.5
+SYNTH_00720,Synthetic_Slave,62.9974,-111.641,2784.14,Craton,,,Slave craton,intermediate,58.23,0.79,14.84,5.07,3.16,5.46,3.95,1.83,671.6,17.6,28.4,2.1,64.1,42.8
