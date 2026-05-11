@@ -9313,6 +9313,186 @@ def _render_feature_importance_panel(importance_df, models_keys, model_key, sort
         st.plotly_chart(fig, width='stretch')
 
 @st.fragment
+def _render_age_histogram(df, key_prefix: str = 'age_hist'):
+    """Sample-count histogram of Age_Ma — small, focused, helps with age-bin
+    decisions in the Group tab and surface data-quality issues in Prepare.
+
+    Bin width is user-controlled (in Ma). Bars can be coloured by Eon /
+    Era so the chronostratigraphic distribution is visible at a glance.
+    Cenozoic / Mesozoic / Paleozoic / Proterozoic / Archean / Hadean
+    boundary lines from the ICS table can be overlaid for context.
+
+    Fragment-scoped so the widget interactions don't rebuild the rest of
+    the tab. Silent no-op if Age_Ma isn't on the bench or has no finite
+    values.
+    """
+    if df is None or df.empty or 'Age_Ma' not in df.columns:
+        return
+    _age = pd.to_numeric(df['Age_Ma'], errors='coerce').dropna()
+    if _age.empty:
+        st.info('No finite `Age_Ma` values on this bench yet — histogram needs at least one numeric age.')
+        return
+
+    _amin, _amax = float(_age.min()), float(_age.max())
+    _span = max(_amax - _amin, 1.0)
+    # Sensible bin-size default: ~30 bins across the data range, rounded
+    # to a friendly Ma value. Big spans (e.g. Cenozoic → Archean) get
+    # 50–100 Ma bins; tight spans (e.g. arc-only) get 1–5 Ma bins.
+    _default_bw_raw = max(_span / 30.0, 0.1)
+    _friendly = [0.1, 0.25, 0.5, 1, 2, 5, 10, 25, 50, 100, 250, 500]
+    _default_bw = min(_friendly, key=lambda v: abs(v - _default_bw_raw))
+
+    _c1, _c2, _c3, _c4, _c5 = st.columns([1.4, 1, 1, 1, 1])
+    _bw = _c1.slider(
+        'Bin width [Ma]',
+        min_value=0.1, max_value=max(500.0, _span / 4.0),
+        value=float(_default_bw), step=0.1,
+        key=f'{key_prefix}_bw',
+        help='Width of each Age_Ma bin in millions of years. Defaults to '
+             '~1/30th of the data span, rounded to a friendly value.',
+    )
+    _color_opts = ['None']
+    for c in ('Geologic_Eon', 'Geologic_Era', 'Geologic_Period'):
+        if c in df.columns and df[c].notna().any():
+            _color_opts.append(c)
+    _color_by = _c2.selectbox(
+        'Colour by', _color_opts, index=min(1, len(_color_opts) - 1),
+        key=f'{key_prefix}_color',
+        help='Stack bars by chronostratigraphic category so the eon / '
+             'era / period composition of each bin is visible.',
+    )
+    _log_x = _c3.checkbox(
+        'Log X axis', value=(_span > 500.0),
+        key=f'{key_prefix}_logx',
+        help='Log-scale the Age_Ma axis — useful when the data spans '
+             'Cenozoic to Archean (orders-of-magnitude range).',
+    )
+    _show_boundaries = _c4.checkbox(
+        'ICS boundaries', value=False,
+        key=f'{key_prefix}_bounds',
+        help='Overlay vertical lines at Era and Period boundaries from '
+             'the ICS chronostratigraphy table (Cenozoic / Mesozoic / '
+             'Paleozoic … Cretaceous / Jurassic / …).',
+    )
+    _show_cumulative = _c5.checkbox(
+        'Cumulative line', value=False,
+        key=f'{key_prefix}_cum',
+        help='Overlay the cumulative-N line on a secondary Y axis.',
+    )
+
+    # Build the bin edges and counts.
+    # Anchor edges to multiples of bin width so the bars line up with
+    # round numbers (250 Ma bins start at 0, 250, 500 … rather than at
+    # min(age)).
+    import math as _math
+    _bw_f = float(max(_bw, 1e-6))
+    _start = _math.floor(_amin / _bw_f) * _bw_f
+    _end   = _math.ceil(_amax / _bw_f) * _bw_f + _bw_f
+    _edges = np.arange(_start, _end + _bw_f, _bw_f)
+    if len(_edges) < 2:
+        st.info('Bin width too large — only one bin across the data range.')
+        return
+
+    fig = go.Figure()
+    if _color_by == 'None':
+        _h, _ = np.histogram(_age.to_numpy(dtype=float), bins=_edges)
+        _centres = (_edges[:-1] + _edges[1:]) / 2.0
+        fig.add_trace(go.Bar(
+            x=_centres, y=_h, width=_bw_f * 0.95,
+            marker=dict(color='#1e3a5f', line=dict(color='black', width=0.4)),
+            name='N', hovertemplate='Age %{x:.1f} Ma<br>N=%{y}<extra></extra>',
+        ))
+    else:
+        # Stacked per category — order taxonomically when possible.
+        _cat_ser = df.loc[_age.index, _color_by].astype('string').fillna('unknown')
+        _eon_order = ['Phanerozoic', 'Proterozoic', 'Archean', 'Hadean', 'unknown']
+        _era_order = ['Cenozoic', 'Mesozoic', 'Paleozoic',
+                      'Neoproterozoic', 'Mesoproterozoic', 'Paleoproterozoic',
+                      'Neoarchean', 'Mesoarchean', 'Paleoarchean', 'Eoarchean',
+                      'Hadean', 'unknown']
+        _cats_present = list(dict.fromkeys(_cat_ser.tolist()))
+        if _color_by == 'Geologic_Eon':
+            _cats_present = [c for c in _eon_order if c in _cats_present] + \
+                            [c for c in _cats_present if c not in _eon_order]
+        elif _color_by == 'Geologic_Era':
+            _cats_present = [c for c in _era_order if c in _cats_present] + \
+                            [c for c in _cats_present if c not in _era_order]
+        _palette = (px.colors.qualitative.Set2 + px.colors.qualitative.Bold
+                    + px.colors.qualitative.Pastel)
+        for _i, _cv in enumerate(_cats_present):
+            _sub = _age[_cat_ser == _cv]
+            if _sub.empty:
+                continue
+            _h, _ = np.histogram(_sub.to_numpy(dtype=float), bins=_edges)
+            _centres = (_edges[:-1] + _edges[1:]) / 2.0
+            fig.add_trace(go.Bar(
+                x=_centres, y=_h, width=_bw_f * 0.95, name=str(_cv),
+                marker=dict(color=_palette[_i % len(_palette)],
+                            line=dict(color='rgba(20,20,20,0.5)', width=0.4)),
+                hovertemplate=(f'<b>{_cv}</b><br>'
+                               'Age %{x:.1f} Ma<br>N=%{y}<extra></extra>'),
+            ))
+        fig.update_layout(barmode='stack')
+
+    if _show_boundaries:
+        # Read distinct Era / Period boundaries from the ICS table.
+        _tab = _load_ics_table()
+        if not _tab.empty:
+            # Use base_ma values that mark Era boundaries (one row per Era
+            # transition). Take the youngest base_ma per Era as the boundary.
+            _era_bounds = (_tab.dropna(subset=['era'])
+                                .groupby('era', sort=False)['base_ma'].max()
+                                .reset_index())
+            for _, _r in _era_bounds.iterrows():
+                _x = float(_r['base_ma'])
+                if _amin <= _x <= _amax:
+                    fig.add_vline(
+                        x=_x, line=dict(color='rgba(100,100,100,0.55)',
+                                        width=1.0, dash='dash'),
+                        annotation_text=str(_r['era']),
+                        annotation_position='top',
+                        annotation_font=dict(size=9, color='#444'),
+                    )
+
+    if _show_cumulative:
+        _h_total, _ = np.histogram(_age.to_numpy(dtype=float), bins=_edges)
+        _centres = (_edges[:-1] + _edges[1:]) / 2.0
+        _cum = np.cumsum(_h_total)
+        fig.add_trace(go.Scatter(
+            x=_centres, y=_cum, mode='lines', name='Cumulative N',
+            yaxis='y2', line=dict(color='#b91c1c', width=2.0),
+            hovertemplate='Age %{x:.1f} Ma<br>Cumulative N=%{y}<extra></extra>',
+        ))
+        fig.update_layout(yaxis2=dict(
+            title='Cumulative N', overlaying='y', side='right',
+            showgrid=False,
+        ))
+
+    fig.update_layout(
+        template='plotly_white',
+        height=320,
+        margin=dict(l=20, r=20, t=30, b=40),
+        xaxis_title='Age [Ma]',
+        yaxis_title='Sample count (N)',
+        showlegend=(_color_by != 'None' or _show_cumulative),
+        legend=dict(orientation='h', y=-0.18, x=0, xanchor='left',
+                    font=dict(size=10)),
+    )
+    if _log_x:
+        # Plotly log on a strictly-positive axis — clamp x=0 ages above zero
+        # for display purposes (cosmetic; counts unchanged).
+        fig.update_xaxes(type='log', range=[np.log10(max(_amin, 0.01)),
+                                             np.log10(_amax * 1.05)])
+
+    st.plotly_chart(fig, width='stretch')
+    st.caption(
+        f'N = **{len(_age):,}** samples with finite Age_Ma · range '
+        f'**{_amin:.1f} – {_amax:.1f} Ma** · bin width **{_bw_f:g} Ma** · '
+        f'**{len(_edges) - 1}** bins.'
+    )
+
+
+@st.fragment
 def _render_blind_validation_map(test_bench):
     """Validate-tab Blind validation map, isolated in a fragment so its
     controls (layer selectbox, zoom checkbox) don't trigger a full-tab
@@ -10541,6 +10721,15 @@ with t_data_prep:
                                 '`Age_Conflict` column on the bench. Conflicts '
                                 'are flags only — no values are auto-corrected, '
                                 'so you can review and decide which one to fix.'
+                            )
+                        # Age histogram — surfaces the temporal distribution so
+                        # the user can see at a glance whether their data is
+                        # clustered, gapped, or spread, before going to Group.
+                        if 'Age_Ma' in _dp_processed.columns:
+                            st.markdown('**Age_Ma distribution**')
+                            _render_age_histogram(
+                                _dp_processed,
+                                key_prefix=f'dp_age_hist_{_dp_fi}_{_dp_f.name}',
                             )
 
             # ── Build export df (anhydrous + row-ignore applied) ─────────────
@@ -13809,6 +13998,20 @@ with t_grouping:
                           and c not in _meta_cols and c not in _cat_cols]
         _num_cols = _num_cols + _user_num_cols
 
+    # Age histogram — shows the temporal distribution of the bench so the
+    # user can pick sensible age-bin breakpoints before defining a Numeric
+    # bins filter on Age_Ma. Collapsed by default; the bin slider /
+    # colour-by / boundaries toggles live inside.
+    if 'Age_Ma' in _g_bench.columns and pd.to_numeric(_g_bench['Age_Ma'], errors='coerce').notna().any():
+        with st.expander('📊 Age distribution', expanded=False):
+            st.caption(
+                'Sample count per Age_Ma bin on **this bench**. Adjust the '
+                'bin width to find the right granularity for an Age_Ma '
+                '*Numeric bins* filter below — visible peaks and gaps make '
+                'good break points.'
+            )
+            _render_age_histogram(_g_bench, key_prefix=f'g_age_hist_{_g_src}')
+
     _af1, _af2, _af3 = st.columns([1.2, 1.2, 0.7])
     _add_kind = _af1.selectbox('Add filter type',
                                ['Categorical (multi-select)',
@@ -14716,7 +14919,7 @@ with t_grouping:
             'and Predict tabs will see the grouped dataset and offer a '
             '"sample data vs. group averages" toggle.'
         )
-        if st.button(f'✓ Apply groups → {_g_src}', key='g_apply_groups',
+        if st.button(f'✓ Apply groups → {_g_src}', key='g_apply_to_source',
                      use_container_width=True,
                      help='Writes Group_ID back into the source dataset in the pool. '
                           'Use the granularity toggle in Model/Validate/Predict to choose '
