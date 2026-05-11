@@ -12324,6 +12324,123 @@ with t_validation:
                                 if _um_curve and _um_formula_text:
                                     st.caption(f'**Formula in view:** {_um_formula_text}')
 
+                    # ── Tree-CI empirical coverage check ────────────────────
+                    # Tree CI = spread of per-tree predictions inside a bagging
+                    # ensemble. It's NOT a calibrated 90 % confidence interval;
+                    # bagging trees are correlated and the spread typically
+                    # underestimates true uncertainty. This block checks the
+                    # ACTUAL fraction of validation residuals that fall inside
+                    # the claimed 90 % interval, and reports a multiplier that
+                    # would calibrate the bars to the empirical distribution.
+                    if {'Observed_km',
+                        'Predicted_CI90_Low_km',
+                        'Predicted_CI90_High_km'}.issubset(test_bench.columns):
+                        with st.expander('Tree-CI coverage check', expanded=False):
+                            st.caption(
+                                'Are the Tree-CI 90 % bars **calibrated** — do 90 % of '
+                                'real residuals actually fall inside them? Coverage well '
+                                'below 90 % means the bars under-state uncertainty (multiply '
+                                'their width by the **Calibration ×** factor to fix). '
+                                'Coverage above 90 % means they are over-conservative. '
+                                'Only available for bagging ensembles (ExtraTrees / '
+                                'RandomForest); boosting models have no per-tree CI.'
+                            )
+
+                            def _coverage_row(_sub_df, _label):
+                                _obs = pd.to_numeric(_sub_df.get('Observed_km'),
+                                                     errors='coerce')
+                                _lo  = pd.to_numeric(_sub_df.get('Predicted_CI90_Low_km'),
+                                                     errors='coerce')
+                                _hi  = pd.to_numeric(_sub_df.get('Predicted_CI90_High_km'),
+                                                     errors='coerce')
+                                _ok  = _obs.notna() & _lo.notna() & _hi.notna()
+                                if int(_ok.sum()) < 5:
+                                    return None
+                                _o = _obs[_ok]; _l = _lo[_ok]; _h = _hi[_ok]
+                                _covered = (_o >= _l) & (_o <= _h)
+                                _emp_cov = float(_covered.mean())
+                                # Normalised residual z = (obs - pred_mid) / half_width.
+                                # If CIs are well-calibrated, the 90th percentile of |z|
+                                # should equal 1.0. Otherwise, |z|_90 is the multiplier
+                                # that would scale the bars to achieve true 90 % coverage.
+                                _half = ((_h - _l) / 2.0)
+                                _mid  = ((_h + _l) / 2.0)
+                                _z    = ((_o - _mid) / _half.replace(0, np.nan)).dropna()
+                                _calib = float(_z.abs().quantile(0.90)) if not _z.empty else np.nan
+                                # Median CI width gives a sense of bar scale.
+                                _med_w = float((_h - _l).median())
+                                return {
+                                    'Model':                 _label,
+                                    'N':                     int(_ok.sum()),
+                                    'Empirical coverage':    round(_emp_cov, 3),
+                                    'Target coverage':       0.90,
+                                    'Calibration × (90 %)':  round(_calib, 2) if not np.isnan(_calib) else np.nan,
+                                    'Median CI width [km]':  round(_med_w, 2),
+                                }
+
+                            _cov_rows = []
+                            if ('Model' in test_bench.columns
+                                    and test_bench['Model'].astype(str).nunique() > 1):
+                                for _mn in (test_bench['Model'].dropna()
+                                            .astype(str).unique()):
+                                    _r = _coverage_row(
+                                        test_bench[test_bench['Model'].astype(str) == _mn],
+                                        _mn,
+                                    )
+                                    if _r is not None:
+                                        _cov_rows.append(_r)
+                            else:
+                                _r = _coverage_row(test_bench, 'All samples')
+                                if _r is not None:
+                                    _cov_rows.append(_r)
+
+                            if _cov_rows:
+                                _cov_df = pd.DataFrame(_cov_rows)
+                                table_action_card(
+                                    'Tree-CI calibration',
+                                    _cov_df,
+                                    'validation_tree_ci_coverage.csv',
+                                    'val_tree_ci_coverage',
+                                )
+                                # Quick verdict line for the primary model.
+                                _primary_label = (st.session_state.get('active_interp_model', '')
+                                                  or _cov_df.iloc[0]['Model'])
+                                _prim_match = _cov_df[_cov_df['Model'].astype(str) == str(_primary_label)]
+                                if _prim_match.empty:
+                                    _prim_match = _cov_df.head(1)
+                                _p = _prim_match.iloc[0]
+                                _ec = float(_p['Empirical coverage'])
+                                _kc = float(_p['Calibration × (90 %)']) if pd.notna(_p['Calibration × (90 %)']) else None
+                                if _kc is not None:
+                                    if abs(_ec - 0.90) <= 0.03:
+                                        st.success(
+                                            f'✅ **{_p["Model"]}**: empirical coverage = '
+                                            f'**{_ec:.0%}** — bars are well-calibrated '
+                                            f'(within ±3 percentage points of target).'
+                                        )
+                                    elif _ec < 0.90:
+                                        st.warning(
+                                            f'⚠️ **{_p["Model"]}**: empirical coverage = '
+                                            f'**{_ec:.0%}** (target 90 %). Tree CI is '
+                                            f'**under-covering** — multiply bar widths by '
+                                            f'**×{_kc:.2f}** to reach true 90 %. The '
+                                            f'displayed bars under-state real uncertainty.'
+                                        )
+                                    else:
+                                        st.info(
+                                            f'ℹ️ **{_p["Model"]}**: empirical coverage = '
+                                            f'**{_ec:.0%}** (target 90 %). Tree CI is '
+                                            f'**over-conservative** — bars are wider than '
+                                            f'they need to be (calibration × {_kc:.2f}).'
+                                        )
+                            else:
+                                st.info(
+                                    'Need at least 5 samples with non-null Observed_km, '
+                                    'Predicted_CI90_Low_km and _High_km to compute coverage. '
+                                    'Boosting models (XGBoost / LightGBM) produce no CI '
+                                    'columns by design.'
+                                )
+
                     with st.expander('Sample size adequacy', expanded=False):
                         st.caption(
                             'How many samples from your target area do you need for the median prediction to be stable? '
