@@ -8583,10 +8583,17 @@ with t_data_prep:
     # because the file_uploader gets a new key.
     _rst_c1, _rst_c2 = st.columns([5, 1])
     with _rst_c2:
+        _rst_reset_aliases = st.checkbox(
+            'Reset mappings too',
+            value=False,
+            key='dp_reset_aliases',
+            help='Also wipe saved column-mapping decisions. '
+                 'Next upload will re-ask for all column assignments.',
+        )
         if st.button('🗑 Reset session', key='dp_reset_session', use_container_width=True,
                      help='Clear current uploads, the in-session pool, role assignments, '
-                          'and all grouping/model state. Saved references (Guo etc.) and '
-                          'column-mapping aliases are preserved.'):
+                          'and all grouping/model state. Saved references (Guo etc.) are '
+                          'preserved; tick "Reset mappings too" to also wipe column aliases.'):
             # Capture the file-uploader nonces BEFORE the wipe loop pops them,
             # so we can strictly increment (each Reset advances to a key that
             # has never been used before — guarantees no stale file state).
@@ -8623,6 +8630,12 @@ with t_data_prep:
                 enrich.clear()
             except Exception:
                 pass
+            # Optionally wipe column-mapping alias file
+            if st.session_state.get('dp_reset_aliases', False):
+                try:
+                    _DP_USER_ALIAS_FILE.write_text('{}', encoding='utf-8')
+                except Exception:
+                    pass
             st.rerun()
 
     # File-uploader widgets retain their files internally regardless of
@@ -9642,6 +9655,68 @@ with t_data_prep:
             # ── Major element QC panel ────────────────────────────────────────
             with st.expander('Major element QC', expanded=False):
                 _dp_major_qc_panel(_dp_processed, key_prefix=f'{_dp_key}_{_dp_fi}_{_dp_f.name}')
+
+            # ── Geologic age consistency check ────────────────────────────────
+            # Flag rows where numeric Age_Ma disagrees with a named era/period/
+            # epoch column (e.g. Age_Ma=120 but Geologic_Period='Triassic').
+            _geo_chk_cols = [c for c in ['Geologic_Era', 'Geologic_Period', 'Geologic_Epoch']
+                             if c in _dp_processed.columns]
+            if 'Age_Ma' in _dp_processed.columns and _geo_chk_cols:
+                # Build Ma-range lookups from GEO_TIME_BINS (epoch/period/era)
+                _geo_era_rng:    dict = {}
+                _geo_period_rng: dict = {}
+                _geo_epoch_rng:  dict = {}
+                for _gep, _gper, _gera, _gyo, _gol in GEO_TIME_BINS:
+                    _geo_epoch_rng[_gep.lower()] = (_gyo, _gol)
+                    _k = _gper.lower()
+                    _geo_period_rng[_k] = (
+                        min(_geo_period_rng.get(_k, (_gyo, _gol))[0], _gyo),
+                        max(_geo_period_rng.get(_k, (_gyo, _gol))[1], _gol),
+                    )
+                    _k = _gera.lower()
+                    _geo_era_rng[_k] = (
+                        min(_geo_era_rng.get(_k, (_gyo, _gol))[0], _gyo),
+                        max(_geo_era_rng.get(_k, (_gyo, _gol))[1], _gol),
+                    )
+                _geo_col_rng = {
+                    'Geologic_Era':    _geo_era_rng,
+                    'Geologic_Period': _geo_period_rng,
+                    'Geologic_Epoch':  _geo_epoch_rng,
+                }
+                _geo_age = pd.to_numeric(_dp_processed['Age_Ma'], errors='coerce')
+                _geo_conflicts = []
+                for _gc in _geo_chk_cols:
+                    _rng_lkp = _geo_col_rng[_gc]
+                    for _gidx, (_gage, _glabel) in enumerate(zip(_geo_age, _dp_processed[_gc])):
+                        if pd.isna(_gage) or pd.isna(_glabel):
+                            continue
+                        _gkey = str(_glabel).strip().lower()
+                        if _gkey in _rng_lkp:
+                            _glo, _ghi = _rng_lkp[_gkey]
+                            if not (_glo <= float(_gage) < _ghi):
+                                _gsid = (str(_dp_processed['Sample_ID'].iloc[_gidx])
+                                         if 'Sample_ID' in _dp_processed.columns else str(_gidx))
+                                _geo_conflicts.append({
+                                    'Row': _gidx,
+                                    'Sample_ID': _gsid,
+                                    'Age_Ma': _gage,
+                                    _gc: str(_glabel),
+                                    'Expected Ma range': f'{_glo}–{_ghi}',
+                                })
+                if _geo_conflicts:
+                    with st.expander(
+                        f'⚠️ Geologic age conflicts — {len(_geo_conflicts)} row(s)',
+                        expanded=False,
+                    ):
+                        st.caption(
+                            '`Age_Ma` falls outside the expected Ma range for the named '
+                            'geologic label. Common causes: Ka entered as Ma (divide by 1000), '
+                            'typo in era/period name, or mismatched column assignment.'
+                        )
+                        st.dataframe(
+                            pd.DataFrame(_geo_conflicts),
+                            hide_index=True, use_container_width=True,
+                        )
 
             # ── Build export df (anhydrous + row-ignore applied) ─────────────
             # Column-ignore is now handled inside _dp_apply_mapping via the
@@ -13639,9 +13714,23 @@ with t_result_summary:
     st.header('Summary')
     _rs_pred=st.session_state.get('_rs_pred_bench',pd.DataFrame())
     _rs_group=st.session_state.get('_rs_group_map',pd.DataFrame())
+    _rs_from_val = False
     if _rs_pred.empty:
-        st.info('Run predictions and (optionally) the grouping workflow in the Predict tab first.')
+        _rs_val_src = st.session_state.get('_rs_val_bench', pd.DataFrame())
+        if not _rs_val_src.empty:
+            _rs_pred = _rs_val_src.copy()
+            _rs_from_val = True
+    if _rs_pred.empty:
+        st.info(
+            'Run **Predict** (Predict tab) or **Validate** (Validate tab) first — '
+            'either bench populates the Summary.'
+        )
     else:
+        if _rs_from_val:
+            st.caption(
+                '📋 Showing **validation** results — no prediction run yet. '
+                'Run the Predict tab for full unknown-sample summaries.'
+            )
         _rs_has_groups=not _rs_group.empty and 'Group_ID' in _rs_group and 'Grouping_Method' in _rs_group
         # ── Row 1: data / model controls ─────────────────────────────────────
         _rs_c1,_rs_c2,_rs_c3,_rs_c4=st.columns([1.3,1.2,1.1,0.9])
