@@ -4040,7 +4040,7 @@ def feature_strategy_controls(prefix, df, target, default_set, full_importance=N
 def training_subset_controls(prefix, df, expanded=False, target=None, noun='training'):
     if df.empty:
         return df
-    filtered = enrich(df.copy(), la_mode)
+    filtered = enrich(df, la_mode)  # enrich() copies internally; no caller copy needed
     with st.expander(f'{prefix} {noun} filters', expanded=expanded):
         if 'Age_Ma' in filtered:
             ages = pd.to_numeric(filtered['Age_Ma'], errors='coerce')
@@ -7438,10 +7438,19 @@ def build_local_targets(target_mode, samples, user_lat=None, user_lon=None, user
         pts = samples.dropna(subset=['Lat','Lon']).copy()
         glat = grid['Lat'].to_numpy(dtype=float)
         glon = grid['Lon'].to_numpy(dtype=float)
+        # Chunked broadcast haversine: replaces per-row iterrows + scalar
+        # haversine_km calls. Chunk size bounds the temporary N_chunk × M
+        # distance matrix to ~M*500*8 ≈ 260 MB for an M ≈ 64.8k CRUST1 grid,
+        # avoiding the multi-GB peak a full-N broadcast would need.
+        plat = pd.to_numeric(pts['Lat'], errors='coerce').to_numpy(dtype=float)
+        plon = pd.to_numeric(pts['Lon'], errors='coerce').to_numpy(dtype=float)
         nearest = []
-        for _, row in pts.iterrows():
-            dist = haversine_km(float(row['Lat']), float(row['Lon']), glat, glon)
-            nearest.append(int(np.nanargmin(dist)))
+        _chunk = 500
+        for _start in range(0, len(plat), _chunk):
+            _end = min(_start + _chunk, len(plat))
+            _d = haversine_km(plat[_start:_end, None], plon[_start:_end, None],
+                              glat[None, :], glon[None, :])
+            nearest.extend(np.nanargmin(_d, axis=1).astype(int).tolist())
         targets = grid.iloc[sorted(set(nearest))].copy().reset_index(drop=True)
         targets['Target_ID'] = ['CRUST1 cell '+str(i+1) for i in range(len(targets))]
         targets['Age_Ma'] = 0.0
@@ -8008,9 +8017,10 @@ def geo_downsample(df: pd.DataFrame, limit: int = _GEO_POINT_LIMIT) -> pd.DataFr
     """Stratified downsample for scatter_geo; preserves spatial spread."""
     if len(df) <= limit:
         return df
-    # Keep every Nth row — simple but preserves order/geography
+    # Keep every Nth row — simple but preserves order/geography. iloc[::step]
+    # and head() already return new DataFrames, so no defensive copy needed.
     step = max(1, len(df) // limit)
-    return df.iloc[::step].head(limit).copy()
+    return df.iloc[::step].head(limit)
 
 def xlsx_bytes(df):
     bio=BytesIO()
@@ -8559,6 +8569,37 @@ def _render_grouping_display(prefix):
     _pgfig.update_layout(height=430,margin=dict(l=10,r=10,t=10,b=10),showlegend=_shgleg)
     _pgfig.update_xaxes(title=local_option_label(_gx)); _pgfig.update_yaxes(title=local_option_label(_gy))
     st.plotly_chart(_pgfig,width='stretch',key=f'{prefix}_disp_graph_fig')
+
+@st.fragment
+def _render_feature_importance_panel(importance_df, models_keys, model_key, sort_key):
+    """Feature importance picker + figure, isolated in a fragment so the
+    model / sort selectboxes don't trigger a full-tab rerun that would
+    rebuild every other chart on the tab."""
+    if importance_df.empty:
+        st.info('Feature importance appears after the model is trained.')
+        return
+    fi1, fi2 = st.columns([1, 0.7])
+    _fi_combined = 'All models — combined (mean bars + per-model dots)'
+    _fi_options = [_fi_combined] + list(models_keys)
+    normalize_widget_state(model_key, _fi_options)
+    _model_for_importance = fi1.selectbox('Feature importance model', _fi_options, key=model_key)
+    _importance_sort      = fi2.selectbox('Sort features by', ['Importance', 'Compatibility'], index=0, key=sort_key)
+    if _model_for_importance == _fi_combined:
+        fig = combined_feature_weighting_figure(importance_df, sort_by=_importance_sort, height=360)
+        st.caption(
+            'Bars show the **mean** Relative_Importance across every trained '
+            "model. Each coloured dot is one model's individual score for that "
+            'feature — clustered dots = models agree, scattered dots = '
+            'models disagree. With signed importance, dots above the zero '
+            'line mean *high values raise the prediction*; below = *high '
+            'values lower it*.'
+        )
+    else:
+        _top = (importance_df[importance_df['Model'].eq(_model_for_importance)]
+                .sort_values('Relative_Importance', ascending=False))
+        fig = feature_weighting_figure(_top['Feature'].tolist(), _top, sort_by=_importance_sort, height=360)
+    if fig is not None:
+        st.plotly_chart(fig, width='stretch')
 
 @st.fragment
 def _render_blind_validation_map(test_bench):
@@ -11014,35 +11055,8 @@ with t0:
                     st.plotly_chart(benchmark_figure(tidy_numbers(cv_plot),cv_size,cv_color,cv_fit,False,cv_envelope,'Window',10.0,25,False,5.0,show_moving_avg=cv_ma,moving_avg_n=cv_ma_n,moving_avg_type=cv_ma_type,show_points=cv_pts),width='stretch')
     
         with st.expander('Feature importance',expanded=False):
-            if importance_df.empty:
-                st.info('Feature importance appears after the model is trained.')
-            else:
-                fi1,fi2=st.columns([1,0.7])
-                # First option is the combined view — average bars + per-model
-                # dots — so users with multiple trained models can read agreement
-                # at a glance without flipping between single-model views.
-                _fi_combined_label = 'All models — combined (mean bars + per-model dots)'
-                _fi_options = [_fi_combined_label] + list(models.keys())
-                normalize_widget_state('importance_model', _fi_options)
-                model_for_importance=fi1.selectbox('Feature importance model',_fi_options,key='importance_model')
-                importance_sort=fi2.selectbox('Sort features by',['Importance','Compatibility'],index=0,key='importance_sort')
-                if model_for_importance == _fi_combined_label:
-                    fig = combined_feature_weighting_figure(
-                        importance_df, sort_by=importance_sort, height=360,
-                    )
-                    st.caption(
-                        'Bars show the **mean** Relative_Importance across every trained '
-                        'model. Each coloured dot is one model\'s individual score for that '
-                        'feature — clustered dots = models agree, scattered dots = '
-                        'models disagree. With signed importance, dots above the zero '
-                        'line mean *high values raise the prediction*; below = *high '
-                        'values lower it*.'
-                    )
-                else:
-                    top=importance_df[importance_df['Model'].eq(model_for_importance)].sort_values('Relative_Importance',ascending=False).copy()
-                    fig=feature_weighting_figure(top['Feature'].tolist(),top,sort_by=importance_sort,height=360)
-                if fig is not None:
-                    st.plotly_chart(fig,width='stretch')
+            _render_feature_importance_panel(importance_df, list(models.keys()),
+                                             'importance_model', 'importance_sort')
     
         with st.expander('Training sample map',expanded=False):
             # Gate the heavy work (enrich + per-model predict over the full
@@ -11816,25 +11830,9 @@ with t_validation:
                     table_action_card('Validation summary',display_validation_summary(test_bench),'validation_summary.csv','validation_summary')
                     if not importance_df.empty:
                         with st.expander('Feature importance', expanded=False):
-                            _vfi1, _vfi2 = st.columns([1, 0.7])
-                            _vfi_combined = 'All models — combined (mean bars + per-model dots)'
-                            _vfi_options  = [_vfi_combined] + list(models.keys())
-                            normalize_widget_state('val_importance_model', _vfi_options)
-                            _vfi_model = _vfi1.selectbox('Feature importance model', _vfi_options, key='val_importance_model')
-                            _vfi_sort  = _vfi2.selectbox('Sort by', ['Importance', 'Compatibility'], index=0, key='val_importance_sort')
-                            if _vfi_model == _vfi_combined:
-                                _vfi_fig = combined_feature_weighting_figure(importance_df, sort_by=_vfi_sort, height=360)
-                                st.caption(
-                                    'Bars = mean Relative_Importance across all trained models. '
-                                    'Each dot = one model\'s individual score — clustered dots mean '
-                                    'models agree; scattered dots mean they disagree.'
-                                )
-                            else:
-                                _vfi_top = (importance_df[importance_df['Model'].eq(_vfi_model)]
-                                            .sort_values('Relative_Importance', ascending=False).copy())
-                                _vfi_fig = feature_weighting_figure(_vfi_top['Feature'].tolist(), _vfi_top, sort_by=_vfi_sort, height=360)
-                            if _vfi_fig is not None:
-                                st.plotly_chart(_vfi_fig, width='stretch')
+                            _render_feature_importance_panel(
+                                importance_df, list(models.keys()),
+                                'val_importance_model', 'val_importance_sort')
                     # Apply per-group visibility filter (set above when groups
                     # exist on the bench). Also filters the summary recompute
                     # so R²/RMSE/MAE in the table reflect what's plotted.
