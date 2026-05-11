@@ -4330,6 +4330,18 @@ def train_model_set(train_df, target, names, seed=42, custom_sets=None, algorith
     imp_df = pd.concat(importance,ignore_index=True) if importance else pd.DataFrame()
     return models, val_df, imp_df
 
+def _sanitise_model_name(name) -> str:
+    """Convert a model registry key (e.g. 'Guo & Yang (2023) / ExtraTrees')
+    into a column-safe suffix (e.g. 'Guo_Yang_2023_ExtraTrees'). Strips
+    punctuation, collapses runs of underscores, trims edges. Used to build
+    per-model wide columns in the validation / prediction bench."""
+    import re as _re
+    s = str(name).strip()
+    s = _re.sub(r'[^0-9A-Za-z]+', '_', s)
+    s = _re.sub(r'_+', '_', s).strip('_')
+    return s or 'model'
+
+
 def _ensemble_predict_ci(bundle, X_df, ci_lo=5, ci_hi=95):
     """Per-tree prediction CI for bagging ensembles (ExtraTrees, RandomForest).
     Returns (ci_low, ci_high, pred_sd) arrays or (None, None, None) for boosting models."""
@@ -4397,7 +4409,59 @@ def benchmark_uploaded(_models, test_df, target, seed=42, la_yb_mode='raw_ppm'):
             tmp['Predicted_SD_km']         = pred_sd
             tmp['Predicted_CI90_Width_km'] = ci_hi - ci_lo
         rows.append(tmp)
-    return ensure_unique_columns(pd.concat(rows,ignore_index=True)) if rows else pd.DataFrame()
+    if not rows:
+        return pd.DataFrame()
+    long_bench = ensure_unique_columns(pd.concat(rows, ignore_index=True))
+    # Per-model wide columns — surface each trained model's predictions as
+    # their own column so the Validation plot picker can plot ExtraTrees vs
+    # RandomForest directly (instead of every row having a single
+    # Predicted_km column whose meaning depends on the Model column).
+    # Each sample row gets EVERY model's column filled; same value
+    # replicates across the rows that share a Sample_ID so the picker can
+    # consume the long-format bench unchanged.
+    long_bench = _attach_per_model_wide_columns(long_bench)
+    return long_bench
+
+
+def _attach_per_model_wide_columns(long_bench):
+    """Add per-model wide columns (Predicted_<safe>_km, Residual_<safe>_km,
+    Predicted_CI90_Low_<safe>_km, Predicted_CI90_High_<safe>_km,
+    Predicted_CI90_Width_<safe>_km, Predicted_SD_<safe>_km) to a long-format
+    validation / prediction bench. Uses Sample_ID when present, otherwise
+    falls back to a positional sample key derived from the per-model row
+    order. Each sample's row block (one row per model) ends up carrying
+    every model's per-model columns — values replicate across the block."""
+    if long_bench.empty or 'Model' not in long_bench.columns:
+        return long_bench
+    if 'Sample_ID' in long_bench.columns and long_bench['Sample_ID'].notna().any():
+        _sample_key = '_pm_sample_key'
+        long_bench = long_bench.copy()
+        long_bench[_sample_key] = long_bench['Sample_ID'].astype(str)
+    else:
+        # Fallback: each model's rows are written in the same input order,
+        # so the per-model cumulative row index identifies the same sample
+        # across model blocks.
+        _sample_key = '_pm_sample_key'
+        long_bench = long_bench.copy()
+        long_bench[_sample_key] = long_bench.groupby('Model').cumcount().astype(int).astype(str)
+    _pm_cols = [c for c in ['Predicted_km', 'Residual_km',
+                            'Predicted_CI90_Low_km', 'Predicted_CI90_High_km',
+                            'Predicted_CI90_Width_km', 'Predicted_SD_km']
+                if c in long_bench.columns]
+    def _to_per_model(col, safe):
+        # Insert _<safe> immediately before the trailing _km. Falls back
+        # to suffixing for columns that don't end in _km.
+        if col.endswith('_km'):
+            return f'{col[:-3]}_{safe}_km'
+        return f'{col}_{safe}'
+    for _mn in long_bench['Model'].dropna().astype(str).unique():
+        _safe = _sanitise_model_name(_mn)
+        _sub = long_bench.loc[long_bench['Model'].astype(str) == _mn,
+                              [_sample_key] + _pm_cols].drop_duplicates(subset=[_sample_key])
+        _sub = _sub.rename(columns={c: _to_per_model(c, _safe) for c in _pm_cols})
+        long_bench = long_bench.merge(_sub, on=_sample_key, how='left')
+    long_bench = long_bench.drop(columns=[_sample_key], errors='ignore')
+    return ensure_unique_columns(long_bench)
 
 @st.cache_data(show_spinner=False)
 def predict_uploaded(_models, pred_df, seed=42, la_yb_mode='raw_ppm'):
@@ -4436,7 +4500,13 @@ def predict_uploaded(_models, pred_df, seed=42, la_yb_mode='raw_ppm'):
             tmp['Predicted_SD_km'] = pred_sd
             tmp['Predicted_CI90_Width_km'] = ci_hi - ci_lo
         rows.append(tmp)
-    return ensure_unique_columns(pd.concat(rows, ignore_index=True)) if rows else pd.DataFrame()
+    if not rows:
+        return pd.DataFrame()
+    long_bench = ensure_unique_columns(pd.concat(rows, ignore_index=True))
+    # Surface per-model wide columns (see _attach_per_model_wide_columns for
+    # rationale) so the Predict tab's Validation plot picker can address
+    # individual trained ML models.
+    return _attach_per_model_wide_columns(long_bench)
 
 def prediction_summary_stats(df):
     rows = []
@@ -5883,6 +5953,14 @@ def simple_xy_column_category(col):
     Categories are emitted as a string so they can be used directly in
     the picker's ``format_func`` as a prefix label.
 
+    ``Predicted_km`` is the *active-model* prediction in the bench. Its
+    category is honest about the source: in ratio / GAME mode it carries
+    the proxy estimate (not an ML output) so we route it accordingly.
+
+    ``Predicted_<safe_name>_km`` columns are per-model wide projections
+    of the long-format bench — each one is a specific trained ML model's
+    prediction surfaced as its own axis option.
+
     Falls back to ``'Category'`` for anything we can't classify (Group_Name,
     Model, Tectonic_Setting, Arc_or_Segment, …) — i.e. metadata columns
     are sensibly grouped at the end of the dropdown.
@@ -5891,10 +5969,27 @@ def simple_xy_column_category(col):
 
     # Estimates ──────────────────────────────────────────────────────────
     if s == 'Predicted_km':
+        # Honour what actually populated Predicted_km — ML mode uses the
+        # model's .predict(), ratio modes synthesise from a proxy column.
+        try:
+            _pmt = st.session_state.get('primary_model_type', 'Machine Learning')
+        except Exception:
+            _pmt = 'Machine Learning'
+        if _pmt == 'Multi-ratio':
+            return 'Estimate: Multi-ratio proxy'
+        if _pmt == 'Single-ratio':
+            return 'Estimate: Single-ratio proxy'
+        return 'Estimate: ML model'
+    # Per-model wide columns produced by benchmark_uploaded() — pattern is
+    # Predicted_<sanitised_name>_km. Always ML model output.
+    if s.startswith('Predicted_') and s.endswith('_km') and s != 'Predicted_km':
         return 'Estimate: ML model'
     if s in _SXY_REFERENCE_COLS:
         return 'Estimate: Reference'
     if s in _RESIDUAL_COLOR_COLS:           # Residual_km, Delta_km, GAME_delta_km
+        return 'Residual'
+    # Per-model residual columns
+    if s.startswith('Residual_') and s.endswith('_km') and s != 'Residual_km':
         return 'Residual'
     if s in _SXY_MULTI_RATIO_COLS:
         return 'Estimate: Multi-ratio proxy'
@@ -11012,7 +11107,17 @@ with t0:
                 st.divider()
                 model_options=list(models.keys())
                 normalize_widget_state('active_interp_model',model_options)
-                active_model_label=st.selectbox('Model to use for interpretation',model_options,index=0,key='active_interp_model')
+                active_model_label=st.selectbox(
+                    'Primary model',
+                    model_options, index=0, key='active_interp_model',
+                    help='Headline ML model. Drives the Model-tab diagnostics '
+                         '(feature importance, partial dependence) AND becomes '
+                         'the default Y axis in the Validate / Predict tabs\' '
+                         'Validation plot. Each trained model also gets its '
+                         'own per-model column (Predicted_<name>_km / '
+                         'Residual_<name>_km / CI_Low_<name>_km / CI_High_<name>_km) '
+                         'so you can pick a different model on either axis there.',
+                )
                 if active_model_label in models:
                     model=models[active_model_label]['model']; clean=models[active_model_label]['clean']; selected_features=models[active_model_label]['features']; feature_set_name=active_model_label
                 if st.button('Save selected model as preset',key='save_model_preset'):
@@ -11988,13 +12093,39 @@ with t_validation:
                         if not _um_axis_opts:
                             st.info('No usable columns on this bench yet.')
                         else:
+                            # What does Predicted_km currently resolve to?
+                            # In ML mode it's the active-model prediction; in
+                            # ratio / GAME mode it's the chosen proxy. Tell
+                            # the user, since the picker categorisation now
+                            # honours this.
+                            _pmt_now = st.session_state.get('primary_model_type', 'Machine Learning')
+                            if _pmt_now == 'Multi-ratio':
+                                _pm_proxy = st.session_state.get('_primary_proxy_name', 'GAME consensus')
+                                st.caption(f'ℹ️ `Predicted_km` currently = **{_pm_proxy}** (proxy estimate, not an ML prediction). Pick a `Predicted_<model>_km` column to plot a specific trained ML model.')
+                            elif _pmt_now == 'Single-ratio':
+                                _pm_proxy = st.session_state.get('_primary_proxy_name', 'Single-ratio proxy')
+                                st.caption(f'ℹ️ `Predicted_km` currently = **{_pm_proxy}**. Pick a `Predicted_<model>_km` column to plot a specific trained ML model.')
+                            else:
+                                _pm_primary = st.session_state.get('active_interp_model', '')
+                                if _pm_primary:
+                                    st.caption(f'ℹ️ `Predicted_km` = **{_pm_primary}** (primary model). Per-model columns `Predicted_<model>_km` let you pick a specific trained model on either axis.')
+                            # Default Y: primary-model per-model column if it
+                            # exists on the bench, else generic Predicted_km.
+                            _pm_safe = _sanitise_model_name(st.session_state.get('active_interp_model', '')) if st.session_state.get('active_interp_model') else ''
+                            _pm_y_col = f'Predicted_{_pm_safe}_km' if _pm_safe else ''
+                            _pm_resid_col = f'Residual_{_pm_safe}_km' if _pm_safe else ''
                             # Defaults: classic predicted-vs-known scatter
                             # coloured by signed residual (red-cream-blue).
                             _um_x_default = 'Observed_km'  if 'Observed_km'  in _um_axis_opts else _um_axis_opts[0]
-                            _um_y_default = 'Predicted_km' if 'Predicted_km' in _um_axis_opts else (
-                                _um_axis_opts[1] if len(_um_axis_opts) > 1 else _um_axis_opts[0]
+                            _um_y_default = (
+                                _pm_y_col if _pm_y_col in _um_axis_opts else
+                                ('Predicted_km' if 'Predicted_km' in _um_axis_opts else
+                                 (_um_axis_opts[1] if len(_um_axis_opts) > 1 else _um_axis_opts[0]))
                             )
-                            _um_c_default = 'Residual_km' if 'Residual_km' in _um_axis_opts else None
+                            _um_c_default = (
+                                _pm_resid_col if _pm_resid_col in _um_axis_opts else
+                                ('Residual_km' if 'Residual_km' in _um_axis_opts else None)
+                            )
 
                             # Two-stage pickers (group → column) for each
                             # axis. Each picker lives in its own column
@@ -12535,14 +12666,34 @@ with t_unknown:
                     if not _upm_axis_opts:
                         st.info('No usable columns on this prediction bench yet.')
                     else:
+                        # Mirror the Validate-tab caption explaining what
+                        # Predicted_km currently resolves to.
+                        _pmt_now_uk = st.session_state.get('primary_model_type', 'Machine Learning')
+                        if _pmt_now_uk in ('Multi-ratio', 'Single-ratio'):
+                            _pm_proxy_uk = st.session_state.get('_primary_proxy_name', 'Proxy estimate')
+                            st.caption(f'ℹ️ `Predicted_km` currently = **{_pm_proxy_uk}** (proxy estimate, not an ML prediction). Pick a `Predicted_<model>_km` column to plot a specific trained ML model.')
+                        else:
+                            _pm_primary_uk = st.session_state.get('active_interp_model', '')
+                            if _pm_primary_uk:
+                                st.caption(f'ℹ️ `Predicted_km` = **{_pm_primary_uk}** (primary model). Per-model columns `Predicted_<model>_km` let you pick a specific trained model on either axis.')
+                        # Primary-model per-model column for default Y.
+                        _pm_safe_uk = _sanitise_model_name(st.session_state.get('active_interp_model', '')) if st.session_state.get('active_interp_model') else ''
+                        _pm_y_col_uk = f'Predicted_{_pm_safe_uk}_km' if _pm_safe_uk else ''
                         # Defaults for Predict (no Observed_km available):
                         # X = a proxy ratio if available so the formula
                         # curve has something to draw, else Predicted_km;
-                        # Y = Predicted_km; Colour = Predicted_km.
+                        # Y = primary-model column if present, else Predicted_km;
+                        # Colour = Predicted_km.
                         _upm_x_default = next((c for c in ('Sr_Y', 'La_Yb_N', 'Predicted_km')
                                                if c in _upm_axis_opts), _upm_axis_opts[0])
-                        _upm_y_default = 'Predicted_km' if 'Predicted_km' in _upm_axis_opts else _upm_axis_opts[0]
-                        _upm_c_default = 'Predicted_km' if 'Predicted_km' in _upm_axis_opts else None
+                        _upm_y_default = (
+                            _pm_y_col_uk if _pm_y_col_uk in _upm_axis_opts else
+                            ('Predicted_km' if 'Predicted_km' in _upm_axis_opts else _upm_axis_opts[0])
+                        )
+                        _upm_c_default = (
+                            _pm_y_col_uk if _pm_y_col_uk in _upm_axis_opts else
+                            ('Predicted_km' if 'Predicted_km' in _upm_axis_opts else None)
+                        )
 
                         # Two-stage pickers (group → column) for each axis,
                         # mirroring the Validate-tab layout.
