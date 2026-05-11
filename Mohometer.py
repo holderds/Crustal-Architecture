@@ -10652,7 +10652,13 @@ with t_data_prep:
                         'Geologic_Age_Label', 'Geologic_Stage', 'Geologic_Eon'])
             )
             if _ics_age_cols_present:
-                _ics_disabled = bool(st.session_state.get('_dp_disable_ics_autofill', False))
+                # Kill-switch key is per-file so multiple uploaded files each
+                # get their own toggle (Streamlit refuses two widgets sharing
+                # one key). Each per-file panel runs its own auto-populate
+                # using its own switch — the downstream enrich() pipeline
+                # always auto-fills regardless.
+                _ics_kill_key = f'_dp_disable_ics_autofill_{_dp_fi}_{_dp_f.name}'
+                _ics_disabled = bool(st.session_state.get(_ics_kill_key, False))
                 _, _ics_stats = ics_auto_populate(_dp_processed, disable=_ics_disabled)
                 _ics_title = ('🌍 Geological age auto-population — DISABLED'
                               if _ics_disabled else
@@ -10678,12 +10684,13 @@ with t_data_prep:
                     st.checkbox(
                         'Disable auto-fill (keep uploaded values untouched)',
                         value=_ics_disabled,
-                        key='_dp_disable_ics_autofill',
+                        key=_ics_kill_key,
                         help='Off by default. Tick to keep the raw uploaded '
                              'Age_Ma / Geologic_* values as-is, without any '
                              'forward or reverse fill. Conflict detection also '
                              'pauses. Useful when debugging an unexpected '
-                             'auto-fill behaviour. Only affects this Prepare '
+                             'auto-fill behaviour. Per-file: each uploaded '
+                             'file has its own switch. Only affects this Prepare '
                              'panel — the downstream `enrich()` pipeline '
                              'still runs auto-fill so the bench used for '
                              'Model / Validate / Predict always sees the '
