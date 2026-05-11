@@ -4378,6 +4378,36 @@ def _conformal_quantile(cal_residuals, alpha: float = 0.10) -> float:
     return float(_np.partition(arr, k - 1)[k - 1])
 
 
+def _bootstrap_median_ci(values, n_boot: int = 1000, alpha: float = 0.10,
+                          seed: int = 42):
+    """Bootstrap a confidence interval on the median of `values`.
+
+    Resamples with replacement n_boot times, returns the (alpha/2, 1-alpha/2)
+    quantiles of the bootstrapped medians. Default α=0.10 → 90 % interval.
+    Captures within-sample variability — i.e. how much the median would
+    move if you'd sampled a different N from the same population.
+
+    Used for "uncertainty on the group median Predicted_km" in the per-group
+    averages (Validate tab) and the Group prediction summary (Summary tab).
+    Cheap: 1000 bootstraps × 100 samples per group ≈ 100k ops ≈ <10 ms.
+
+    Returns (low, high). Returns (NaN, NaN) when N<3 (no bootstrap signal).
+    """
+    import numpy as _np
+    arr = _np.asarray(values, dtype=float)
+    arr = arr[_np.isfinite(arr)]
+    n = arr.size
+    if n < 3:
+        return (float('nan'), float('nan'))
+    rng = _np.random.default_rng(seed)
+    # Vectorised bootstrap: build (n_boot, n) index matrix in one shot.
+    idx = rng.integers(0, n, size=(int(n_boot), n))
+    boot_medians = _np.median(arr[idx], axis=1)
+    lo = float(_np.quantile(boot_medians, alpha / 2.0))
+    hi = float(_np.quantile(boot_medians, 1.0 - alpha / 2.0))
+    return (lo, hi)
+
+
 def _sanitise_model_name(name) -> str:
     """Convert a model registry key (e.g. 'Guo & Yang (2023) / ExtraTrees')
     into a column-safe suffix (e.g. 'Guo_Yang_2023_ExtraTrees'). Strips
@@ -12233,12 +12263,20 @@ with t_validation:
                                     continue
                                 _o = _obs[_ok]; _p = _pred[_ok]
                                 _resid = _p - _o
+                                # 90 % bootstrap CI on the median of per-sample
+                                # Predicted_km — captures within-group sample
+                                # variability. Tells you how much the group's
+                                # median thickness would move if you'd sampled
+                                # a different N rocks from the same population.
+                                _med_lo, _med_hi = _bootstrap_median_ci(_p.to_numpy())
                                 _grp_rows.append({
                                     'Model':              _mn,
                                     _val_group_col:       str(_gname),
                                     'N':                  int(_ok.sum()),
-                                    'Median Observed [km]':  float(_o.median()),
-                                    'Median Predicted [km]': float(_p.median()),
+                                    'Median Observed [km]':       float(_o.median()),
+                                    'Median Predicted [km]':      float(_p.median()),
+                                    'Median Predicted CI Low':    _med_lo,
+                                    'Median Predicted CI High':   _med_hi,
                                     'Mean Observed [km]':    float(_o.mean()),
                                     'Mean Predicted [km]':   float(_p.mean()),
                                     'Median Residual [km]':  float(_resid.median()),
@@ -12253,6 +12291,15 @@ with t_validation:
                             # Hide the Model column when only one model is in view
                             _show_cols = [c for c in _grp_df.columns
                                           if not (c == 'Model' and _grp_df['Model'].nunique() <= 1)]
+                            st.caption(
+                                '`Median Predicted CI Low / High` = 90 % bootstrap '
+                                'interval on the group median Predicted_km — how much '
+                                'the median would shift if you sampled a different N '
+                                'rocks from the same group. Tightens with larger N and '
+                                'lower within-group spread; doesn\'t include per-sample '
+                                'model error (look at `Predicted_Conformal_*_km` columns '
+                                'for that).'
+                            )
                             table_action_card(
                                 f'Per-`{_val_group_col}` averages ({len(_grp_df)} group(s))',
                                 _grp_df[_show_cols],
@@ -14490,8 +14537,19 @@ with t_result_summary:
                 SD_km=('Predicted_km','std'),
                 Q25_km=('Predicted_km',lambda x: x.quantile(0.25)),
                 Q75_km=('Predicted_km',lambda x: x.quantile(0.75)),
+                Median_CI_Low_km=('Predicted_km',
+                                  lambda x: _bootstrap_median_ci(x.to_numpy())[0]),
+                Median_CI_High_km=('Predicted_km',
+                                  lambda x: _bootstrap_median_ci(x.to_numpy())[1]),
             ).reset_index()
             # (downloads consolidated into the Export results section below)
+            st.caption(
+                '`Median_CI_Low_km` / `Median_CI_High_km` = 90 % bootstrap '
+                'interval on the per-group median Predicted_km. Captures '
+                'within-group sample variability — how much the median would '
+                'shift if you sampled a different N rocks from the same group. '
+                'Narrower when N is large and within-group spread is tight.'
+            )
             table_action_card('Group prediction summary',tidy_numbers(_rs_sum),'result_summary.csv','rs_group_summary_table')
             # ── Summary map ───────────────────────────────────────────────────
             # Same lazy-execution pattern as the Training sample map: the
