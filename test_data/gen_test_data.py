@@ -262,6 +262,101 @@ def _round_numerics(df, oxide_dp=2, trace_dp=1, age_dp=2):
     return out
 
 
+# ── Real-world messy-column bench ────────────────────────────────────────────
+
+# Mapping from canonical internal name to a messy real-world header. Designed
+# to exercise the Prepare-tab auto-mapping registry: unit tags in headers,
+# parentheses / brackets / spaces, mixed case, abbreviations, ppb-units that
+# need conversion, alternative iron expressions, and synonym names.
+_MESSY_RENAMES = {
+    'Sample_ID':         'Sample',
+    'Dataset':           'Reference',
+    'Lat':               'Latitude (DD)',
+    'Lon':               'Longitude (DD)',
+    'Age_Ma':            'Age (Ma)',
+    'Tectonic_Setting':  'Tectonic Setting',
+    'Arc':               'Arc Name',
+    'Segment':           'Volcanic Segment',
+    'Geologic_Domain':   'Domain',
+    'Rock_Type':         'Lithology',
+    'SiO2':              'SiO2 (wt%)',
+    'TiO2':              'TiO2 wt%',
+    'Al2O3':             'Al2O3 (wt%)',
+    'FeO':               'FeOt',           # iron expressed as FeO-total
+    'MgO':               'MgO (wt%)',
+    'CaO':               'CaO_wt',
+    'Na2O':              'Na2O wt%',
+    'K2O':               'K2O (%)',
+    'Sr':                'Sr [ppm]',
+    'Y':                 'Y_ppm',
+    'La':                'La (ppm)',
+    'Yb':                'Yb_ppm',
+    'Ce':                'Ce ppm',
+    'Crust_Thickness':   'Moho depth (km)',
+}
+
+
+def real_world_messy_bench(rng):
+    """A ~150-row bench with messy real-world column headers, mixed iron
+    expressions, ppb-encoded trace elements that need converting to ppm,
+    typical missing-value tokens, and some junk columns the registry should
+    ignore. Designed to exercise the Prepare-tab auto-mapping pipeline."""
+    # Draw 25 samples from each of the 6 regions for a 150-row file.
+    rows = []
+    for region in REGIONS:
+        for _ in range(25):
+            rows.append(_region_sample(rng, region))
+    df = pd.DataFrame(rows)
+    df.insert(0, 'Sample_ID', [f'RW_{i+1:04d}' for i in range(len(df))])
+    # Add a few extra columns the registry should map / ignore.
+    # 1. Sr_ppb: same Sr but expressed in ppb (× 1000) — tests the ppm/ppb
+    #    unit handling. We populate this for half the rows; the other half
+    #    keeps Sr in ppm so both code paths fire.
+    sr_in_ppb_mask = rng.random(len(df)) < 0.5
+    df['Sr_ppb'] = np.where(sr_in_ppb_mask, df['Sr'] * 1000.0, np.nan)
+    df.loc[sr_in_ppb_mask, 'Sr'] = np.nan   # only one Sr column populated per row
+    # 2. Geologic categories: include one but NOT all — auto-populate
+    #    should fill in the missing levels from Age_Ma.
+    df['Period'] = pd.NA   # will be ignored (empty) — exercises the empty-column path
+    df['Stage']  = pd.NA
+    # 3. Junk columns the registry shouldn't touch.
+    df['Lab ID']           = [f'L{rng.integers(1000, 9999)}' for _ in range(len(df))]
+    df['Date analysed']    = pd.to_datetime('2024-01-01') + pd.to_timedelta(rng.integers(0, 700, len(df)), unit='D')
+    df['Comments']         = ''
+    # 4. Round the numerics first, THEN sprinkle in real-world missing tokens.
+    df = _round_numerics(df)
+    # 5. Sprinkle missing-value tokens — about 5% of cells in chemistry
+    #    columns get one of {'NA', 'n/a', '-', 'bdl', '<0.1'}. We do this
+    #    AFTER rounding so the original numeric distribution is intact.
+    missing_tokens = ['NA', 'n/a', '-', 'bdl', '<0.1']
+    chem_cols = ['SiO2','TiO2','Al2O3','FeO','MgO','CaO','Na2O','K2O',
+                 'Sr','Y','La','Yb','Ce','Sr_ppb']
+    for col in chem_cols:
+        # Cast to object so we can store string tokens alongside floats
+        # without triggering pandas' incompatible-dtype FutureWarning.
+        df[col] = df[col].astype(object)
+        mask = rng.random(len(df)) < 0.04
+        if mask.any():
+            df.loc[mask, col] = rng.choice(missing_tokens, size=int(mask.sum()))
+    # 6. Now rename to the messy real-world headers. Sr_ppb stays as-is.
+    df = df.rename(columns=_MESSY_RENAMES)
+    # 7. Reorder so headers appear in a sensible-but-messy order (sample +
+    #    location first, then chemistry, then misc).
+    preferred_order = [
+        'Sample', 'Reference', 'Latitude (DD)', 'Longitude (DD)',
+        'Age (Ma)', 'Period', 'Stage',
+        'Tectonic Setting', 'Arc Name', 'Volcanic Segment', 'Domain',
+        'Lithology',
+        'SiO2 (wt%)', 'TiO2 wt%', 'Al2O3 (wt%)', 'FeOt', 'MgO (wt%)',
+        'CaO_wt', 'Na2O wt%', 'K2O (%)',
+        'Sr [ppm]', 'Sr_ppb', 'Y_ppm', 'La (ppm)', 'Yb_ppm', 'Ce ppm',
+        'Moho depth (km)',
+        'Lab ID', 'Date analysed', 'Comments',
+    ]
+    df = df[[c for c in preferred_order if c in df.columns]]
+    return df
+
+
 # ── Edge-case bench (hand-crafted) ──────────────────────────────────────────
 
 def edge_cases():
@@ -353,15 +448,19 @@ def main():
     prediction = prediction.drop(columns=['Crust_Thickness'])
 
     edges = edge_cases()
+    messy_rng = np.random.default_rng(SEED + 3)
+    messy = real_world_messy_bench(messy_rng)
     training.to_csv  (OUT_DIR / 'test_training.csv',   index=False)
     validation.to_csv(OUT_DIR / 'test_validation.csv', index=False)
     prediction.to_csv(OUT_DIR / 'test_prediction.csv', index=False)
     edges.to_csv     (OUT_DIR / 'test_edge_cases.csv', index=False)
+    messy.to_csv     (OUT_DIR / 'test_real_world_messy.csv', index=False)
 
-    print(f'  test_training.csv     {len(training)} rows  ({training["Dataset"].nunique()} datasets)')
-    print(f'  test_validation.csv   {len(validation)} rows')
-    print(f'  test_prediction.csv   {len(prediction)} rows  (Crust_Thickness blanked)')
-    print(f'  test_edge_cases.csv   {len(edges)} rows')
+    print(f'  test_training.csv          {len(training)} rows  ({training["Dataset"].nunique()} datasets)')
+    print(f'  test_validation.csv        {len(validation)} rows')
+    print(f'  test_prediction.csv        {len(prediction)} rows  (Crust_Thickness blanked)')
+    print(f'  test_edge_cases.csv        {len(edges)} rows')
+    print(f'  test_real_world_messy.csv  {len(messy)} rows  ({len(messy.columns)} columns with real-world names)')
     print()
     print('Summary of training set:')
     print(training[['Dataset','Age_Ma','Crust_Thickness','SiO2','MgO','Sr','Y']].describe().round(1))

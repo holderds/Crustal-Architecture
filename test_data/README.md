@@ -8,10 +8,11 @@ with a fixed seed (42) so the files are stable across runs.
 
 | File | Rows | Has Crust_Thickness? | What to use it for |
 |---|---|---|---|
-| `test_training.csv`    | 720 | yes | Model-tab training source |
-| `test_validation.csv`  | 240 | yes | Validate-tab held-out dataset |
-| `test_prediction.csv`  | 180 | **no** (blanked) | Predict-tab unknown-samples dataset |
-| `test_edge_cases.csv`  | 30  | mixed | Prepare-tab auto-populate + column-mapping exerciser |
+| `test_training.csv`         | 720 | yes | Model-tab training source |
+| `test_validation.csv`       | 240 | yes | Validate-tab held-out dataset |
+| `test_prediction.csv`       | 180 | **no** (blanked) | Predict-tab unknown-samples dataset |
+| `test_edge_cases.csv`       | 30  | mixed | ICS auto-populate hand-crafted edge cases |
+| `test_real_world_messy.csv` | 150 | yes | **Real-world** column-name variants + units + missing-value tokens + ppb conversion |
 
 ## Regional archetypes (used in training / validation / prediction)
 
@@ -78,6 +79,74 @@ synthetic "perfect prediction" trap.
 
 - **Predict tab**: 180 unknown samples. Crust_Thickness is dropped so the model produces Predicted_km + Conformal CI. Useful for sanity-checking the predictions cluster around the right thickness per region even though the file has no labels.
 - **Summary tab**: violin plot will show 6 region clusters; MC-perturbed CI button should reduce to roughly the per-sample CI width over √(N) per group.
+
+### `test_real_world_messy.csv` — 150 rows, real-world column-name mess
+
+Same six regions as the main bench but with **realistic, messy column
+headers** you actually see in published / shared geochemical
+datasets. Designed to exercise the Prepare-tab auto-mapping registry
++ unit handling + missing-value parsing in one upload.
+
+**Column-name variants:**
+
+| Canonical    | This file uses      | Why it's there |
+|---|---|---|
+| `Sample_ID`         | `Sample`           | Common short form |
+| `Dataset`           | `Reference`        | Publication-style |
+| `Lat`               | `Latitude (DD)`    | Full word + unit tag in parens |
+| `Lon`               | `Longitude (DD)`   | ditto |
+| `Age_Ma`            | `Age (Ma)`         | Unit in parens |
+| `Tectonic_Setting`  | `Tectonic Setting` | Space-separated |
+| `Arc`               | `Arc Name`         | Synonym |
+| `Segment`           | `Volcanic Segment` | Synonym |
+| `Geologic_Domain`   | `Domain`           | Abbreviated |
+| `Rock_Type`         | `Lithology`        | Domain term |
+| `SiO2`              | `SiO2 (wt%)`       | Unit tag |
+| `TiO2`              | `TiO2 wt%`         | Unit tag, no parens |
+| `Al2O3`             | `Al2O3 (wt%)`      | Unit tag |
+| `FeO`               | `FeOt`             | **Iron expressed as FeO-total** (must convert via existing iron→FeO logic) |
+| `MgO`               | `MgO (wt%)`        | Unit tag |
+| `CaO`               | `CaO_wt`           | Underscore variant |
+| `Na2O`              | `Na2O wt%`         | Bare unit |
+| `K2O`               | `K2O (%)`          | Generic % unit |
+| `Sr`                | `Sr [ppm]` / `Sr_ppb`* | **Two columns** — half the rows in ppm, half in ppb (1000× larger). Tests the unit-aware ingestion path. |
+| `Y`                 | `Y_ppm`            | Suffix unit |
+| `La`                | `La (ppm)`         | Paren unit |
+| `Yb`                | `Yb_ppm`           | Suffix unit |
+| `Ce`                | `Ce ppm`           | Bare unit |
+| `Crust_Thickness`   | `Moho depth (km)`  | Synonym + unit |
+
+**Plus:**
+
+- **Empty `Period` / `Stage` columns** — present but all-NaN, so the
+  ICS auto-populate has nothing to coalesce *into* and must invent the
+  hierarchy from `Age (Ma)` alone.
+- **3 junk columns** the registry should ignore: `Lab ID`, `Date analysed`, `Comments`.
+- **~4 % of cells in chemistry columns** carry real-world missing-value tokens:
+  `NA`, `n/a`, `-`, `bdl` (below detection limit), `<0.1` (censored).
+  These should land as NaN after the Prepare-tab numeric coercion.
+
+**What to watch for when you upload this file:**
+
+1. The auto-mapping editor should show most columns as **🔵 Blue
+   (confirmed)** because the registry has decent fuzzy-matching. Things
+   like `SiO2 (wt%)` and `MgO (wt%)` should auto-map cleanly. The
+   `Latitude (DD)` / `Longitude (DD)` headers test the location-unit
+   detection.
+2. **`Sr_ppb` should auto-detect as Sr with unit = ppb**, and the
+   processed values should be 1000× smaller than the raw column values
+   (because ppb → ppm conversion divides by 1000). If you see Sr
+   values in the thousands of ppm range, the unit handling failed.
+3. **`FeOt` → `FeO`**: the iron-to-FeO conversion path (see
+   `iron_to_feo()` in the source) should pick FeOt up as a valid iron
+   source.
+4. **`Moho depth (km)`** should map to `Crust_Thickness`. Check the
+   Prepare data-quality panel shows it as the target.
+5. **Missing-value tokens**: the data-quality panel should report ~4 %
+   missing per chemistry column. Make sure the histogram still renders.
+6. The **age histogram** has no Period/Stage columns to colour by — pick
+   `Geologic_Era` from the colour-by selector once auto-populate has filled
+   that column.
 
 ### `test_edge_cases.csv` — 30 hand-crafted rows
 
