@@ -8378,7 +8378,40 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 la_mode='raw_ppm'
+st.sidebar.slider('Point size (all charts)', 2, 14, 5, 1, key='global_point_size')
 pred_no_header=False
+
+# ── Workflow breadcrumb (appears once Prepare has data) ─────────────────────
+def _bc_step(label, done, note=''):
+    col  = '#16a34a' if done else '#9ca3af'
+    tick = '✓' if done else '○'
+    base = (f'<span style="color:{col};font-weight:{"600" if done else "400"};'
+            f'white-space:nowrap">{tick} {label}</span>')
+    if note:
+        base += (f'<span style="color:#9ca3af;font-size:11px;margin-left:3px">'
+                 f'{note}</span>')
+    return base
+
+_bc_prepare = bool(get_prepped_pool())
+if _bc_prepare:
+    _bc_group   = any('Group_ID' in df.columns for df in get_prepped_pool().values())
+    _bc_model   = bool(st.session_state.get('_training_sources_used'))
+    _bc_predict = ('_rs_pred_bench' in st.session_state
+                   or '_rs_val_bench' in st.session_state)
+    _bc_arrow   = '<span style="color:#d1d5db;margin:0 6px">→</span>'
+    st.markdown(
+        '<div style="display:flex;gap:0;align-items:center;padding:4px 0 12px 2px;'
+        'font-size:13px;font-family:sans-serif;flex-wrap:wrap">'
+        + _bc_step('Prepare', _bc_prepare)
+        + _bc_arrow
+        + _bc_step('Group', _bc_group, '(optional)')
+        + _bc_arrow
+        + _bc_step('Model', _bc_model)
+        + _bc_arrow
+        + _bc_step('Validate / Predict', _bc_predict)
+        + '</div>',
+        unsafe_allow_html=True,
+    )
 seed=42
 
 def summary_tile(label, value, numeric=False, compact=False):
@@ -9872,6 +9905,11 @@ with t0:
             '💡 Use the **Group** tab to define groups and save to pool — '
             'Multi-model training will then be available here.'
         )
+    elif _ml_approach == 'Multi-model — train per group':
+        st.caption(
+            '📍 **Per-group model assignment** panel is at the bottom of this tab — '
+            'configure which trained model applies to each group after training completes.'
+        )
 
     # ── 3. Model type (single-model only; multi-model is always ML) ──────────
     _pmt_is_ml = True          # default — multi-model path always uses ML
@@ -10145,13 +10183,13 @@ with t0:
                 else:
                     st.info('No rows have both a ratio prediction and a known crustal thickness.')
             else:
-                _rcv_a, _rcv_b, _rcv_c, _rcv_d = st.columns(4)
+                _rcv_a, _rcv_c, _rcv_d = st.columns(3)
                 _rcv_color = _rcv_a.selectbox(
                     'Colour by',
                     [c for c in ['Residual_km', 'Age_Ma', 'Rock_Type_Model'] if c in _rat_bench],
                     index=0, key='ratio_cv_color',
                 )
-                _rcv_size    = typed_slider(_rcv_b, 'Point size', 2, 12, 5, 1, key='ratio_cv_psize')
+                _rcv_size    = int(st.session_state.get('global_point_size', 5))
                 _rcv_fit     = _rcv_c.checkbox('Best-fit line', True, key='ratio_cv_fit')
                 _rcv_env     = _rcv_d.checkbox('Residual envelope', False, key='ratio_cv_env')
                 _r2a, _r2b, _r2c, _r2d = st.columns(4)
@@ -10825,9 +10863,9 @@ with t0:
                 if cv_plot.empty:
                     st.info('Select at least one model to show the cross-validation graph.')
                 else:
-                    cva,cvb,cvc,cvd=st.columns(4)
+                    cva,cvc,cvd=st.columns(3)
                     cv_color=cva.selectbox('Colour points by',['Delta_km','Model','Algorithm'],index=0,key='model_cv_color',format_func=lambda c: 'model - known [Km]' if c == 'Delta_km' else c)
-                    cv_size=typed_slider(cvb,'Point size',2,12,5,1,key='model_cv_point_size')
+                    cv_size=int(st.session_state.get('global_point_size', 5))
                     cv_fit=cvc.checkbox('Best-fit lines',True,key='model_cv_best_fit')
                     cv_envelope=cvd.checkbox('Best-fit residual envelopes',False,key='model_cv_envelope')
                     cv_r2a,cv_r2b,cv_r2c,cv_r2d=st.columns(4)
@@ -11170,9 +11208,9 @@ with t_validation:
                 if _val_group_col:
                     _val_color_options.append(_val_group_col)
 
-                v1,v2,v3,v4,v5,v6=st.columns(6)
+                v1,v3,v4,v5,v6=st.columns(5)
                 color_by=v1.selectbox('Colour points by',_val_color_options,index=0,key='validation_color',format_func=lambda c: 'model - known [Km]' if c == 'Delta_km' else ('group' if c == _val_group_col else c))
-                point_size=typed_slider(v2,'Point size',2,12,5,1,key='validation_point_size')
+                point_size=int(st.session_state.get('global_point_size', 5))
                 show_best_fit=v3.checkbox('Best-fit lines',True,key='validation_best_fit')
                 show_point_error=v4.checkbox('Point residual bars',False,key='validation_point_error')
                 show_envelope=v5.checkbox('Best-fit residual envelopes',False,key='validation_envelope')
@@ -11621,6 +11659,27 @@ with t_validation:
                     if show_tree_ci and 'Predicted_CI90_Low_km' not in test_bench:
                         st.info('Tree CI requires ExtraTrees or RandomForest — not available for boosting algorithms.')
                     table_action_card('Validation summary',display_validation_summary(test_bench),'validation_summary.csv','validation_summary')
+                    if not importance_df.empty:
+                        with st.expander('Feature importance', expanded=False):
+                            _vfi1, _vfi2 = st.columns([1, 0.7])
+                            _vfi_combined = 'All models — combined (mean bars + per-model dots)'
+                            _vfi_options  = [_vfi_combined] + list(models.keys())
+                            normalize_widget_state('val_importance_model', _vfi_options)
+                            _vfi_model = _vfi1.selectbox('Feature importance model', _vfi_options, key='val_importance_model')
+                            _vfi_sort  = _vfi2.selectbox('Sort by', ['Importance', 'Compatibility'], index=0, key='val_importance_sort')
+                            if _vfi_model == _vfi_combined:
+                                _vfi_fig = combined_feature_weighting_figure(importance_df, sort_by=_vfi_sort, height=360)
+                                st.caption(
+                                    'Bars = mean Relative_Importance across all trained models. '
+                                    'Each dot = one model\'s individual score — clustered dots mean '
+                                    'models agree; scattered dots mean they disagree.'
+                                )
+                            else:
+                                _vfi_top = (importance_df[importance_df['Model'].eq(_vfi_model)]
+                                            .sort_values('Relative_Importance', ascending=False).copy())
+                                _vfi_fig = feature_weighting_figure(_vfi_top['Feature'].tolist(), _vfi_top, sort_by=_vfi_sort, height=360)
+                            if _vfi_fig is not None:
+                                st.plotly_chart(_vfi_fig, width='stretch')
                     # Apply per-group visibility filter (set above when groups
                     # exist on the bench). Also filters the summary recompute
                     # so R²/RMSE/MAE in the table reflect what's plotted.
@@ -11887,9 +11946,8 @@ with t_validation:
                             gtab2,gtab3=st.tabs(['Reliability','Calibration'])
                             with gtab2:
                                 st.caption('GAME explicitly tracks how many mohometers survive data-availability, reference-model residual/RMSE, and STD/MAD filtering. Low kept N, high MAD/IQR, wide bootstrap CI, or an "all valid; high spread" status should be treated as lower-confidence interpretation.')
-                                rx1,rx2=st.columns([1,0.35])
-                                game_rel_x=rx1.selectbox('Reference for reliability residual',['Observed_km','Predicted_km'],index=0,key='game_reliability_x',format_func=lambda c: 'known: crustal thickness [Km]' if c == 'Observed_km' else 'model: crustal thickness [Km]')
-                                game_rel_size=typed_slider(rx2,'Point size',2,12,6,1,key='game_reliability_point_size')
+                                game_rel_x=st.selectbox('Reference for reliability residual',['Observed_km','Predicted_km'],index=0,key='game_reliability_x',format_func=lambda c: 'known: crustal thickness [Km]' if c == 'Observed_km' else 'model: crustal thickness [Km]')
+                                game_rel_size=int(st.session_state.get('global_point_size', 5))
                                 rfig=game_reliability_figure(test_bench,game_rel_x,game_rel_size)
                                 if rfig is not None:
                                     st.plotly_chart(rfig,width='stretch',key='val_game_reliability_fig')
@@ -12436,8 +12494,7 @@ with t_unknown:
                         uk_gtab2,uk_gtab3=st.tabs(['Reliability','Calibration'])
                         with uk_gtab2:
                             st.caption('GAME explicitly tracks how many mohometers survive data-availability, reference-model residual/RMSE, and STD/MAD filtering. Low kept N, high MAD/IQR, wide bootstrap CI, or an "all valid; high spread" status should be treated as lower-confidence interpretation.')
-                            uk_rx1,uk_rx2=st.columns([1,0.35])
-                            uk_game_rel_size=typed_slider(uk_rx2,'Point size',2,12,6,1,key='uk_game_reliability_point_size')
+                            uk_game_rel_size=int(st.session_state.get('global_point_size', 5))
                             uk_rfig=game_reliability_figure(pred_bench,'Predicted_km',uk_game_rel_size)
                             if uk_rfig is not None:
                                 st.plotly_chart(uk_rfig,width='stretch',key='uk_game_reliability_fig')
@@ -12688,11 +12745,10 @@ with t_grouping:
         st.rerun()
 
     # --- Resolve groups from filters ---------------------------------------
-    # Cache the filter-resolution call: same bench + same filter spec →
-    # same result.  Uses a content-derived signature (bench shape + columns
-    # + filter list JSON) to avoid re-iterating large benches on every
-    # widget interaction. We memoize via st.session_state rather than
-    # @st.cache_data because the bench can come from the live pool.
+    # Computation is gated behind ▶ Apply groups so that tweaking sliders /
+    # multiselects doesn't re-scan the bench on every keystroke.
+    # A content-hash (MD5 of bench signature + filter JSON) tells us when
+    # the displayed result is stale so we can warn the user.
     import hashlib as _hl_g
     _filt_spec  = st.session_state[_filter_state_key]
     _bench_id   = (
@@ -12705,8 +12761,12 @@ with t_grouping:
     ).hexdigest()
     _grouped_cache_key = f'_g_grouped_cache_{_g_src}'
     _grouped_sig_key   = f'{_grouped_cache_key}_sig'
-    if (st.session_state.get(_grouped_sig_key) != _filt_sig
-            or _grouped_cache_key not in st.session_state):
+    _sig_stale = (st.session_state.get(_grouped_sig_key) != _filt_sig)
+    _apply_col, _stale_col = st.columns([0.22, 0.78])
+    _apply_groups = _apply_col.button('▶ Apply groups', key='g_apply_groups', type='primary')
+    if _sig_stale and not _apply_groups:
+        _stale_col.caption('⚠️ Filters changed — click **▶ Apply groups** to update.')
+    if _apply_groups or _grouped_cache_key not in st.session_state:
         st.session_state[_grouped_cache_key] = _g_auto_groups_from_filters(
             _g_bench, _filt_spec,
         )
@@ -13584,7 +13644,7 @@ with t_result_summary:
     else:
         _rs_has_groups=not _rs_group.empty and 'Group_ID' in _rs_group and 'Grouping_Method' in _rs_group
         # ── Row 1: data / model controls ─────────────────────────────────────
-        _rs_c1,_rs_c2,_rs_c3,_rs_c4,_rs_c5=st.columns([1.3,1.2,1.1,0.9,0.6])
+        _rs_c1,_rs_c2,_rs_c3,_rs_c4=st.columns([1.3,1.2,1.1,0.9])
         if _rs_has_groups:
             _rs_methods=sorted(_rs_group['Grouping_Method'].dropna().astype(str).unique())
             _rs_method=_rs_c1.selectbox('Grouping method',_rs_methods,index=0,key='rs_violin_method')
@@ -13622,7 +13682,7 @@ with t_result_summary:
         if 'Long_Axis_Position_km' in _rs_vdf: _rs_order_map['Along-strike']='Long_Axis_Position_km'
         _rs_order_label=_rs_c4.selectbox('Order by',list(_rs_order_map),index=0,key='rs_violin_order')
         _rs_order_col=_rs_order_map[_rs_order_label]
-        _rs_point_size=typed_slider(_rs_c5,'Pt size',2,14,4,1,key='rs_point_size')
+        _rs_point_size=int(st.session_state.get('global_point_size', 5))
         # ── Row 2: violin appearance + overlay toggles ────────────────────────
         _rs_d1,_rs_d2,_rs_d3,_rs_d4,_rs_d5=st.columns([1.4,1.1,1.1,1.1,1.3])
         _rs_viol_colour=_rs_d1.selectbox('Violin colour',['By group','By median thickness'],key='rs_viol_colour')
