@@ -10984,87 +10984,106 @@ with t0:
                     st.plotly_chart(fig,width='stretch')
     
         with st.expander('Training sample map',expanded=False):
-            map_source_df = primary_train_df if 'primary_train_df' in locals() and not primary_train_df.empty else train_df
-            if {'Lat','Lon'}.issubset(map_source_df) and not map_source_df.empty:
-                map_df=enrich(map_source_df.copy(),la_mode)
-                color_options=[c for c in ['Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model'] if c in map_df]
-                modelled_cols=[]
-                for name,bundle in models.items():
-                    ok,_=complete(map_df,bundle['features'])
-                    map_df[f'Modelled_{name}_km']=np.nan
-                    if ok.any():
-                        map_df.loc[ok,f'Modelled_{name}_km']=bundle['model'].predict(map_df.loc[ok,bundle['features']])
-                    modelled_cols.append(f'Modelled_{name}_km')
-                color_options = modelled_cols + color_options
-                if color_options:
-                    map_c1,map_c2,map_c3,map_c4=st.columns([1.1,1,0.9,0.6])
-                    _crust1_grid   = read_default_crust_grid(str(DEFAULT_CRUST1_GRID))
-                    _lithoref_grid = read_default_lithoref18()
-                    _bg_choices = ['None']
-                    if not _crust1_grid.empty:   _bg_choices.insert(0,'CRUST1.0')
-                    if not _lithoref_grid.empty: _bg_choices.insert(min(1,len(_bg_choices)),'LithoRef18 / Alfonso 2019')
-                    bg_grid_choice = map_c1.selectbox('Background grid', _bg_choices, index=0, key='training_map_bg_grid')
-                    bg_display_mode = map_c1.radio('Display as', ['Surface','Points'], horizontal=True, key='training_map_bg_mode',
-                                                   help='Surface resamples to a uniform 1°×1° layer. Points shows raw grid nodes.')
-                    normalize_widget_state('training_model_map_layer',color_options)
-                    color_by=map_c2.selectbox('Sample layer',color_options,index=0,key='training_model_map_layer',format_func=lambda c: model_map_option_label(c,len(modelled_cols)))
-                    zoom_to_data=map_c4.checkbox('Zoom to data',value=False,key='training_map_zoom_to_data')
-                    m=plot_df(map_df.dropna(subset=['Lat','Lon']))
-                    color_by=resolve_option(color_by,list(m.columns),0)
-                    m_geo = geo_downsample(m)
-                    if len(m_geo) < len(m): map_c3.caption(f'{len(m_geo):,} / {len(m):,} pts')
-                    hover_columns=hover_cols(m_geo,['Sample_ID','Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model','Crust_Thickness'],color_by,'Lat','Lon')
-                    fig=px.scatter_geo(
-                        m_geo,lat='Lat',lon='Lon',color=color_by,
-                        hover_data=map_hover_data(m_geo,hover_columns),
-                        projection='natural earth',template='plotly_white',
-                        labels={color_by:model_map_legend_title(color_by).replace('<br>',' ')},
-                        **map_color_kw(color_by, m_geo),
-                    )
-                    fig.update_traces(marker=dict(line=dict(color='black',width=0.7)),selector=dict(type='scattergeo'))
-                    if bg_grid_choice == 'CRUST1.0' and not _crust1_grid.empty:
-                        fig = add_grid_background_to_geofig(fig, _crust1_grid, 'CRUST1_Total_Crust_km', 'CRUST1.0', 'CRUST1.0', bg_display_mode)
-                    elif bg_grid_choice == 'LithoRef18 / Alfonso 2019' and not _lithoref_grid.empty:
-                        fig = add_grid_background_to_geofig(fig, _lithoref_grid, 'LithoRef18_Total_Crust_km', 'LithoRef18 / Alfonso 2019', 'LithoRef18', bg_display_mode)
-                    fig=style_training_map_legends(fig,color_by)
-                    fig=apply_geo_zoom_to_data(fig,m,zoom_to_data)
-                    fig.update_layout(height=650)
-                    st.plotly_chart(fig,width='stretch')
-    
-                    # ── Coverage density heat-map ─────────────────────────────────
-                    if map_c3.checkbox('Show coverage density', value=False, key='training_map_density'):
-                        _lats = pd.to_numeric(m['Lat'], errors='coerce').dropna()
-                        _lons = pd.to_numeric(m['Lon'], errors='coerce').dropna()
-                        if len(_lats) >= 10:
-                            _grid_deg = 10  # 10° × 10° cells
-                            _lat_bins = np.arange(-90, 91, _grid_deg)
-                            _lon_bins = np.arange(-180, 181, _grid_deg)
-                            _hist, _, _ = np.histogram2d(_lats, _lons, bins=[_lat_bins, _lon_bins])
-                            _cell_lats = (_lat_bins[:-1] + _lat_bins[1:]) / 2
-                            _cell_lons = (_lon_bins[:-1] + _lon_bins[1:]) / 2
-                            _clon, _clat = np.meshgrid(_cell_lons, _cell_lats)
-                            _dens_df = pd.DataFrame({
-                                'lat': _clat.ravel(), 'lon': _clon.ravel(), 'n': _hist.ravel()
-                            })
-                            _dens_df = _dens_df[_dens_df['n'] == 0].copy()
-                            if not _dens_df.empty:
-                                st.caption(f'**{len(_dens_df)} empty {_grid_deg}° cells** (no training samples) — predictions into these regions are extrapolations.')
-                                _gap_fig = px.scatter_geo(
-                                    _dens_df, lat='lat', lon='lon',
-                                    projection='natural earth', template='plotly_white',
-                                    color_discrete_sequence=['#ef4444'],
-                                )
-                                _gap_fig.update_traces(marker=dict(size=8, symbol='square', opacity=0.4,
-                                                                   line=dict(color='#b91c1c', width=0.5)))
-                                _gap_fig.update_layout(height=350, margin=dict(l=0, r=0, t=0, b=0),
-                                                       showlegend=False)
-                                st.plotly_chart(_gap_fig, width='stretch', key='training_coverage_gaps')
-                            else:
-                                st.success(f'All {_grid_deg}° cells have at least one training sample.')
-                else:
-                    st.info('No colour columns found for the training map.')
+            # Gate the heavy work (enrich + per-model predict over the full
+            # training set, plus CRUST1.0 / LithoRef18 grid loads) behind a
+            # checkbox. Default OFF because Streamlit re-executes every tab
+            # body on every interaction — without this gate the map would
+            # rebuild on every widget change anywhere in the app.
+            _render_tm = st.checkbox(
+                'Render map',
+                value=False,
+                key='training_map_render',
+                help='Off by default — rendering the map runs enrich + per-model '
+                     'predict over the full training set and loads the CRUST1.0 / '
+                     'LithoRef18 background grids. That work runs every Streamlit '
+                     'rerun, so leaving this off avoids paying the cost when you '
+                     'are working elsewhere in the app. Tick when you want to view '
+                     'the map.',
+            )
+            if not _render_tm:
+                st.caption('🗺️ Tick **Render map** above to compute and display the training-sample map.')
             else:
-                st.info('Training map needs Lat and Lon columns.')
+                map_source_df = primary_train_df if 'primary_train_df' in locals() and not primary_train_df.empty else train_df
+                if {'Lat','Lon'}.issubset(map_source_df) and not map_source_df.empty:
+                    map_df=enrich(map_source_df.copy(),la_mode)
+                    color_options=[c for c in ['Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model'] if c in map_df]
+                    modelled_cols=[]
+                    for name,bundle in models.items():
+                        ok,_=complete(map_df,bundle['features'])
+                        map_df[f'Modelled_{name}_km']=np.nan
+                        if ok.any():
+                            map_df.loc[ok,f'Modelled_{name}_km']=bundle['model'].predict(map_df.loc[ok,bundle['features']])
+                        modelled_cols.append(f'Modelled_{name}_km')
+                    color_options = modelled_cols + color_options
+                    if color_options:
+                        map_c1,map_c2,map_c3,map_c4=st.columns([1.1,1,0.9,0.6])
+                        _crust1_grid   = read_default_crust_grid(str(DEFAULT_CRUST1_GRID))
+                        _lithoref_grid = read_default_lithoref18()
+                        _bg_choices = ['None']
+                        if not _crust1_grid.empty:   _bg_choices.insert(0,'CRUST1.0')
+                        if not _lithoref_grid.empty: _bg_choices.insert(min(1,len(_bg_choices)),'LithoRef18 / Alfonso 2019')
+                        bg_grid_choice = map_c1.selectbox('Background grid', _bg_choices, index=0, key='training_map_bg_grid')
+                        bg_display_mode = map_c1.radio('Display as', ['Surface','Points'], horizontal=True, key='training_map_bg_mode',
+                                                       help='Surface resamples to a uniform 1°×1° layer. Points shows raw grid nodes.')
+                        normalize_widget_state('training_model_map_layer',color_options)
+                        color_by=map_c2.selectbox('Sample layer',color_options,index=0,key='training_model_map_layer',format_func=lambda c: model_map_option_label(c,len(modelled_cols)))
+                        zoom_to_data=map_c4.checkbox('Zoom to data',value=False,key='training_map_zoom_to_data')
+                        m=plot_df(map_df.dropna(subset=['Lat','Lon']))
+                        color_by=resolve_option(color_by,list(m.columns),0)
+                        m_geo = geo_downsample(m)
+                        if len(m_geo) < len(m): map_c3.caption(f'{len(m_geo):,} / {len(m):,} pts')
+                        hover_columns=hover_cols(m_geo,['Sample_ID','Age_Ma','Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model','Crust_Thickness'],color_by,'Lat','Lon')
+                        fig=px.scatter_geo(
+                            m_geo,lat='Lat',lon='Lon',color=color_by,
+                            hover_data=map_hover_data(m_geo,hover_columns),
+                            projection='natural earth',template='plotly_white',
+                            labels={color_by:model_map_legend_title(color_by).replace('<br>',' ')},
+                            **map_color_kw(color_by, m_geo),
+                        )
+                        fig.update_traces(marker=dict(line=dict(color='black',width=0.7)),selector=dict(type='scattergeo'))
+                        if bg_grid_choice == 'CRUST1.0' and not _crust1_grid.empty:
+                            fig = add_grid_background_to_geofig(fig, _crust1_grid, 'CRUST1_Total_Crust_km', 'CRUST1.0', 'CRUST1.0', bg_display_mode)
+                        elif bg_grid_choice == 'LithoRef18 / Alfonso 2019' and not _lithoref_grid.empty:
+                            fig = add_grid_background_to_geofig(fig, _lithoref_grid, 'LithoRef18_Total_Crust_km', 'LithoRef18 / Alfonso 2019', 'LithoRef18', bg_display_mode)
+                        fig=style_training_map_legends(fig,color_by)
+                        fig=apply_geo_zoom_to_data(fig,m,zoom_to_data)
+                        fig.update_layout(height=650)
+                        st.plotly_chart(fig,width='stretch')
+
+                        # ── Coverage density heat-map ─────────────────────────────────
+                        if map_c3.checkbox('Show coverage density', value=False, key='training_map_density'):
+                            _lats = pd.to_numeric(m['Lat'], errors='coerce').dropna()
+                            _lons = pd.to_numeric(m['Lon'], errors='coerce').dropna()
+                            if len(_lats) >= 10:
+                                _grid_deg = 10  # 10° × 10° cells
+                                _lat_bins = np.arange(-90, 91, _grid_deg)
+                                _lon_bins = np.arange(-180, 181, _grid_deg)
+                                _hist, _, _ = np.histogram2d(_lats, _lons, bins=[_lat_bins, _lon_bins])
+                                _cell_lats = (_lat_bins[:-1] + _lat_bins[1:]) / 2
+                                _cell_lons = (_lon_bins[:-1] + _lon_bins[1:]) / 2
+                                _clon, _clat = np.meshgrid(_cell_lons, _cell_lats)
+                                _dens_df = pd.DataFrame({
+                                    'lat': _clat.ravel(), 'lon': _clon.ravel(), 'n': _hist.ravel()
+                                })
+                                _dens_df = _dens_df[_dens_df['n'] == 0].copy()
+                                if not _dens_df.empty:
+                                    st.caption(f'**{len(_dens_df)} empty {_grid_deg}° cells** (no training samples) — predictions into these regions are extrapolations.')
+                                    _gap_fig = px.scatter_geo(
+                                        _dens_df, lat='lat', lon='lon',
+                                        projection='natural earth', template='plotly_white',
+                                        color_discrete_sequence=['#ef4444'],
+                                    )
+                                    _gap_fig.update_traces(marker=dict(size=8, symbol='square', opacity=0.4,
+                                                                       line=dict(color='#b91c1c', width=0.5)))
+                                    _gap_fig.update_layout(height=350, margin=dict(l=0, r=0, t=0, b=0),
+                                                           showlegend=False)
+                                    st.plotly_chart(_gap_fig, width='stretch', key='training_coverage_gaps')
+                                else:
+                                    st.success(f'All {_grid_deg}° cells have at least one training sample.')
+                    else:
+                        st.info('No colour columns found for the training map.')
+                else:
+                    st.info('Training map needs Lat and Lon columns.')
 
         # ── Per-group model assignment (Model tab) ───────────────────────────
         if models and 'primary_train_df' in locals() and not primary_train_df.empty and 'Group_ID' in primary_train_df.columns:
