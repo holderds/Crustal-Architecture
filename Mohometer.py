@@ -6104,12 +6104,41 @@ def _simple_xy_formula_curve(x_col, y_col, x_grid):
     return fn(x) if fn else None
 
 
+def _simple_xy_tree_ci_cols(axis_col, bench_cols):
+    """For a Predicted_* axis column, return (low_col, high_col) names if
+    matching CI90 columns exist on the bench, else (None, None).
+
+    Recognised forms:
+      • Predicted_km                 → Predicted_CI90_Low_km / _High_km
+      • Predicted_<safe>_km          → Predicted_CI90_Low_<safe>_km / _High_<safe>_km
+    """
+    if not axis_col or not str(axis_col).endswith('_km'):
+        return None, None
+    if axis_col == 'Predicted_km':
+        lo, hi = 'Predicted_CI90_Low_km', 'Predicted_CI90_High_km'
+    elif axis_col.startswith('Predicted_'):
+        # Insert _CI90_<side> immediately after 'Predicted', keeping the suffix.
+        # Predicted_Guo_Yang_ExtraTrees_km
+        #   → Predicted_CI90_Low_Guo_Yang_ExtraTrees_km
+        body = axis_col[len('Predicted_'):-3]   # strip prefix + trailing _km
+        if not body:
+            return None, None
+        lo = f'Predicted_CI90_Low_{body}_km'
+        hi = f'Predicted_CI90_High_{body}_km'
+    else:
+        return None, None
+    if lo in bench_cols and hi in bench_cols:
+        return lo, hi
+    return None, None
+
+
 def simple_xy_figure(bench_df, x_col, y_col, color_col=None,
                      show_one_to_one=True, show_curve=True, show_best_fit=False,
                      point_size=6, height=520,
                      trend_stat='Off', trend_bin_width=5.0, trend_min_n=5,
                      clip_pct=0.0,
-                     show_points=True, group_stat='Off', group_col='Group_Name'):
+                     show_points=True, group_stat='Off', group_col='Group_Name',
+                     show_tree_ci=False):
     """Plain X-vs-Y scatter coloured by any third column.
 
     Colour mode auto-detects:
@@ -6171,14 +6200,49 @@ def simple_xy_figure(bench_df, x_col, y_col, color_col=None,
     if 'Group_Name' in bench_df.columns and 'Group_Name' not in custom_cols:
         custom_cols.append('Group_Name')
 
-    plot = bench_df.loc[ok, list(dict.fromkeys([x_col, y_col]
-                                                + ([color_col] if color_col else [])
-                                                + custom_cols))].copy()
+    # Resolve Tree-CI columns (per-axis). Only applies when the corresponding
+    # Predicted_* column has a sibling pair on the bench. Y axis is the
+    # natural place; X axis bars are also drawn when X is a prediction col.
+    _ci_y_lo_col, _ci_y_hi_col = (None, None)
+    _ci_x_lo_col, _ci_x_hi_col = (None, None)
+    if show_tree_ci:
+        _ci_y_lo_col, _ci_y_hi_col = _simple_xy_tree_ci_cols(y_col, set(bench_df.columns))
+        _ci_x_lo_col, _ci_x_hi_col = _simple_xy_tree_ci_cols(x_col, set(bench_df.columns))
+
+    _projection_cols = [x_col, y_col]
+    if color_col:
+        _projection_cols.append(color_col)
+    _projection_cols += custom_cols
+    if _ci_y_lo_col and _ci_y_hi_col:
+        _projection_cols += [_ci_y_lo_col, _ci_y_hi_col]
+    if _ci_x_lo_col and _ci_x_hi_col:
+        _projection_cols += [_ci_x_lo_col, _ci_x_hi_col]
+    plot = bench_df.loc[ok, list(dict.fromkeys(_projection_cols))].copy()
     plot[x_col] = pd.to_numeric(plot[x_col], errors='coerce')
     plot[y_col] = pd.to_numeric(plot[y_col], errors='coerce')
 
+    # Build error-bar magnitudes (kept non-negative; px.scatter expects
+    # length above and below the marker, not absolute bounds).
+    if _ci_y_lo_col and _ci_y_hi_col:
+        _y_lo_num = pd.to_numeric(plot[_ci_y_lo_col], errors='coerce')
+        _y_hi_num = pd.to_numeric(plot[_ci_y_hi_col], errors='coerce')
+        plot['_ci_err_y_high'] = (_y_hi_num - plot[y_col]).clip(lower=0)
+        plot['_ci_err_y_low']  = (plot[y_col] - _y_lo_num).clip(lower=0)
+    if _ci_x_lo_col and _ci_x_hi_col:
+        _x_lo_num = pd.to_numeric(plot[_ci_x_lo_col], errors='coerce')
+        _x_hi_num = pd.to_numeric(plot[_ci_x_hi_col], errors='coerce')
+        plot['_ci_err_x_high'] = (_x_hi_num - plot[x_col]).clip(lower=0)
+        plot['_ci_err_x_low']  = (plot[x_col] - _x_lo_num).clip(lower=0)
+
     px_kwargs = dict(x=x_col, y=y_col, template='plotly_white',
                      custom_data=custom_cols if custom_cols else None)
+    # Wire CI error bars (Plotly Express picks up column-name args).
+    if '_ci_err_y_high' in plot.columns:
+        px_kwargs['error_y']       = '_ci_err_y_high'
+        px_kwargs['error_y_minus'] = '_ci_err_y_low'
+    if '_ci_err_x_high' in plot.columns:
+        px_kwargs['error_x']       = '_ci_err_x_high'
+        px_kwargs['error_x_minus'] = '_ci_err_x_low'
     if color_col and color_col in plot.columns:
         px_kwargs['color'] = color_col
         if is_residual:
@@ -6198,6 +6262,12 @@ def simple_xy_figure(bench_df, x_col, y_col, color_col=None,
     fig.update_traces(marker=dict(size=int(point_size),
                                   line=dict(color='rgba(17,24,39,0.45)', width=0.4)),
                       visible=_scatter_visible)
+    # Light, neutral CI bars — strong colours fight with the marker palette.
+    if '_ci_err_y_high' in plot.columns or '_ci_err_x_high' in plot.columns:
+        fig.update_traces(
+            error_y=dict(color='rgba(75,85,99,0.45)', thickness=0.9, width=0),
+            error_x=dict(color='rgba(75,85,99,0.45)', thickness=0.9, width=0),
+        )
 
     # Hover: include Model + Group_Name when available
     _hover_lines = [f'<b>{x_col}=%{{x:.3g}}</b>',
@@ -12151,7 +12221,7 @@ with t_validation:
                                                          label_visibility='collapsed')
 
                             # Overlays row — show points + reference overlays
-                            _uc0, _uc1, _uc2, _uc3 = st.columns(4)
+                            _uc0, _uc1, _uc2, _uc3, _uc4 = st.columns(5)
                             _um_show_pts   = _uc0.checkbox('Show points', True, key='val_xy_show_pts',
                                                            help='Hide the sample scatter and keep only the overlays (medians, means, moving summary). The trace stays in the legend so you can flip it back on with one click.')
                             _um_one_to_one = _uc1.checkbox('1:1 line', True,  key='val_xy_121',
@@ -12159,6 +12229,16 @@ with t_validation:
                             _um_curve      = _uc2.checkbox('Formula curve', True, key='val_xy_curve',
                                                            help='Overlay the proxy calibration when (X, Y) matches a known formula pair (e.g. X=Sr_Y, Y=Profeta Sr/Y)')
                             _um_bestfit    = _uc3.checkbox('Best fit', False, key='val_xy_bf')
+                            _um_tree_ci    = _uc4.checkbox(
+                                'Tree CI 90%', False, key='val_xy_tree_ci',
+                                help='When the X or Y axis is a `Predicted_<model>_km` column, '
+                                     'draw the per-sample 90 % prediction interval as error bars. '
+                                     'Width is the spread of the per-tree predictions inside the '
+                                     'trained ensemble (ExtraTrees / RandomForest only — boosting '
+                                     'models like XGBoost do not expose a per-tree distribution). '
+                                     'The same columns are written into the bench and flow into '
+                                     'the Summary tab\'s CSV / Excel export.',
+                            )
 
                             # Per-group statistic overlay — shown only when
                             # the bench has Group_Name labels. Renders one
@@ -12231,6 +12311,7 @@ with t_validation:
                                     show_points=bool(_um_show_pts),
                                     group_stat=str(_um_group_stat),
                                     group_col=(_val_group_col or 'Group_Name'),
+                                    show_tree_ci=bool(_um_tree_ci),
                                 )
                             if _um_fig is None:
                                 st.warning('Pick columns that have at least one row of overlapping numeric data.')
@@ -12717,7 +12798,7 @@ with t_unknown:
                                                       label_visibility='collapsed')
 
                         # Overlays row — show points + reference overlays
-                        _ucp0, _ucp1, _ucp2, _ucp3 = st.columns(4)
+                        _ucp0, _ucp1, _ucp2, _ucp3, _ucp4 = st.columns(5)
                         _upm_show_pts   = _ucp0.checkbox('Show points', True, key='uk_xy_show_pts',
                                                          help='Hide the sample scatter and keep only the overlays.')
                         _upm_one_to_one = _ucp1.checkbox('1:1 line', False, key='uk_xy_121',
@@ -12725,6 +12806,15 @@ with t_unknown:
                         _upm_curve      = _ucp2.checkbox('Formula curve', True, key='uk_xy_curve',
                                                          help='Overlay the proxy calibration when (X, Y) matches a known formula pair')
                         _upm_bestfit    = _ucp3.checkbox('Best fit', False, key='uk_xy_bf')
+                        _upm_tree_ci    = _ucp4.checkbox(
+                            'Tree CI 90%', False, key='uk_xy_tree_ci',
+                            help='When the X or Y axis is a `Predicted_<model>_km` column, '
+                                 'draw the per-sample 90 % prediction interval as error bars. '
+                                 'Available only for ExtraTrees / RandomForest models — '
+                                 'boosting algorithms have no per-tree distribution. '
+                                 'CI columns are written into the bench and flow into the '
+                                 'Summary tab\'s CSV / Excel export.',
+                        )
 
                         # Per-group statistic overlay — same as Validate.
                         _upm_has_groups = (_pred_group_col is not None
@@ -12781,6 +12871,7 @@ with t_unknown:
                                 show_points=bool(_upm_show_pts),
                                 group_stat=str(_upm_group_stat),
                                 group_col=(_pred_group_col or 'Group_Name'),
+                                show_tree_ci=bool(_upm_tree_ci),
                             )
                         if _upm_fig is None:
                             st.warning('Pick columns that have at least one row of overlapping numeric data.')
