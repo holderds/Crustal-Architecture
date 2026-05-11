@@ -1179,16 +1179,10 @@ def _dp_excel_to_mapping(file, orig_cols: list, cur_map: dict, confirmed: set):
 # ── Persistent user-alias learning ────────────────────────────────────────────
 _DP_USER_ALIAS_FILE = _APP_DIR / '_dp_user_aliases.json'
 
-def _dp_load_user_aliases() -> dict:
-    """Load saved column-name aliases, migrating pre-bare-label entries.
-
-    Older versions of the app stored display labels with unit suffixes
-    (`'FeO [wt%]'`, `'La [ppm]'`, `'La [ppb]'`).  The current registry uses
-    bare names so we strip the suffix on load.  ``[ppb]`` entries are kept
-    as the bare element name — the per-column Unit field handles the
-    ppb→ppm conversion now (so `'sr ppb' → 'Sr [ppb]'` becomes `'sr ppb' →
-    'Sr'`, and the auto-mapper picks unit='ppb' from the original header).
-    """
+@st.cache_data(show_spinner=False)
+def _dp_load_user_aliases_cached(mtime: float) -> dict:
+    """Cached body of _dp_load_user_aliases — keyed on file mtime so an
+    alias save (which bumps mtime) automatically invalidates the cache."""
     try:
         if _DP_USER_ALIAS_FILE.exists():
             data = json.loads(_DP_USER_ALIAS_FILE.read_text(encoding='utf-8'))
@@ -1214,6 +1208,26 @@ def _dp_load_user_aliases() -> dict:
     except Exception:
         pass
     return {}
+
+def _dp_load_user_aliases() -> dict:
+    """Load saved column-name aliases, migrating pre-bare-label entries.
+
+    Older versions of the app stored display labels with unit suffixes
+    (`'FeO [wt%]'`, `'La [ppm]'`, `'La [ppb]'`).  The current registry uses
+    bare names so we strip the suffix on load.  ``[ppb]`` entries are kept
+    as the bare element name — the per-column Unit field handles the
+    ppb→ppm conversion now (so `'sr ppb' → 'Sr [ppb]'` becomes `'sr ppb' →
+    'Sr'`, and the auto-mapper picks unit='ppb' from the original header).
+    Result is cached per file-mtime so saving a new alias automatically
+    invalidates; otherwise the on-disk read happens once per session.
+    """
+    if not _DP_USER_ALIAS_FILE.exists():
+        return {}
+    try:
+        _mtime = _DP_USER_ALIAS_FILE.stat().st_mtime
+    except Exception:
+        return {}
+    return _dp_load_user_aliases_cached(_mtime)
 
 def _dp_save_user_alias(orig_col: str, display_label: str) -> None:
     """Persist a user-corrected column mapping keyed by normalised header."""
@@ -8546,6 +8560,42 @@ def _render_grouping_display(prefix):
     _pgfig.update_xaxes(title=local_option_label(_gx)); _pgfig.update_yaxes(title=local_option_label(_gy))
     st.plotly_chart(_pgfig,width='stretch',key=f'{prefix}_disp_graph_fig')
 
+@st.fragment
+def _render_blind_validation_map(test_bench):
+    """Validate-tab Blind validation map, isolated in a fragment so its
+    controls (layer selectbox, zoom checkbox) don't trigger a full-tab
+    rerun that would rebuild every other Validate chart."""
+    if not {'Lat','Lon'}.issubset(test_bench):
+        st.info('Validation map needs Lat and Lon columns.')
+        return
+    map_options=[c for c in ['Predicted_km','Observed_km','Residual_km','CRUST1_Total_Crust_km','CRUST1_Crystalline_Crust_km','CRUST1_Sediment_km','Age_Ma','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model'] if c in test_bench]
+    if not map_options:
+        st.info('No validation columns are available for map colouring.')
+        return
+    map_c1,map_c2,map_c3=st.columns([1,1,0.7])
+    map_c1.markdown('**crust 1.0: crustal thickness [Km]**')
+    normalize_widget_state('validation_map_layer',map_options)
+    map_color=map_c2.selectbox('Validation layer',map_options,index=0,key='validation_map_layer',format_func=lambda c: 'model: crustal thickness [Km]' if c == 'Predicted_km' else 'known: crustal thickness [Km]' if c == 'Observed_km' else 'model: residual [Km]' if c == 'Residual_km' else model_map_option_label(c,0))
+    validation_zoom_to_data=map_c3.checkbox('Zoom to data',value=False,key='validation_map_zoom_to_data')
+    m=plot_df(tidy_numbers(test_bench).dropna(subset=['Lat','Lon']))
+    m_geo = geo_downsample(m)
+    if len(m_geo) < len(m): map_c3.caption(f'{len(m_geo):,} / {len(m):,} pts')
+    hover_columns=hover_cols(m_geo,['Sample_ID','Age_Ma','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model','Observed_km','Predicted_km','Residual_km','CRUST1_Total_Crust_km','CRUST1_Crystalline_Crust_km','CRUST1_Sediment_km','CRUST1_Match_Distance_km','Model'],map_color,'Lat','Lon')
+    fig=px.scatter_geo(
+        m_geo,lat='Lat',lon='Lon',color=map_color,
+        hover_data=map_hover_data(m_geo,hover_columns),
+        projection='natural earth',template='plotly_white',
+        labels={map_color:model_map_legend_title(map_color).replace('<br>',' ')}
+    )
+    fig.update_traces(marker=dict(line=dict(color='black',width=0.7)),selector=dict(type='scattergeo'))
+    default_crust=read_default_crust_grid(str(DEFAULT_CRUST1_GRID))
+    if not default_crust.empty:
+        fig=add_crust_grid_background_to_geofig(fig,default_crust,'CRUST1_Total_Crust_km')
+    fig=style_training_map_legends(fig,map_color)
+    fig=apply_geo_zoom_to_data(fig,m_geo,validation_zoom_to_data)
+    fig.update_layout(height=650)
+    st.plotly_chart(fig,width='stretch')
+
 t_data_prep,t_grouping,t0,t_validation,t_unknown,t_result_summary=st.tabs(['Prepare','Group','Model','Validate','Predict','Summary'])
 
 models={}; validation_df=pd.DataFrame(); importance_df=pd.DataFrame(); train_df=pd.DataFrame(); clean=pd.DataFrame(); target=None
@@ -9683,29 +9733,40 @@ with t_data_prep:
                     'Geologic_Period': _geo_period_rng,
                     'Geologic_Epoch':  _geo_epoch_rng,
                 }
+                # Vectorised conflict detection (per-column .map() + boolean
+                # mask). Replaces a Python row-by-row loop that ran N × 3
+                # iterations on every Prepare rerun.
                 _geo_age = pd.to_numeric(_dp_processed['Age_Ma'], errors='coerce')
-                _geo_conflicts = []
+                _geo_pos = np.arange(len(_dp_processed))
+                _geo_sid = (_dp_processed['Sample_ID'].astype(str)
+                            if 'Sample_ID' in _dp_processed.columns
+                            else pd.Series(_geo_pos.astype(str), index=_dp_processed.index))
+                _geo_conflict_frames = []
                 for _gc in _geo_chk_cols:
                     _rng_lkp = _geo_col_rng[_gc]
-                    for _gidx, (_gage, _glabel) in enumerate(zip(_geo_age, _dp_processed[_gc])):
-                        if pd.isna(_gage) or pd.isna(_glabel):
-                            continue
-                        _gkey = str(_glabel).strip().lower()
-                        if _gkey in _rng_lkp:
-                            _glo, _ghi = _rng_lkp[_gkey]
-                            if not (_glo <= float(_gage) < _ghi):
-                                _gsid = (str(_dp_processed['Sample_ID'].iloc[_gidx])
-                                         if 'Sample_ID' in _dp_processed.columns else str(_gidx))
-                                _geo_conflicts.append({
-                                    'Row': _gidx,
-                                    'Sample_ID': _gsid,
-                                    'Age_Ma': _gage,
-                                    _gc: str(_glabel),
-                                    'Expected Ma range': f'{_glo}–{_ghi}',
-                                })
-                if _geo_conflicts:
+                    _key_ser = _dp_processed[_gc].astype(str).str.strip().str.lower()
+                    _lo_ser  = _key_ser.map(lambda k, _r=_rng_lkp: _r[k][0] if k in _r else np.nan)
+                    _hi_ser  = _key_ser.map(lambda k, _r=_rng_lkp: _r[k][1] if k in _r else np.nan)
+                    _mask = (
+                        _geo_age.notna()
+                        & _dp_processed[_gc].notna()
+                        & _lo_ser.notna()
+                        & ((_geo_age < _lo_ser) | (_geo_age >= _hi_ser))
+                    ).to_numpy()
+                    if _mask.any():
+                        _geo_conflict_frames.append(pd.DataFrame({
+                            'Row':               _geo_pos[_mask],
+                            'Sample_ID':         _geo_sid.to_numpy()[_mask],
+                            'Age_Ma':            _geo_age.to_numpy()[_mask],
+                            _gc:                 _dp_processed[_gc].astype(str).to_numpy()[_mask],
+                            'Expected Ma range': [f'{lo}–{hi}' for lo, hi in
+                                                  zip(_lo_ser.to_numpy()[_mask],
+                                                      _hi_ser.to_numpy()[_mask])],
+                        }))
+                if _geo_conflict_frames:
+                    _geo_conflict_df = pd.concat(_geo_conflict_frames, ignore_index=True)
                     with st.expander(
-                        f'⚠️ Geologic age conflicts — {len(_geo_conflicts)} row(s)',
+                        f'⚠️ Geologic age conflicts — {len(_geo_conflict_df)} row(s)',
                         expanded=False,
                     ):
                         st.caption(
@@ -9714,7 +9775,7 @@ with t_data_prep:
                             'typo in era/period name, or mismatched column assignment.'
                         )
                         st.dataframe(
-                            pd.DataFrame(_geo_conflicts),
+                            _geo_conflict_df,
                             hide_index=True, use_container_width=True,
                         )
 
@@ -12072,36 +12133,7 @@ with t_validation:
                     # picker-driven view.
 
                     st.subheader('Blind validation map')
-                    if {'Lat','Lon'}.issubset(test_bench):
-                        map_options=[c for c in ['Predicted_km','Observed_km','Residual_km','CRUST1_Total_Crust_km','CRUST1_Crystalline_Crust_km','CRUST1_Sediment_km','Age_Ma','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model'] if c in test_bench]
-                        if map_options:
-                            map_c1,map_c2,map_c3=st.columns([1,1,0.7])
-                            map_c1.markdown('**crust 1.0: crustal thickness [Km]**')
-                            normalize_widget_state('validation_map_layer',map_options)
-                            map_color=map_c2.selectbox('Validation layer',map_options,index=0,key='validation_map_layer',format_func=lambda c: 'model: crustal thickness [Km]' if c == 'Predicted_km' else 'known: crustal thickness [Km]' if c == 'Observed_km' else 'model: residual [Km]' if c == 'Residual_km' else model_map_option_label(c,0))
-                            validation_zoom_to_data=map_c3.checkbox('Zoom to data',value=False,key='validation_map_zoom_to_data')
-                            m=plot_df(tidy_numbers(test_bench).dropna(subset=['Lat','Lon']))
-                            m_geo = geo_downsample(m)
-                            if len(m_geo) < len(m): map_c3.caption(f'{len(m_geo):,} / {len(m):,} pts')
-                            hover_columns=hover_cols(m_geo,['Sample_ID','Age_Ma','Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset','Rock_Type_Model','Observed_km','Predicted_km','Residual_km','CRUST1_Total_Crust_km','CRUST1_Crystalline_Crust_km','CRUST1_Sediment_km','CRUST1_Match_Distance_km','Model'],map_color,'Lat','Lon')
-                            fig=px.scatter_geo(
-                                m_geo,lat='Lat',lon='Lon',color=map_color,
-                                hover_data=map_hover_data(m_geo,hover_columns),
-                                projection='natural earth',template='plotly_white',
-                                labels={map_color:model_map_legend_title(map_color).replace('<br>',' ')}
-                            )
-                            fig.update_traces(marker=dict(line=dict(color='black',width=0.7)),selector=dict(type='scattergeo'))
-                            default_crust=read_default_crust_grid(str(DEFAULT_CRUST1_GRID))
-                            if not default_crust.empty:
-                                fig=add_crust_grid_background_to_geofig(fig,default_crust,'CRUST1_Total_Crust_km')
-                            fig=style_training_map_legends(fig,map_color)
-                            fig=apply_geo_zoom_to_data(fig,m_geo,validation_zoom_to_data)
-                            fig.update_layout(height=650)
-                            st.plotly_chart(fig,width='stretch')
-                        else:
-                            st.info('No validation columns are available for map colouring.')
-                    else:
-                        st.info('Validation map needs Lat and Lon columns.')
+                    _render_blind_validation_map(test_bench)
 
                     # ── Per-group model assignment ───────────────────────────
                     # Hidden in 'single' mode — there's only one model, so
