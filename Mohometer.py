@@ -68,7 +68,9 @@ SUMMARY_MEDIAN_COLOR = '#69c58e'
 SUMMARY_MEAN_COLOR = '#f0b36a'
 # Shared colorscale and range used for ALL crustal-thickness layers
 # (sample scatter, background grid, GAME N-mohometer).
-THICKNESS_COLORSCALE = 'Viridis'
+# RdBu_r: blue = thin (oceanic/arc), white = normal continental (~35-40 km),
+# red = thick (Tibet/Andes) — matches the residual red-white-blue theme.
+THICKNESS_COLORSCALE = 'RdBu_r'
 THICKNESS_CMIN = 10
 THICKNESS_CMAX = 70
 GUO_FEATURES = ['SiO2','TiO2','Al2O3','FeO','MnO','MgO','CaO','Na2O','K2O','P2O5','La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Sr','Y','Rb','Ba','Hf','Nb','Ta','Th']
@@ -891,43 +893,21 @@ def table_action_card(title, df, filename=None, key=None):
         st.caption(f'{title}: no rows')
         return
     view = tidy_numbers(plot_df(df))
-    safe_title = html.escape(str(title))
     safe_key = compact_key(key or title or 'table')
     filename = filename or f'{safe_key}.csv'
     rows, cols = view.shape
-    table_html = view.to_html(index=False, border=0, classes='data-table')
-    doc = f"""<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>{safe_title}</title>
-<style>
-body {{ font-family: Arial, sans-serif; margin: 20px; color: #1f2937; }}
-h1 {{ font-size: 18px; margin: 0 0 4px 0; }}
-.meta {{ color: #6b7280; font-size: 12px; margin-bottom: 14px; }}
-table {{ border-collapse: collapse; width: 100%; font-size: 12px; }}
-th {{ position: sticky; top: 0; background: #f3f4f6; border-bottom: 1px solid #d1d5db; text-align: left; }}
-td, th {{ padding: 5px 7px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }}
-tbody tr:nth-child(even) {{ background: #fafafa; }}
-</style>
-</head>
-<body>
-<h1>{safe_title}</h1>
-<div class="meta">{rows:,} rows x {cols:,} columns</div>
-{table_html}
-</body>
-</html>"""
-    payload = base64.b64encode(doc.encode('utf-8')).decode('ascii')
-    c1,c2,c3 = st.columns([1.4,0.42,0.32])
+    _show_key = f'_table_show_{safe_key}'
+    if _show_key not in st.session_state:
+        st.session_state[_show_key] = False
+    c1, c2, c3 = st.columns([1.4, 0.42, 0.32])
     c1.caption(f'{title}: {rows:,} rows x {cols:,} columns')
-    c2.markdown(
-        f'<a href="data:text/html;base64,{payload}" target="_blank" rel="noopener" '
-        'style="display:inline-block;padding:0.45rem 0.7rem;border:1px solid #d1d5db;'
-        'border-radius:0.45rem;text-decoration:none;color:#1f2937;background:#fff;'
-        'font-size:0.88rem;line-height:1.1;">Open table</a>',
-        unsafe_allow_html=True,
-    )
+    _label = 'Hide table' if st.session_state[_show_key] else 'Open table'
+    if c2.button(_label, key=f'table_open_{safe_key}'):
+        st.session_state[_show_key] = not st.session_state[_show_key]
+        st.rerun()
     c3.download_button('CSV', view.to_csv(index=False).encode('utf-8'), filename, 'text/csv', key=f'table_csv_{safe_key}')
+    if st.session_state[_show_key]:
+        st.dataframe(view, use_container_width=True, hide_index=True)
 
 def qualitative_palette(name):
     palettes = {
@@ -1857,23 +1837,40 @@ def _dp_major_qc_panel(df: pd.DataFrame, key_prefix: str) -> None:
 
     if _any_flag.any():
         _flag_rows = df[_any_flag].copy().reset_index()
+        _flag_sids = (_flag_rows[_id_col].astype(str) if _id_col
+                      else _flag_rows['index'].astype(str))
+
+        def _loi_icon(loi_val, loi_fail):
+            if pd.isna(loi_val):
+                return '⚠️'        # measured but absent
+            return '❌' if loi_fail else '✅'
+
+        _loi_col_vals = _loi_vals[_any_flag].values if _has_loi else [np.nan] * _any_flag.sum()
         _flag_df = pd.DataFrame({
-            'Ignore': (_flag_rows['Sample_ID'].astype(str).isin({str(s) for s in _ignore_set})
-                       if _id_col else [i in _ignore_set for i in _flag_rows['index']]),
-            'Sample_ID': _flag_rows[_id_col].astype(str) if _id_col else _flag_rows['index'].astype(str),
+            'Ignore': _flag_sids.isin({str(s) for s in _ignore_set}).values,
+            'Sample_ID': _flag_sids.values,
             'Analytical total': _tots[_any_flag].values,
-            'LOI [wt%]': _loi_vals[_any_flag].round(2).values if _has_loi else np.nan,
-            'LOI > 2%': _loi_flag[_any_flag].values,
-            'Total <98 or >102': _tot_flag[_any_flag].values,
+            'LOI [wt%]': np.where(_has_loi, _loi_vals[_any_flag].round(2).values, np.nan),
+            'LOI': [_loi_icon(v, f) for v, f in zip(_loi_col_vals, _loi_flag[_any_flag].values)],
+            'Total': ['❌' if f else '✅' for f in _tot_flag[_any_flag].values],
         })
-        st.caption(f'{len(_flag_df)} flagged row(s) — tick **Ignore** to exclude from downstream tabs:')
+        _all_failing_ids = set(_flag_sids.values)
+        _btn_col, _cap_col = st.columns([1, 3])
+        with _btn_col:
+            if st.button('Auto-ignore all failing',
+                         key=f'{key_prefix}_autoignore',
+                         help='Adds every flagged sample to the ignore list in one click.'):
+                st.session_state[_ignore_key] = _all_failing_ids
+                st.rerun()
+        with _cap_col:
+            st.caption(f'{len(_flag_df)} flagged row(s) — tick **Ignore** to exclude from downstream tabs:')
         _cc = {
             'Ignore':           st.column_config.CheckboxColumn('Ignore', default=False),
             'Sample_ID':        st.column_config.TextColumn('Sample ID', disabled=True),
             'Analytical total': st.column_config.NumberColumn('Total', disabled=True, format='%.2f'),
             'LOI [wt%]':        st.column_config.NumberColumn('LOI [wt%]', disabled=True, format='%.2f'),
-            'LOI > 2%':         st.column_config.CheckboxColumn('LOI>2%', disabled=True),
-            'Total <98 or >102':st.column_config.CheckboxColumn('Total<98/>102', disabled=True),
+            'LOI':              st.column_config.TextColumn('LOI >2%', disabled=True),
+            'Total':            st.column_config.TextColumn('Total 98–102%', disabled=True),
         }
         _qc_edited = st.data_editor(
             _flag_df, column_config=_cc,
@@ -4368,18 +4365,21 @@ def training_subset_controls(prefix, df, expanded=False, target=None, noun='trai
     if df.empty:
         return df
     filtered = enrich(df, la_mode)  # enrich() copies internally; no caller copy needed
+    # Priority category columns — shown in this order when present, then any
+    # additional low-cardinality string columns from the dataset.
+    _CAT_PRIORITY = [
+        'Tectonic_Setting', 'Rock_Type_Model', 'Lithology_Type',
+        'Arc', 'Arc_or_Segment', 'Segment', 'Belt', 'Geologic_Domain',
+        'Dataset', 'Country', 'Location',
+        'Geologic_Era', 'Geologic_Period', 'Geologic_Epoch',
+        'Geologic_Age_Label', 'Geologic_Eon',
+    ]
+    _SKIP_COLS = {
+        'Sample_ID', 'Age_Source', 'FeO_Source', 'Age_Conflict',
+        'Rock_Type_Source', 'Lithology_Grouping',
+    }
     with st.expander(f'{prefix} {noun} filters', expanded=expanded):
-        if 'Age_Ma' in filtered:
-            ages = pd.to_numeric(filtered['Age_Ma'], errors='coerce')
-            finite = ages[np.isfinite(ages)]
-            if not finite.empty:
-                min_age = float(np.nanmax([0, np.floor(finite.min())]))
-                max_age = float(np.ceil(finite.max()))
-                if max_age > min_age:
-                    age_range = typed_range_slider(st, f'{prefix} age range (Ma)', min_age, max_age, (min_age, max_age), key=f'{prefix}_age_range')
-                    filtered = filtered.loc[ages.between(age_range[0], age_range[1], inclusive='both')]
-                else:
-                    st.caption(f'{prefix} age range: {min_age:.0f} Ma')
+        # ── Crustal thickness slider ──────────────────────────────────────
         thickness_col = target if target in filtered else target_col(filtered)
         if thickness_col in filtered:
             thickness = pd.to_numeric(filtered[thickness_col], errors='coerce')
@@ -4388,28 +4388,126 @@ def training_subset_controls(prefix, df, expanded=False, target=None, noun='trai
                 min_thick = float(np.floor(finite_thickness.min()))
                 max_thick = float(np.ceil(finite_thickness.max()))
                 if max_thick > min_thick:
-                    thick_range = typed_range_slider(st, f'{prefix} crustal thickness range (km)', min_thick, max_thick, (min_thick, max_thick), key=f'{prefix}_thickness_range')
+                    thick_range = st.slider(
+                        'Crustal thickness (km)',
+                        min_thick, max_thick, (min_thick, max_thick), 1.0,
+                        key=f'{prefix}_thickness_range',
+                    )
                     filtered = filtered.loc[thickness.between(thick_range[0], thick_range[1], inclusive='both')]
-                else:
-                    st.caption(f'{prefix} crustal thickness: {min_thick:.0f} km')
-        rock_options = [r for r in ['ultramafic','mafic','intermediate','felsic','unclassified'] if 'Rock_Type_Model' in filtered and filtered['Rock_Type_Model'].eq(r).any()]
-        if rock_options:
-            selected_rocks = st.multiselect(f'{prefix} rock types', rock_options, default=rock_options, key=f'{prefix}_rocks')
-            filtered = filtered[filtered['Rock_Type_Model'].isin(selected_rocks)]
-        age_cat_cols = [c for c in ['Geologic_Era','Geologic_Period','Geologic_Epoch','Geologic_Age_Label'] if c in filtered]
-        if age_cat_cols:
-            age_cat_col = st.selectbox(f'{prefix} geological time category', age_cat_cols, index=min(1,len(age_cat_cols)-1), key=f'{prefix}_geo_time_col')
-            age_cats = sorted([str(v) for v in filtered[age_cat_col].dropna().unique()])
-            if age_cats:
-                selected_age_cats = st.multiselect(f'{prefix} geological time values', age_cats, default=age_cats, key=f'{prefix}_geo_time_values')
-                filtered = filtered[filtered[age_cat_col].astype(str).isin(selected_age_cats)]
-        setting_cols = [c for c in ['Tectonic_Setting','Arc_or_Segment','Geologic_Domain','Dataset'] if c in filtered]
-        if setting_cols:
-            setting_col = st.selectbox(f'{prefix} tectonic/grouping column', setting_cols, index=0, key=f'{prefix}_setting_col')
-            settings = sorted([str(v) for v in filtered[setting_col].dropna().unique()])
-            if settings:
-                selected_settings = st.multiselect(f'{prefix} tectonic/grouping values', settings, default=settings, key=f'{prefix}_settings')
-                filtered = filtered[filtered[setting_col].astype(str).isin(selected_settings)]
+        # ── Age slider ───────────────────────────────────────────────────
+        # Check both raw df and enriched df — enrich() may add Age_Ma from
+        # geologic-time reverse-fill even if the original file lacked it.
+        _age_col_src = filtered if 'Age_Ma' in filtered.columns else df
+        if 'Age_Ma' in _age_col_src.columns:
+            ages = pd.to_numeric(filtered['Age_Ma'] if 'Age_Ma' in filtered.columns
+                                 else pd.Series(dtype=float), errors='coerce')
+            finite = ages[np.isfinite(ages)]
+            if finite.empty:
+                # fallback: try reading from enriched source
+                ages = pd.to_numeric(filtered.get('Age_Ma', pd.Series(dtype=float)), errors='coerce')
+                finite = ages[np.isfinite(ages)]
+            if not finite.empty:
+                min_age = float(max(0.0, np.floor(finite.min())))
+                max_age = float(np.ceil(finite.max()))
+                if max_age > min_age:
+                    age_range = st.slider(
+                        'Age (Ma)',
+                        min_age, max_age, (min_age, max_age), 1.0,
+                        key=f'{prefix}_age_range',
+                    )
+                    filtered = filtered.loc[ages.between(age_range[0], age_range[1], inclusive='both')]
+        # ── Additional numeric column filters (multiple) ──────────────────
+        # Columns already covered by the dedicated sliders above.
+        _fixed_num = {thickness_col, 'Age_Ma', 'Lat', 'Lon',
+                      'Age_Min_Ma', 'Age_Max_Ma', 'Age_Error_Ma'}
+        _num_candidates = [
+            c for c in filtered.columns
+            if c not in _fixed_num
+            and pd.api.types.is_numeric_dtype(filtered[c])
+            and filtered[c].notna().any()
+        ]
+        if _num_candidates:
+            _nf_key = f'{prefix}_num_filters'
+            if _nf_key not in st.session_state:
+                st.session_state[_nf_key] = []
+            _nf_a, _nf_b = st.columns([3, 1])
+            _new_col = _nf_a.selectbox(
+                'Add numeric filter',
+                ['(select column)'] + [c for c in _num_candidates
+                                       if c not in st.session_state[_nf_key]],
+                index=0,
+                key=f'{prefix}_num_col_picker',
+                help='Pick a numeric column to add a min/max range filter.',
+            )
+            if _nf_b.button('＋ Add', key=f'{prefix}_num_add') and _new_col != '(select column)':
+                st.session_state[_nf_key].append(_new_col)
+                st.rerun()
+            for _nfi, _nfc in enumerate(list(st.session_state[_nf_key])):
+                if _nfc not in filtered.columns:
+                    continue
+                _ns = pd.to_numeric(filtered[_nfc], errors='coerce')
+                _nfin = _ns[np.isfinite(_ns)]
+                if _nfin.empty or _nfin.max() <= _nfin.min():
+                    continue
+                _nmin = float(np.floor(_nfin.min() * 100) / 100)
+                _nmax = float(np.ceil(_nfin.max() * 100) / 100)
+                _rs_col, _rm_col = st.columns([5, 1])
+                with _rs_col:
+                    _nrange = st.slider(
+                        _nfc.replace('_', ' '),
+                        _nmin, _nmax, (_nmin, _nmax),
+                        key=f'{prefix}_num_range_{_nfc}',
+                    )
+                if _rm_col.button('✕', key=f'{prefix}_num_rm_{_nfi}',
+                                  help=f'Remove {_nfc} filter'):
+                    st.session_state[_nf_key].remove(_nfc)
+                    st.rerun()
+                filtered = filtered.loc[_ns.between(_nrange[0], _nrange[1], inclusive='both')]
+        # ── Category filters (add-on-demand) ─────────────────────────────
+        _seen = set(_CAT_PRIORITY) | _SKIP_COLS
+        _extra = [
+            c for c in filtered.columns
+            if c not in _seen
+            and c not in _fixed_num
+            and (filtered[c].dtype == object
+                 or str(filtered[c].dtype) == 'string'
+                 or str(filtered[c].dtype).startswith('category'))
+            and 1 < filtered[c].nunique(dropna=True) <= 60
+        ]
+        _all_cat_cols = [c for c in _CAT_PRIORITY if c in filtered] + _extra
+        _cf_key = f'{prefix}_cat_filters'
+        if _cf_key not in st.session_state:
+            st.session_state[_cf_key] = []
+        _cf_a, _cf_b = st.columns([3, 1])
+        _new_cat = _cf_a.selectbox(
+            'Add category filter',
+            ['(select column)'] + [c for c in _all_cat_cols
+                                   if c not in st.session_state[_cf_key]],
+            index=0,
+            key=f'{prefix}_cat_col_picker',
+        )
+        if _cf_b.button('＋ Add', key=f'{prefix}_cat_add') and _new_cat != '(select column)':
+            st.session_state[_cf_key].append(_new_cat)
+            st.rerun()
+        for _cfi, _cc in enumerate(list(st.session_state[_cf_key])):
+            if _cc not in filtered.columns:
+                continue
+            _opts = sorted(str(v) for v in filtered[_cc].dropna().unique())
+            if len(_opts) < 2:
+                continue
+            _ms_col, _cr_col = st.columns([5, 1])
+            with _ms_col:
+                _sel = st.multiselect(
+                    _cc.replace('_', ' '),
+                    _opts, default=_opts,
+                    key=f'{prefix}_cat_{_cc}',
+                )
+            if _cr_col.button('✕', key=f'{prefix}_cat_rm_{_cfi}',
+                              help=f'Remove {_cc} filter'):
+                st.session_state[_cf_key].remove(_cc)
+                st.rerun()
+            if _sel and len(_sel) < len(_opts):
+                filtered = filtered[filtered[_cc].astype(str).isin(_sel)]
         st.caption(f'{len(filtered)} of {len(df)} rows selected for {noun}')
     return filtered
 
@@ -6588,6 +6686,7 @@ def simple_xy_axis_options(bench_df):
         'H_GAME_LuffiDucea2022_km', 'H_Sundell2021_Paired_km',
         'H_Profeta2015_SrY_km', 'H_Sundell2021_SrY_km', 'H_Zou2021_SrY_SVRE_km',
         'H_Profeta2015_LaYbN_km', 'H_Sundell2021_LaYbN_km', 'H_Zou2021_LaYbN_SVRE_km',
+        'Along_Strike_km', 'Across_Strike_km',
         'CRUST1_Total_Crust_km', 'LithoRef18_Total_Crust_km',
         'Tectonic_Setting', 'Arc_or_Segment', 'Geologic_Domain',
         'Geologic_Eon', 'Geologic_Era', 'Geologic_Period',
@@ -8684,7 +8783,10 @@ def is_thickness_layer(col):
 def is_residual_layer(col):
     """True when col is a signed residual / delta that should use
     RESIDUAL_COLORSCALE centred on zero."""
-    return str(col) in {'Residual_km', 'Delta_km', 'GAME_delta_km'}
+    s = str(col)
+    return (s in {'Residual_km', 'Delta_km', 'GAME_delta_km'}
+            or s.startswith('Residual_')
+            or s.lower().startswith('delta_'))
 
 def thickness_scatter_kw(col, df):
     """Return extra kwargs for px.scatter_geo when col is a thickness layer."""
@@ -9113,7 +9215,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 la_mode='raw_ppm'
-st.sidebar.slider('Point size (all charts)', 2, 14, 5, 1, key='global_point_size')
+
 pred_no_header=False
 
 # ── Workflow breadcrumb (appears once Prepare has data) ─────────────────────
@@ -9181,7 +9283,7 @@ def _render_grouping_display(prefix):
     with st.expander('Map style',expanded=False):
         _ms1,_ms2,_ms3,_ms4=st.columns(4)
         _mpal=_ms1.selectbox('Colour palette',['Plotly','Set2','Dark24','Alphabet','Safe'],index=1,key=f'{prefix}_disp_map_palette')
-        _mscale=_ms2.selectbox('Continuous scale',['Viridis','Turbo','Cividis','RdBu_r'],index=0,key=f'{prefix}_disp_map_scale')
+        _mscale=_ms2.selectbox('Continuous scale',['RdBu_r','Plasma','Viridis','Turbo','Cividis'],index=0,key=f'{prefix}_disp_map_scale')
         _ssym=_ms3.selectbox('Sample symbol',['circle','square','diamond','cross','x','triangle-up','triangle-down'],index=0,key=f'{prefix}_disp_map_ssym')
         _msym=_ms4.selectbox('Median symbol',['diamond','star','square','circle','cross','x','triangle-up'],index=0,key=f'{prefix}_disp_map_msym')
         _ms5,_ms6,_ms7=st.columns(3)
@@ -9192,7 +9294,12 @@ def _render_grouping_display(prefix):
     _ghov=hover_cols(_fm,['Sample_ID','Grouping_Method','Group_ID','Age_Ma','Dataset','Arc_or_Segment','Geologic_Domain','Rock_Type_Model','Model',_lv,'Predicted_km','Sr_Y','La_Yb_N','Ce_Y','Dy_Yb']+[p for p in PROXY_THICKNESS_LABELS if p in _fm],_mcol,'Lat','Lon')
     _fm_geo = geo_downsample(tidy_numbers(_fm))
     if len(_fm_geo) < len(_fm): st.caption(f'Map showing {len(_fm_geo):,} of {len(_fm):,} points for performance.')
-    _gfig=px.scatter_geo(_fm_geo,lat='Lat',lon='Lon',color=_mcol,hover_data=map_hover_data(_fm_geo,_ghov),projection='natural earth',template='plotly_white',labels={_mcol:local_option_label(_mcol)},color_discrete_sequence=qualitative_palette(_mpal),color_continuous_scale=_mscale if _mnum else None)
+    # Thickness / residual columns use the shared scales; other numeric cols
+    # use the user-selected _mscale from the Map style expander.
+    _ckw = map_color_kw(_mcol, _fm_geo) if _mnum else {}
+    if not _ckw and _mnum:
+        _ckw = {'color_continuous_scale': _mscale}
+    _gfig=px.scatter_geo(_fm_geo,lat='Lat',lon='Lon',color=_mcol,hover_data=map_hover_data(_fm_geo,_ghov),projection='natural earth',template='plotly_white',labels={_mcol:local_option_label(_mcol)},color_discrete_sequence=qualitative_palette(_mpal),**_ckw)
     _gfig.update_traces(marker=dict(size=_ssz,symbol=_ssym,opacity=_sopac/100,line=dict(color='black',width=0.45)),selector=dict(type='scattergeo'))
     if not _show_samp:
         _gfig.for_each_trace(lambda tr:tr.update(visible=False))
@@ -9310,7 +9417,7 @@ def _render_feature_importance_panel(importance_df, models_keys, model_key, sort
                 .sort_values('Relative_Importance', ascending=False))
         fig = feature_weighting_figure(_top['Feature'].tolist(), _top, sort_by=_importance_sort, height=360)
     if fig is not None:
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, width='stretch', key=f'{model_key}_chart')
 
 @st.fragment
 def _render_age_histogram(df, key_prefix: str = 'age_hist'):
@@ -9517,7 +9624,8 @@ def _render_blind_validation_map(test_bench):
         m_geo,lat='Lat',lon='Lon',color=map_color,
         hover_data=map_hover_data(m_geo,hover_columns),
         projection='natural earth',template='plotly_white',
-        labels={map_color:model_map_legend_title(map_color).replace('<br>',' ')}
+        labels={map_color:model_map_legend_title(map_color).replace('<br>',' ')},
+        **map_color_kw(map_color, m_geo),
     )
     fig.update_traces(marker=dict(line=dict(color='black',width=0.7)),selector=dict(type='scattergeo'))
     default_crust=read_default_crust_grid(str(DEFAULT_CRUST1_GRID))
@@ -10612,9 +10720,24 @@ with t_data_prep:
                     st.session_state[_dp_proc_sig_key] = _dp_proc_sig
             _dp_processed = st.session_state[_dp_proc_key]
 
-            # ── Data Quality panel ───────────────────────────────────────────
-            with st.expander('Data quality check', expanded=False):
+            # ── Data Completeness panel (quality + column filter) ────────────
+            with st.expander('Data completeness', expanded=False):
                 _dp_qa_panel(_dp_processed, key_prefix=f'{_dp_key}_{_dp_fi}_{_dp_f.name}')
+                st.markdown('---')
+                # ── Column-completeness filter (nested here) ─────────────────
+                _missing_options  = ['Keep all'] + [f'> {p} %' for p in range(10, 101, 10)] + ['Strict (any missing)']
+                _missing_key = f'{_dp_key}_{_dp_fi}_{_dp_f.name}_missing_thresh'
+                _missing_choice = st.selectbox(
+                    '🧹 Column completeness filter',
+                    _missing_options,
+                    index=0,
+                    key=_missing_key,
+                    help='Drops columns whose missing-value percentage **exceeds** '
+                         'the chosen threshold. "> 90 %" keeps everything except '
+                         'near-blank columns; "> 10 %" keeps only the most complete '
+                         'columns. Useful for cleaning up big imports like Luffi T1 '
+                         'where most isotope/PGE columns are sparsely populated.',
+                )
 
             # ── Anhydrous toggle (prominent — default ON) ────────────────────
             _anhy_key_now = f'{_dp_key}_{_dp_fi}_{_dp_f.name}_anhy'
@@ -10639,12 +10762,10 @@ with t_data_prep:
                 _dp_major_qc_panel(_dp_processed, key_prefix=f'{_dp_key}_{_dp_fi}_{_dp_f.name}')
 
             # ── Geological age auto-population panel ─────────────────────────
-            # Replaces the old GEO_TIME_BINS conflict-only check. The ICS
-            # auto-populate orchestrator runs upstream in _dp_apply_mapping
-            # (via _dp_infer_age_from_geologic_time) and writes the new
-            # Age_Min/Max/Error/Source/Conflict columns into _dp_processed.
-            # Re-running it here is cheap (idempotent) and gives this file's
-            # stats independent of session-state ordering across files.
+            # _ics_enriched_df accumulates any ICS-derived columns so they
+            # reach the export / pool and are available as Group-tab grouping
+            # options. Falls back to _dp_processed when ICS is skipped.
+            _ics_enriched_df = _dp_processed
             _ics_age_cols_present = (
                 'Age_Ma' in _dp_processed.columns
                 or any(c in _dp_processed.columns for c in
@@ -10652,14 +10773,9 @@ with t_data_prep:
                         'Geologic_Age_Label', 'Geologic_Stage', 'Geologic_Eon'])
             )
             if _ics_age_cols_present:
-                # Kill-switch key is per-file so multiple uploaded files each
-                # get their own toggle (Streamlit refuses two widgets sharing
-                # one key). Each per-file panel runs its own auto-populate
-                # using its own switch — the downstream enrich() pipeline
-                # always auto-fills regardless.
                 _ics_kill_key = f'_dp_disable_ics_autofill_{_dp_fi}_{_dp_f.name}'
                 _ics_disabled = bool(st.session_state.get(_ics_kill_key, False))
-                _, _ics_stats = ics_auto_populate(_dp_processed, disable=_ics_disabled)
+                _ics_enriched_df, _ics_stats = ics_auto_populate(_dp_processed, disable=_ics_disabled)
                 _ics_title = ('🌍 Geological age auto-population — DISABLED'
                               if _ics_disabled else
                               (f'🌍 Geological age auto-population — '
@@ -10671,48 +10787,30 @@ with t_data_prep:
                     st.caption(
                         'Auto-fills missing chronostratigraphic categories from '
                         '`Age_Ma` (forward) AND missing `Age_Ma` from category '
-                        'labels (reverse, using the midpoint of the smallest '
-                        'filled level with min/max/error bounds). User-entered '
-                        'values are never overwritten. Reverse-derived ages get '
-                        '`Age_Min_Ma` / `Age_Max_Ma` / `Age_Error_Ma` columns '
-                        'and `Age_Source = derived_from_<level>`; measured '
-                        'ages get `Age_Source = measured`. Conflicts (Age_Ma '
-                        'inconsistent with a user-entered category) are '
-                        'flagged in the `Age_Conflict` column. Reference '
-                        'table: `ics_chronostratigraphy.csv` (ICS v2023/09).'
+                        'labels (reverse). User-entered values are never '
+                        'overwritten. Reverse-derived ages get `Age_Min_Ma` / '
+                        '`Age_Max_Ma` / `Age_Error_Ma` / `Age_Source` columns. '
+                        'Conflicts (Age_Ma inconsistent with a user-entered '
+                        'category) are flagged in `Age_Conflict`. '
+                        'Age histogram is in the Group tab.'
                     )
                     st.checkbox(
                         'Disable auto-fill (keep uploaded values untouched)',
                         value=_ics_disabled,
                         key=_ics_kill_key,
-                        help='Off by default. Tick to keep the raw uploaded '
-                             'Age_Ma / Geologic_* values as-is, without any '
-                             'forward or reverse fill. Conflict detection also '
-                             'pauses. Useful when debugging an unexpected '
-                             'auto-fill behaviour. Per-file: each uploaded '
-                             'file has its own switch. Only affects this Prepare '
-                             'panel — the downstream `enrich()` pipeline '
-                             'still runs auto-fill so the bench used for '
-                             'Model / Validate / Predict always sees the '
-                             'enriched values.',
+                        help='Off by default. Per-file toggle — only affects '
+                             'this panel. The downstream enrich() pipeline '
+                             'always auto-fills for Model / Validate / Predict.',
                     )
-                    if _ics_disabled:
-                        st.info(
-                            'Auto-fill is disabled. No conflicts flagged and '
-                            'no `Age_Min_Ma` / `Age_Max_Ma` / `Age_Error_Ma` / '
-                            '`Age_Source` columns written here. The downstream '
-                            'enrich() still auto-fills for the modelling bench.'
-                        )
-                    else:
+                    if not _ics_disabled:
                         _c1, _c2, _c3 = st.columns(3)
                         _c1.metric('Forward-filled cells',
                                    int(_ics_stats['forward_filled']),
                                    help='Empty category cells filled from Age_Ma.')
                         _c2.metric('Reverse-filled ages',
                                    int(_ics_stats['reverse_filled']),
-                                   help='Missing Age_Ma values derived from the '
-                                        'smallest filled category (midpoint, '
-                                        'min, max, error written too).')
+                                   help='Missing Age_Ma derived from the smallest '
+                                        'filled category (midpoint + bounds).')
                         _c3.metric('Conflicts flagged',
                                    int(_ics_stats['conflicts']),
                                    help='Rows where the user-entered category '
@@ -10723,21 +10821,6 @@ with t_data_prep:
                                 _ics_stats['conflict_rows'],
                                 hide_index=True, use_container_width=True,
                             )
-                            st.caption(
-                                'The same message is written into the '
-                                '`Age_Conflict` column on the bench. Conflicts '
-                                'are flags only — no values are auto-corrected, '
-                                'so you can review and decide which one to fix.'
-                            )
-                        # Age histogram — surfaces the temporal distribution so
-                        # the user can see at a glance whether their data is
-                        # clustered, gapped, or spread, before going to Group.
-                        if 'Age_Ma' in _dp_processed.columns:
-                            st.markdown('**Age_Ma distribution**')
-                            _render_age_histogram(
-                                _dp_processed,
-                                key_prefix=f'dp_age_hist_{_dp_fi}_{_dp_f.name}',
-                            )
 
             # ── Build export df (anhydrous + row-ignore applied) ─────────────
             # Column-ignore is now handled inside _dp_apply_mapping via the
@@ -10746,34 +10829,14 @@ with t_data_prep:
             # next to an Ignored ``SiO2 (wt%)``) from getting collateral-
             # damaged when the post-processing tried to drop ``SiO2`` by
             # internal name.
+            # Use _ics_enriched_df so ICS-derived columns (Geologic_Era etc.)
+            # flow through to the pool and become available in the Group tab.
             _anhy_on_now = st.session_state.get(_anhy_key_now, _has_major_now)
-            _dp_display  = _dp_anhydrous_recalc(_dp_processed) if _anhy_on_now else _dp_processed
+            _dp_display  = _dp_anhydrous_recalc(_ics_enriched_df) if _anhy_on_now else _ics_enriched_df
             _dp_ignored  = st.session_state.get(f'{_dp_key}_{_dp_fi}_{_dp_f.name}_ignore', set())
             _dp_export_df = _dp_display.loc[~_dp_display.index.isin(_dp_ignored)].reset_index(drop=True)
 
-            # ── Column-completeness filter ────────────────────────────────────
-            # Imports like Luffi T1 ship 190+ columns, many of which are
-            # >90 % blank for a given sample subset (e.g. He isotopes only
-            # measured on a handful of arc samples). Surface a threshold
-            # picker so the user can drop the noise in one click rather
-            # than ignoring columns one-by-one in the mapping editor.
-            #
-            # Threshold semantics: "drop columns where more than X% of
-            # the values are missing". 100 % keeps everything (default).
-            # 0 % drops any column with even one missing value.
-            _missing_options  = ['Keep all'] + [f'> {p} %' for p in range(10, 101, 10)] + ['Strict (any missing)']
-            _missing_key = f'{_dp_key}_{_dp_fi}_{_dp_f.name}_missing_thresh'
-            _missing_choice = st.selectbox(
-                '🧹 Column completeness filter',
-                _missing_options,
-                index=0,
-                key=_missing_key,
-                help='Drops columns whose missing-value percentage **exceeds** '
-                     'the chosen threshold. "> 90 %" keeps everything except '
-                     'near-blank columns; "> 10 %" keeps only the most complete '
-                     'columns. Useful for cleaning up big imports like Luffi T1 '
-                     'where most isotope/PGE columns are sparsely populated.',
-            )
+            # Apply column-completeness threshold chosen in the Data Completeness expander above.
             if _missing_choice == 'Keep all':
                 _missing_thresh_pct = None
             elif _missing_choice == 'Strict (any missing)':
@@ -10879,7 +10942,8 @@ with t_data_prep:
         _existing = _pool.get(_stale_sheet)
         if isinstance(_existing, pd.DataFrame):
             _snap = {}
-            for _gcol in ('Group_ID', 'Group_Name'):
+            for _gcol in ('Group_ID', 'Group_Name', 'Group_Source',
+                          'Along_Strike_km', 'Across_Strike_km'):
                 if _gcol in _existing.columns:
                     _snap[_gcol] = _existing[_gcol].copy()
             if _snap:
@@ -10898,6 +10962,15 @@ with t_data_prep:
                 for _gcol, _gvals in _snap.items():
                     if _gcol not in _sheet_df.columns:
                         _sheet_df[_gcol] = _gvals.values
+        else:
+            # Fresh upload — seed every row with a single group named after the file
+            # so polyline projection and group-aware features work immediately.
+            # Users can split or relabel groups in the Group tab as needed.
+            if 'Group_ID' not in _sheet_df.columns:
+                _sheet_df = _sheet_df.copy()
+                _sheet_df['Group_ID'] = _sheet_stem
+                _sheet_df['Group_Name'] = _sheet_stem
+                _sheet_df['Group_Source'] = 'auto'
         _pool[_sheet_stem] = _sheet_df
         _new_sheet_pool_keys.append(_sheet_stem)
     st.session_state['_dp_sheet_pool_keys'] = _new_sheet_pool_keys
@@ -12788,7 +12861,7 @@ with t_validation:
                         for _gk, _g in _vb_df.groupby(_vb_group_keys, dropna=True, observed=True):
                             if _g.empty:
                                 continue
-                            _bin_obj = _gk[-1] if _vb_split_models else _gk
+                            _bin_obj = (_gk[-1] if isinstance(_gk, tuple) else _gk)
                             _r = _g['Delta_km']
                             _row = {
                                 'Observed bin [km]':   f'{int(_bin_obj.left)}–{int(_bin_obj.right)}',
@@ -14236,12 +14309,12 @@ with t_grouping:
         # ── Landing 3: Polyline-as-axis ──────────────────────────────────────
         with st.expander('🔬 Polyline axes — PCA long-axis projection', expanded=False):
             st.checkbox(
-                'Enable per-group PCA polyline projection',
+                'Enable polyline axis projection',
                 value=st.session_state.get('_g_polyline_on', False),
                 key='_g_polyline_on',
-                help='Fits a straight-line axis through each group\'s samples via PCA '
-                     '(equirectangular km projection). Adds Along_Strike_km and '
-                     'Across_Strike_km columns; draws the axis on the map.',
+                help='Fits a straight-line axis through each group\'s samples. '
+                     'Adds Along_Strike_km and Across_Strike_km columns; draws '
+                     'the axis on the map.',
             )
             if st.session_state.get('_g_polyline_on', False):
                 _pa1, _pa2 = st.columns(2)
@@ -14257,9 +14330,55 @@ with t_grouping:
                     key='_g_poly_window',
                     help='Half-window = window ÷ 2 km on either side of each grid point.',
                 )
+                # ── Axis orientation ──────────────────────────────────────────
+                st.radio(
+                    'Axis orientation',
+                    ['Auto (PCA per group)', 'Manual azimuth'],
+                    key='_g_poly_mode',
+                    horizontal=True,
+                    help='Auto fits the best-fit axis to each group independently. '
+                         'Manual applies the same compass bearing to every group.',
+                )
+                if st.session_state.get('_g_poly_mode') == 'Manual azimuth':
+                    _paz_col, _pcmp_col = st.columns([2, 1])
+                    _az_val = int(st.session_state.get('_g_poly_azimuth', 0))
+                    _az_val = _paz_col.slider(
+                        'Azimuth (° clockwise from North)', 0, 359, _az_val, 1,
+                        key='_g_poly_azimuth',
+                        help='0° = North, 90° = East, 180° = South, 270° = West.',
+                    )
+                    # SVG compass rose
+                    _az_rad = _az_val  # SVG rotate() is already CW from top
+                    _compass_svg = f"""
+<svg width="90" height="90" viewBox="-50 -50 100 100"
+     style="display:block;margin:auto;">
+  <circle cx="0" cy="0" r="46" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1.5"/>
+  <line x1="0" y1="-46" x2="0" y2="-38" stroke="#9ca3af" stroke-width="1.5"/>
+  <line x1="0" y1="46"  x2="0" y2="38"  stroke="#9ca3af" stroke-width="1.5"/>
+  <line x1="-46" y1="0" x2="-38" y2="0" stroke="#9ca3af" stroke-width="1.5"/>
+  <line x1="46"  y1="0" x2="38"  y2="0" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="0" y="-28" text-anchor="middle" font-size="9"
+        font-family="Arial,sans-serif" fill="#374151" font-weight="bold">N</text>
+  <text x="0"  y="38"  text-anchor="middle" font-size="9"
+        font-family="Arial,sans-serif" fill="#9ca3af">S</text>
+  <text x="34" y="4"   text-anchor="middle" font-size="9"
+        font-family="Arial,sans-serif" fill="#9ca3af">E</text>
+  <text x="-34" y="4"  text-anchor="middle" font-size="9"
+        font-family="Arial,sans-serif" fill="#9ca3af">W</text>
+  <g transform="rotate({_az_rad})">
+    <polygon points="0,-34 -4,-18 4,-18" fill="#8f1729"/>
+    <line x1="0" y1="-18" x2="0" y2="22"
+          stroke="#244575" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#6b7280"/>
+  </g>
+  <text x="0" y="52" text-anchor="middle" font-size="9"
+        font-family="Arial,sans-serif" fill="#374151" font-weight="bold"
+        >{_az_val}°</text>
+</svg>"""
+                    _pcmp_col.markdown(_compass_svg, unsafe_allow_html=True)
                 st.caption(
-                    '**Along_Strike_km** = distance along the group PCA axis from the '
-                    'south-west end. **Across_Strike_km** = signed perpendicular distance '
+                    '**Along_Strike_km** = distance along the axis from the south-west end. '
+                    '**Across_Strike_km** = signed perpendicular distance '
                     '(positive = left of direction vector). Select **Along_Strike_km** as '
                     'the cross-plot X axis to see a rolling-window smoothing curve.'
                 )
@@ -14268,11 +14387,14 @@ with t_grouping:
         _poly_on = st.session_state.get('_g_polyline_on', False)
         _poly_stat = st.session_state.get('_g_poly_stat', 'median')
         _poly_window = int(st.session_state.get('_g_poly_window', 200))
+        _poly_manual = (st.session_state.get('_g_poly_mode') == 'Manual azimuth')
+        _poly_azimuth = float(st.session_state.get('_g_poly_azimuth', 0)) if _poly_manual else None
         _group_axes: dict = {}
         if _poly_on and _n_passing > 0:
             try:
                 _grouped_proj, _group_axes = _g_attach_polyline_projections(
-                    _grouped, group_col='Group_ID', lon_col='Lon', lat_col='Lat'
+                    _grouped, group_col='Group_ID', lon_col='Lon', lat_col='Lat',
+                    azimuth_deg=_poly_azimuth,
                 )
                 if 'Along_Strike_km' in _grouped_proj.columns:
                     _grouped = _grouped_proj
@@ -14939,15 +15061,14 @@ with t_grouping:
             # find it. Otherwise the grouped dataset would only be reachable
             # under '<friendly name> [grouped]' which the Model tab doesn't
             # check, and Multi-model training would crash with KeyError 'Group_ID'.
+            _POOL_WRITEBACK_COLS = ['Group_ID', 'Group_Name',
+                                       'Along_Strike_km', 'Across_Strike_km']
             if _g_src in _pool:
                 # User-uploaded pool entry — modify in place under same key
                 _src_df = _pool[_g_src].copy()
-                _id_map = _grouped.set_index(_grouped.index)[['Group_ID', 'Group_Name']] \
-                                  if 'Group_Name' in _grouped.columns \
-                                  else _grouped[['Group_ID']].copy()
-                for _col in ['Group_ID', 'Group_Name']:
-                    if _col in _id_map.columns:
-                        _src_df[_col] = _id_map[_col]
+                for _col in _POOL_WRITEBACK_COLS:
+                    if _col in _grouped.columns:
+                        _src_df[_col] = _grouped[_col]
                 _pool[_g_src] = _src_df.reset_index(drop=True)
                 _saved_under = _g_src
             elif _g_src in _BUILTIN_TO_FILE_STEM:
@@ -14959,7 +15080,7 @@ with t_grouping:
                     _src_df = _src_df.reset_index(drop=True)
                     # Align grouping by row position (both share the same bench origin)
                     if len(_src_df) == len(_grouped):
-                        for _col in ['Group_ID', 'Group_Name']:
+                        for _col in _POOL_WRITEBACK_COLS:
                             if _col in _grouped.columns:
                                 _src_df[_col] = _grouped[_col].values
                     _pool[_stem] = _src_df
@@ -15362,15 +15483,18 @@ with t_result_summary:
                         format_func=lambda c: 'Prediction uncertainty [90% CI width, Km]' if c == 'Predicted_CI90_Width_km' else c,
                         key='rs_map_col')
                     _rs_map_num=pd.api.types.is_numeric_dtype(pd.to_numeric(_rs_vdf[_rs_map_col],errors='coerce'))
-                    _rs_map_cscale = 'RdYlGn_r' if _rs_map_col == 'Predicted_CI90_Width_km' else ('plasma' if _rs_map_num else None)
                     _rs_mapdf=_rs_vdf.dropna(subset=['Lat','Lon']).copy()
+                    _rs_ckw = map_color_kw(_rs_map_col, _rs_mapdf) if _rs_map_num else {}
+                    if not _rs_ckw and _rs_map_num:
+                        _rs_ckw = {'color_continuous_scale': THICKNESS_COLORSCALE}
                     _rs_mapfig=px.scatter_map(
                         _rs_mapdf,lat='Lat',lon='Lon',color=_rs_map_col,
-                        color_continuous_scale=_rs_map_cscale,
+                        map_style='carto-positron',
                         hover_name=_rs_x if _rs_x in _rs_mapdf.columns else None,
                         hover_data={c:':.1f' if _rs_map_num else True
                                     for c in ['Predicted_km','Predicted_CI90_Width_km','Age_Ma','Model'] if c in _rs_mapdf and c!=_rs_map_col},
                         zoom=1,height=440,
+                        **_rs_ckw,
                     )
                     _rs_mapfig.update_layout(margin=dict(l=0,r=0,t=0,b=0))
                     with _rs_mc1:

@@ -402,41 +402,70 @@ def axis_endpoints_lonlat(centroid, direction, length_km, ref_lat) -> tuple:
     return (float(lon0), float(lat0)), (float(lon1), float(lat1))
 
 
+def azimuth_to_direction(azimuth_deg: float) -> np.ndarray:
+    """Convert a compass azimuth (degrees clockwise from North) to a unit
+    direction vector [east, north] in equirectangular km space."""
+    rad = np.radians(float(azimuth_deg) % 360)
+    return np.array([np.sin(rad), np.cos(rad)])
+
+
 def attach_polyline_projections(df: pd.DataFrame, group_col: str = 'Group_ID',
-                                 lon_col: str = 'Lon', lat_col: str = 'Lat'):
-    """For each group, fit a PCA axis and project that group's samples onto it.
-    Adds columns Along_Strike_km, Across_Strike_km to a copy of df.
+                                 lon_col: str = 'Lon', lat_col: str = 'Lat',
+                                 azimuth_deg: float | None = None):
+    """For each group, fit a PCA axis (or use a fixed azimuth) and project
+    that group's samples onto it.  Adds Along_Strike_km, Across_Strike_km.
+
+    If no Group_ID column exists (or all values are NaN), the entire dataset
+    is treated as a single group labelled '__all__'.
 
     Returns (df_with_projections, group_axes) where group_axes is a dict
     {group_id: {'centroid', 'direction', 'length_km', 'ref_lat',
-                'lon0','lat0','lon1','lat1'}} for plotting.
+                'lon0','lat0','lon1','lat1', 'azimuth_deg'}} for plotting.
     """
     out = df.copy()
     out['Along_Strike_km'] = np.nan
     out['Across_Strike_km'] = np.nan
     group_axes: dict = {}
-    if group_col not in out.columns or lon_col not in out.columns or lat_col not in out.columns:
+    if lon_col not in out.columns or lat_col not in out.columns:
         return out, group_axes
-    for gid, g in out.dropna(subset=[group_col, lon_col, lat_col]).groupby(group_col):
+    # If no group column or all NaN, treat whole dataset as one group.
+    # Also write '__all__' into the real group_col so downstream rendering
+    # that matches on group_col can find the axis entry.
+    if group_col not in out.columns or out[group_col].isna().all():
+        out[group_col] = '__all__'
+        _gc = group_col
+    else:
+        _gc = group_col
+    manual_direction = azimuth_to_direction(azimuth_deg) if azimuth_deg is not None else None
+    for gid, g in out.dropna(subset=[_gc, lon_col, lat_col]).groupby(_gc):
         if len(g) < 2:
             continue
-        fit = fit_pca_axis(g[lon_col].to_numpy(dtype=float),
-                           g[lat_col].to_numpy(dtype=float))
-        if fit is None:
-            continue
-        centroid, direction, length_km, ref_lat = fit
-        along, across = project_onto_axis(
-            g[lon_col].to_numpy(dtype=float),
-            g[lat_col].to_numpy(dtype=float),
-            centroid, direction, ref_lat,
-        )
+        lons = g[lon_col].to_numpy(dtype=float)
+        lats = g[lat_col].to_numpy(dtype=float)
+        if manual_direction is not None:
+            ref_lat = float(np.nanmean(lats))
+            xy = _lonlat_to_km(lons, lats, ref_lat=ref_lat)
+            centroid = xy.mean(axis=0)
+            centred = xy - centroid
+            along_raw = centred @ manual_direction
+            length_km = float(np.nanmax(along_raw) - np.nanmin(along_raw))
+            direction = manual_direction
+        else:
+            fit = fit_pca_axis(lons, lats)
+            if fit is None:
+                continue
+            centroid, direction, length_km, ref_lat = fit
+        along, across = project_onto_axis(lons, lats, centroid, direction, ref_lat)
         out.loc[g.index, 'Along_Strike_km'] = np.round(along, 2)
         out.loc[g.index, 'Across_Strike_km'] = np.round(across, 2)
         (lon0, lat0), (lon1, lat1) = axis_endpoints_lonlat(centroid, direction, length_km, ref_lat)
+        reported_az = float(azimuth_deg) if azimuth_deg is not None else float(
+            np.degrees(np.arctan2(direction[0], direction[1])) % 360)
         group_axes[gid] = {
             'centroid': centroid, 'direction': direction,
             'length_km': float(length_km), 'ref_lat': ref_lat,
             'lon0': lon0, 'lat0': lat0, 'lon1': lon1, 'lat1': lat1,
+            'azimuth_deg': reported_az,
         }
     return out, group_axes
 
